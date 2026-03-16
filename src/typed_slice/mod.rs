@@ -2,6 +2,10 @@ use core::marker::PhantomData;
 
 use crate::IndexType;
 
+mod index;
+
+pub use index::TypedSliceIndex;
+
 #[repr(transparent)]
 pub struct TypedSlice<I: IndexType, T> {
     _marker: PhantomData<fn(&I)>,
@@ -9,12 +13,10 @@ pub struct TypedSlice<I: IndexType, T> {
 }
 impl<I: IndexType, T> TypedSlice<I, T> {
     pub const fn from_slice(slice: &[T]) -> &Self {
-        // SAFETY: we use `#[repr(transparent)]`
         unsafe { core::mem::transmute(slice) }
     }
 
     pub const fn from_slice_mut(slice: &mut [T]) -> &mut Self {
-        // SAFETY: we use `#[repr(transparent)]`
         unsafe { core::mem::transmute(slice) }
     }
 }

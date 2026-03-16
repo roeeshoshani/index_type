@@ -2,20 +2,13 @@
 
 extern crate alloc;
 
-use crate::index_type_sealed::IndexTypeSealed;
-
 pub mod typed_slice;
 pub mod typed_vec;
 
 pub struct IndexTooBigError;
 
-// we seal it since improper implementations may lead to undefined behaviour.
-mod index_type_sealed {
-    pub trait IndexTypeSealed {}
-}
-
-pub trait IndexType:
-    IndexTypeSealed + Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
+pub unsafe trait IndexType:
+    Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
 {
     const ZERO: Self;
 
@@ -24,9 +17,10 @@ pub trait IndexType:
     unsafe fn from_index_unchecked(index: usize) -> Self;
 
     fn to_index(self) -> usize;
+
+    unsafe fn unchecked_sub(self, rhs: Self) -> Self;
 }
-impl IndexTypeSealed for usize {}
-impl IndexType for usize {
+unsafe impl IndexType for usize {
     const ZERO: Self = 0;
 
     #[inline(always)]
@@ -42,5 +36,10 @@ impl IndexType for usize {
     #[inline(always)]
     fn to_index(self) -> usize {
         self
+    }
+
+    #[inline(always)]
+    unsafe fn unchecked_sub(self, rhs: Self) -> Self {
+        unsafe { self.unchecked_sub(rhs) }
     }
 }
