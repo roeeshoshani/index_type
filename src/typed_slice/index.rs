@@ -26,28 +26,34 @@ impl<I: IndexType> private_typed_slice_index::Sealed for I {}
 unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for I {
     type Output = T;
 
+    #[inline]
     fn get(self, slice: &TypedSlice<I, T>) -> Option<&Self::Output> {
         slice.raw.get(self.to_index())
     }
 
+    #[inline]
     fn get_mut(self, slice: &mut TypedSlice<I, T>) -> Option<&mut Self::Output> {
         slice.raw.get_mut(self.to_index())
     }
 
+    #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const Self::Output {
         let ptr = slice as *const T;
         unsafe { ptr.add(self.to_index()) }
     }
 
+    #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut Self::Output {
         let ptr = slice as *mut T;
         unsafe { ptr.add(self.to_index()) }
     }
 
+    #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &Self::Output {
         &slice.raw[self.to_index()]
     }
 
+    #[inline]
     fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut Self::Output {
         &mut slice.raw[self.to_index()]
     }
@@ -57,16 +63,19 @@ impl<I: IndexType> private_typed_slice_index::Sealed for core::ops::Range<I> {}
 unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Range<I> {
     type Output = TypedSlice<I, T>;
 
+    #[inline]
     fn get(self, slice: &TypedSlice<I, T>) -> Option<&Self::Output> {
         let raw_range = self.start.to_index()..self.end.to_index();
         slice.raw.get(raw_range).map(TypedSlice::from_slice)
     }
 
+    #[inline]
     fn get_mut(self, slice: &mut TypedSlice<I, T>) -> Option<&mut Self::Output> {
         let raw_range = self.start.to_index()..self.end.to_index();
         slice.raw.get_mut(raw_range).map(TypedSlice::from_slice_mut)
     }
 
+    #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const Self::Output {
         let raw_range = self.start.to_index()..self.end.to_index();
         let ptr = slice as *const T;
@@ -76,6 +85,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
         }
     }
 
+    #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut Self::Output {
         let raw_range = self.start.to_index()..self.end.to_index();
         let ptr = slice as *mut T;
@@ -85,13 +95,51 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
         }
     }
 
+    #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &Self::Output {
         let raw_range = self.start.to_index()..self.end.to_index();
         TypedSlice::from_slice(&slice.raw[raw_range])
     }
 
+    #[inline]
     fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut Self::Output {
         let raw_range = self.start.to_index()..self.end.to_index();
         TypedSlice::from_slice_mut(&mut slice.raw[raw_range])
+    }
+}
+impl<I: IndexType> private_typed_slice_index::Sealed for core::ops::RangeTo<I> {}
+unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::RangeTo<I> {
+    type Output = TypedSlice<I, T>;
+
+    #[inline]
+    fn get(self, slice: &TypedSlice<I, T>) -> Option<&TypedSlice<I, T>> {
+        (I::ZERO..self.end).get(slice)
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut TypedSlice<I, T>) -> Option<&mut TypedSlice<I, T>> {
+        (I::ZERO..self.end).get_mut(slice)
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const TypedSlice<I, T> {
+        // SAFETY: the caller has to uphold the safety contract for `get_unchecked`.
+        unsafe { (I::ZERO..self.end).get_unchecked(slice) }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut TypedSlice<I, T> {
+        // SAFETY: the caller has to uphold the safety contract for `get_unchecked_mut`.
+        unsafe { (I::ZERO..self.end).get_unchecked_mut(slice) }
+    }
+
+    #[inline(always)]
+    fn index(self, slice: &TypedSlice<I, T>) -> &TypedSlice<I, T> {
+        (I::ZERO..self.end).index(slice)
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut TypedSlice<I, T> {
+        (I::ZERO..self.end).index_mut(slice)
     }
 }
