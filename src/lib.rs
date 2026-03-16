@@ -4,6 +4,7 @@ extern crate alloc;
 
 use crate::index_type_sealed::IndexTypeSealed;
 
+pub mod typed_slice;
 pub mod typed_vec;
 
 pub struct IndexTooBigError;
