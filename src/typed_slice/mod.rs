@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::IndexType;
+use crate::{IndexTooBigError, IndexType};
 
 mod index;
 
@@ -9,14 +9,24 @@ pub use index::TypedSliceIndex;
 #[repr(transparent)]
 pub struct TypedSlice<I: IndexType, T> {
     _marker: PhantomData<fn(&I)>,
-    pub raw: [T],
+    raw: [T],
 }
 impl<I: IndexType, T> TypedSlice<I, T> {
-    pub const fn from_slice(slice: &[T]) -> &Self {
+    pub fn from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
+        let _ = I::try_from_index(slice.len())?;
+        Ok(unsafe { core::mem::transmute(slice) })
+    }
+
+    pub fn from_slice_mut(slice: &mut [T]) -> Result<&mut Self, IndexTooBigError> {
+        let _ = I::try_from_index(slice.len())?;
+        Ok(unsafe { core::mem::transmute(slice) })
+    }
+
+    pub unsafe fn from_slice_unchecked(slice: &[T]) -> &Self {
         unsafe { core::mem::transmute(slice) }
     }
 
-    pub const fn from_slice_mut(slice: &mut [T]) -> &mut Self {
+    pub unsafe fn from_slice_unchecked_mut(slice: &mut [T]) -> &mut Self {
         unsafe { core::mem::transmute(slice) }
     }
 }
