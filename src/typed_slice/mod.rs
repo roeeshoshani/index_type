@@ -1,4 +1,4 @@
-use core::marker::PhantomData;
+use core::{marker::PhantomData, mem::MaybeUninit};
 
 use crate::{IndexTooBigError, IndexType};
 
@@ -714,6 +714,24 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn split_off_last_mut<'a>(self: &mut &'a mut Self) -> Option<&'a mut T> {
         let raw_self: &mut &'a mut [T] = unsafe { core::mem::transmute(self) };
         raw_self.split_off_last_mut()
+    }
+
+    #[inline]
+    #[track_caller]
+    pub unsafe fn get_disjoint_unchecked_mut<X, const N: usize>(
+        &mut self,
+        indices: [X; N],
+    ) -> [&mut X::Output; N]
+    where
+        X: TypedSliceIndex<Self>,
+    {
+        let slice: *mut TypedSlice<I, T> = self;
+        let mut arr: MaybeUninit<[&mut X::Output; N]> = MaybeUninit::uninit();
+        let arr_ptr = arr.as_mut_ptr().cast::<&mut X::Output>();
+        for (i, idx) in indices.into_iter().enumerate() {
+            unsafe { arr_ptr.add(i).write(&mut *idx.get_unchecked_mut(slice)) }
+        }
+        unsafe { arr.assume_init() }
     }
 }
 
