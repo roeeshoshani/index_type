@@ -138,19 +138,18 @@ impl<ITmp: IndexType, T> TypedSlice<ITmp, T> {
     #[must_use]
     pub fn get<I>(&self, index: I) -> Option<&I::Output>
     where
-        I: core::slice::SliceIndex<[T]>,
+        I: TypedSliceIndex<Self>,
     {
-        // TODO: replace index with typed index
-        self.raw.get(index)
+        index.get(self)
     }
+
     #[inline]
     #[must_use]
     pub fn get_mut<I>(&mut self, index: I) -> Option<&mut I::Output>
     where
-        I: core::slice::SliceIndex<[T]>,
+        I: TypedSliceIndex<Self>,
     {
-        // TODO: replace index with typed index
-        self.raw.get_mut(index)
+        index.get_mut(self)
     }
 
     #[inline]
@@ -158,10 +157,9 @@ impl<ITmp: IndexType, T> TypedSlice<ITmp, T> {
     #[track_caller]
     pub unsafe fn get_unchecked<I>(&self, index: I) -> &I::Output
     where
-        I: core::slice::SliceIndex<[T]>,
+        I: TypedSliceIndex<Self>,
     {
-        // TODO: replace index with typed index
-        unsafe { self.raw.get_unchecked(index) }
+        unsafe { &*index.get_unchecked(self) }
     }
 
     #[inline]
@@ -169,10 +167,9 @@ impl<ITmp: IndexType, T> TypedSlice<ITmp, T> {
     #[track_caller]
     pub unsafe fn get_unchecked_mut<I>(&mut self, index: I) -> &mut I::Output
     where
-        I: core::slice::SliceIndex<[T]>,
+        I: TypedSliceIndex<Self>,
     {
-        // TODO: replace index with typed index
-        unsafe { self.raw.get_unchecked_mut(index) }
+        unsafe { &mut *index.get_unchecked_mut(self) }
     }
 
     #[inline(always)]
