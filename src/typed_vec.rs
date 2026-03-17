@@ -231,21 +231,21 @@ impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
 }
 impl<I: IndexType, T: PartialEq> PartialEq for TypedVec<I, T> {
     fn eq(&self, other: &Self) -> bool {
-        self.raw == other.raw
+        PartialEq::eq(&self.raw, &other.raw)
     }
 }
 impl<I: IndexType, T: Eq> Eq for TypedVec<I, T> {}
 impl<I: IndexType, T: Clone> Clone for TypedVec<I, T> {
     fn clone(&self) -> Self {
         Self {
-            raw: self.raw.clone(),
+            raw: Clone::clone(&self.raw),
             phantom: PhantomData,
         }
     }
 }
 impl<I: IndexType, T: core::hash::Hash> core::hash::Hash for TypedVec<I, T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.raw.hash(state);
+        core::hash::Hash::hash(&self.raw, state);
     }
 }
 impl<I: IndexType, T> Default for TypedVec<I, T> {
