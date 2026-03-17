@@ -31,7 +31,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(res)
     }
 
-    #[inline]
+    #[inline(always)]
     pub unsafe fn from_vec_unchecked(vec: Vec<T>) -> Self {
         Self {
             raw: vec,
@@ -52,7 +52,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         })
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn into_vec(self) -> Vec<T> {
         self.raw
     }
