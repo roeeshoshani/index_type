@@ -229,7 +229,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
     }
 }
 
-unsafe fn range_inclusive_to_exclusive<I: IndexType>(
+unsafe fn range_inclusive_to_exclusive_unchecked<I: IndexType>(
     r: core::ops::RangeInclusive<I>,
 ) -> core::ops::Range<I> {
     // this special code is used to handle the quirks of `RangeInclusive` related to the `exhausted` field.
@@ -267,12 +267,12 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
 
     #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const Self::Output {
-        unsafe { range_inclusive_to_exclusive(self).get_unchecked(slice) }
+        unsafe { range_inclusive_to_exclusive_unchecked(self).get_unchecked(slice) }
     }
 
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut Self::Output {
-        unsafe { range_inclusive_to_exclusive(self).get_unchecked_mut(slice) }
+        unsafe { range_inclusive_to_exclusive_unchecked(self).get_unchecked_mut(slice) }
     }
 
     #[inline]
