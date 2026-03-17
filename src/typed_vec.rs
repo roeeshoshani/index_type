@@ -257,6 +257,7 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         self.raw.extend_from_slice(other.to_slice())
     }
 
+    #[inline(always)]
     pub fn extend_from_within<R>(&mut self, src: R)
     where
         R: core::ops::RangeBounds<I>,
@@ -264,6 +265,7 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         self.raw.extend_from_within(range_bounds_to_raw(src));
     }
 
+    #[inline(always)]
     pub fn extract_if<F, R>(&mut self, range: R, filter: F) -> alloc::vec::ExtractIf<'_, T, F>
     where
         F: FnMut(&mut T) -> bool,
