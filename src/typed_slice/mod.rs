@@ -1,4 +1,8 @@
-use core::{marker::PhantomData, mem::MaybeUninit};
+use core::{
+    marker::PhantomData,
+    mem::MaybeUninit,
+    ops::{Index, IndexMut},
+};
 
 use crate::{IndexTooBigError, IndexType};
 
@@ -752,6 +756,20 @@ impl<I: IndexType, T: core::hash::Hash> core::hash::Hash for TypedSlice<I, T> {
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedSlice<I, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.raw.fmt(f)
+    }
+}
+
+impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> Index<X> for TypedSlice<I, T> {
+    type Output = X::Output;
+
+    fn index(&self, index: X) -> &Self::Output {
+        index.index(self)
+    }
+}
+
+impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> IndexMut<X> for TypedSlice<I, T> {
+    fn index_mut(&mut self, index: X) -> &mut Self::Output {
+        index.index_mut(self)
     }
 }
 
