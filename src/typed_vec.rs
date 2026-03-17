@@ -263,6 +263,14 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
     {
         self.raw.extend_from_within(range_bounds_to_raw(src));
     }
+
+    pub fn extract_if<F, R>(&mut self, range: R, filter: F) -> alloc::vec::ExtractIf<'_, T, F>
+    where
+        F: FnMut(&mut T) -> bool,
+        R: core::ops::RangeBounds<I>,
+    {
+        self.raw.extract_if(range_bounds_to_raw(range), filter)
+    }
 }
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
