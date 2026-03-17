@@ -1,4 +1,4 @@
-use core::{mem::MaybeUninit, ptr::NonNull};
+use core::ptr::NonNull;
 
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 use thiserror_no_std::Error;
