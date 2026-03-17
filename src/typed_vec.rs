@@ -40,6 +40,19 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     #[inline]
+    pub unsafe fn from_raw_parts(
+        ptr: *mut T,
+        length: usize,
+        capacity: usize,
+    ) -> Result<Self, IndexTooBigError> {
+        let _ = I::try_from_raw_index(length)?;
+        Ok(Self {
+            raw: unsafe { Vec::from_raw_parts(ptr, length, capacity) },
+            phantom: PhantomData,
+        })
+    }
+
+    #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.raw
     }
