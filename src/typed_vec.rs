@@ -223,6 +223,18 @@ impl<I: IndexType, T> TypedVec<I, T> {
     pub fn leak<'a>(self) -> &'a mut [T] {
         self.raw.leak()
     }
+
+    #[inline(always)]
+    pub fn drain<R>(&mut self, range: R) -> alloc::vec::Drain<'_, T>
+    where
+        R: core::ops::RangeBounds<I>,
+    {
+        let raw_bounds = (
+            range.start_bound().map(|x| x.to_raw_index()),
+            range.end_bound().map(|x| x.to_raw_index()),
+        );
+        self.raw.drain(raw_bounds)
+    }
 }
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
