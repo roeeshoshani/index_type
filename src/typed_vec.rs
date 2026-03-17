@@ -53,6 +53,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     #[inline(always)]
+    pub fn into_raw_parts(self) -> (*mut T, usize, usize) {
+        self.raw.into_raw_parts()
+    }
+
+    #[inline(always)]
     pub fn into_vec(self) -> Vec<T> {
         self.raw
     }
