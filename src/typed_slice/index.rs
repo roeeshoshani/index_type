@@ -229,7 +229,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
     }
 }
 
-fn range_inclusive_to_exclusive<I: IndexType>(
+unsafe fn range_inclusive_to_exclusive<I: IndexType>(
     r: core::ops::RangeInclusive<I>,
 ) -> core::ops::Range<I> {
     // this special code is used to handle the quirks of `RangeInclusive` related to the `exhausted` field.
