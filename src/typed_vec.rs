@@ -108,20 +108,20 @@ impl<I: IndexType, T> TypedVec<I, T> {
             })
         }
     }
-    pub fn shrink_to(&mut self, min_capacity: usize) {
+    pub fn shrink_to(&mut self, min_capacity: I) {
         unsafe {
             self.modify_as_vec_unchecked(|v| {
-                v.shrink_to(min_capacity);
+                v.shrink_to(min_capacity.to_index());
             })
         }
     }
     pub fn into_boxed_slice(self) -> Box<TypedSlice<I, T>> {
         unsafe { core::mem::transmute(self.into_vec().into_boxed_slice()) }
     }
-    pub fn truncate(&mut self, len: usize) {
+    pub fn truncate(&mut self, len: I) {
         unsafe {
             self.modify_as_vec_unchecked(|v| {
-                v.truncate(len);
+                v.truncate(len.to_index());
             })
         }
     }
@@ -191,7 +191,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         todo!()
     }
 
-    pub const fn len(&self) -> usize {
+    pub const fn len(&self) -> I {
         self.len
     }
 
