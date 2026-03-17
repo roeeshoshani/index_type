@@ -1,14 +1,14 @@
 #![no_std]
 
+pub use crate::error::IndexTooBigError;
+
 extern crate alloc;
 
 mod base_index_types;
+mod error;
 mod index_scalar_types;
 pub mod typed_slice;
 pub mod typed_vec;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct IndexTooBigError;
 
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord

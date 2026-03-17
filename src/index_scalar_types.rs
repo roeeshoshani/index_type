@@ -1,4 +1,4 @@
-use crate::{IndexScalarType, IndexTooBigError};
+use crate::{IndexScalarType, error::IndexTooBigError};
 
 macro_rules! impl_for_uint_type {
     {$t: ty} => {

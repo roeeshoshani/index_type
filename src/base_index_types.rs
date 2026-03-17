@@ -2,7 +2,7 @@
 use core::num::NonZeroU64;
 use core::num::{NonZeroU8, NonZeroU16, NonZeroU32, NonZeroUsize};
 
-use crate::{IndexTooBigError, IndexType};
+use crate::{IndexType, error::IndexTooBigError};
 
 macro_rules! impl_for_uint_type {
     {$t: ty} => {
