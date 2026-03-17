@@ -6,11 +6,9 @@ mod index;
 
 pub use index::TypedSliceIndex;
 
-type PhantomIndexType<I> = PhantomData<fn(&I)>;
-
 #[repr(transparent)]
 pub struct TypedSlice<I: IndexType, T> {
-    phantom: PhantomIndexType<I>,
+    phantom: PhantomData<fn(&I)>,
     raw: [T],
 }
 impl<I: IndexType, T> TypedSlice<I, T> {
