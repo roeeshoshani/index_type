@@ -1,8 +1,7 @@
-use core::ptr::NonNull;
+use core::{marker::PhantomData, ptr::NonNull};
 
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 use thiserror_no_std::Error;
-use uniq::Unique;
 
 use crate::{IndexTooBigError, IndexType, typed_slice::TypedSlice};
 
@@ -16,76 +15,52 @@ pub enum TypedVecTryReserveError {
 }
 
 pub struct TypedVec<I: IndexType, T> {
-    ptr: Unique<T>,
-    len: I,
-    cap: I,
+    raw: Vec<T>,
+    phantom: PhantomData<fn(&I)>,
 }
 impl<I: IndexType, T> TypedVec<I, T> {
     pub const fn new() -> Self {
         Self {
-            ptr: Unique::dangling(),
-            len: I::ZERO,
-            cap: I::ZERO,
+            raw: Vec::new(),
+            phantom: PhantomData,
         }
     }
 
+    fn check_len_in_bounds(&self) -> Result<(), IndexTooBigError> {
+        let _ = I::try_from_index(self.raw.len())?;
+        Ok(())
+    }
+
     pub fn try_from_vec(vec: Vec<T>) -> Result<Self, IndexTooBigError> {
-        let (new_ptr, new_len, new_cap) = vec.into_raw_parts();
-        Ok(Self {
-            ptr: unsafe {
-                // SAFETY: the pointer of a vec is never null. it is stored internally as a non-null pointer.
-                Unique::new_unchecked(new_ptr)
-            },
-            len: I::try_from_index(new_len)?,
-            cap: I::try_from_index(new_cap)?,
-        })
+        let res = Self {
+            raw: vec,
+            phantom: PhantomData,
+        };
+        res.check_len_in_bounds()?;
+        Ok(res)
     }
 
     pub unsafe fn from_vec_unchecked(vec: Vec<T>) -> Self {
-        let (new_ptr, new_len, new_cap) = vec.into_raw_parts();
         Self {
-            ptr: unsafe {
-                // SAFETY: the pointer of a vec is never null. it is stored internally as a non-null pointer.
-                Unique::new_unchecked(new_ptr)
-            },
-            len: unsafe { I::from_index_unchecked(new_len) },
-            cap: unsafe { I::from_index_unchecked(new_cap) },
+            raw: vec,
+            phantom: PhantomData,
         }
     }
 
     pub fn into_vec(self) -> Vec<T> {
-        unsafe { Vec::from_raw_parts(self.ptr.as_ptr(), self.len.to_index(), self.cap.to_index()) }
-    }
-
-    pub fn modify_as_vec<F, R>(&mut self, f: F) -> Result<R, IndexTooBigError>
-    where
-        F: FnOnce(&mut Vec<T>) -> R,
-    {
-        let mut vec = core::mem::take(self).into_vec();
-        let res = f(&mut vec);
-        *self = Self::try_from_vec(vec)?;
-        Ok(res)
-    }
-
-    pub unsafe fn modify_as_vec_unchecked<F, R>(&mut self, f: F) -> R
-    where
-        F: FnOnce(&mut Vec<T>) -> R,
-    {
-        let mut vec = core::mem::take(self).into_vec();
-        let res = f(&mut vec);
-        *self = unsafe { Self::from_vec_unchecked(vec) };
-        res
+        self.raw
     }
 
     pub fn push(&mut self, value: T) -> Result<I, IndexTooBigError> {
-        let res = self.len;
-        self.modify_as_vec(|v| {
-            v.push(value);
-        })?;
+        let _ = self.len().checked_add_usize(1)?;
+        let res = self.len();
+        self.raw.push(value);
         Ok(res)
     }
 
     pub fn append(&mut self, other: &mut TypedVec<I, T>) -> Result<(), IndexTooBigError> {
+        // let _ = self.len().checked_add_usize(rhs)
+        self.append(other)
         self.modify_as_vec(|self_vec| {
             other.modify_as_vec(|other_vec| {
                 self_vec.append(other_vec);
@@ -97,8 +72,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.ptr.as_ptr()
     }
 
-    pub const fn capacity(&self) -> I {
-        self.cap
+    pub const fn capacity(&self) -> usize {
+        self.raw.capacity()
     }
 
     pub fn reserve(&mut self, additional: usize) -> Result<(), IndexTooBigError> {
@@ -250,15 +225,35 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.into_vec().leak()
     }
 }
-impl<I: IndexType, T> Drop for TypedVec<I, T> {
-    fn drop(&mut self) {
-        let _ = unsafe {
-            Vec::from_raw_parts(self.ptr.as_ptr(), self.len.to_index(), self.cap.to_index())
-        };
+impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(&self.raw, f)
+    }
+}
+impl<I: IndexType, T: PartialEq> PartialEq for TypedVec<I, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.raw == other.raw
+    }
+}
+impl<I: IndexType, T: Eq> Eq for TypedVec<I, T> {}
+impl<I: IndexType, T: Clone> Clone for TypedVec<I, T> {
+    fn clone(&self) -> Self {
+        Self {
+            raw: self.raw.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
+impl<I: IndexType, T: core::hash::Hash> core::hash::Hash for TypedVec<I, T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.raw.hash(state);
     }
 }
 impl<I: IndexType, T> Default for TypedVec<I, T> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            raw: Default::default(),
+            phantom: PhantomData,
+        }
     }
 }

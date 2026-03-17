@@ -23,6 +23,8 @@ pub unsafe trait IndexType:
 
     fn to_index(self) -> usize;
 
+    fn checked_add_usize(self, rhs: usize) -> Result<Self, IndexTooBigError>;
+
     unsafe fn unchecked_add_usize(self, rhs: usize) -> Self;
 
     unsafe fn unchecked_sub(self, rhs: Self) -> usize;

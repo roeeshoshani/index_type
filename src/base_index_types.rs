@@ -23,6 +23,11 @@ unsafe impl IndexType for usize {
     }
 
     #[inline(always)]
+    fn checked_add_usize(self, rhs: usize) -> Result<Self, IndexTooBigError> {
+        self.checked_add(rhs).ok_or(IndexTooBigError)
+    }
+
+    #[inline(always)]
     unsafe fn unchecked_add_usize(self, rhs: usize) -> Self {
         unsafe { self.unchecked_add(rhs) }
     }
@@ -54,6 +59,11 @@ macro_rules! impl_for_uint_type {
                     panic!()
                 };
                 self as usize
+            }
+
+            #[inline(always)]
+            fn checked_add_usize(self, rhs: usize) -> Result<Self, IndexTooBigError> {
+                self.checked_add(rhs.try_into().map_err(|_| IndexTooBigError)?).ok_or(IndexTooBigError)
             }
 
             #[inline(always)]
@@ -94,6 +104,10 @@ unsafe impl IndexType for NonZeroUsize {
         unsafe { self.get().unchecked_sub(1) }
     }
 
+    fn checked_add_usize(self, rhs: usize) -> Result<Self, IndexTooBigError> {
+        self.checked_add(rhs).ok_or(IndexTooBigError)
+    }
+
     unsafe fn unchecked_add_usize(self, rhs: usize) -> Self {
         unsafe { Self::new_unchecked(self.get().unchecked_add(rhs)) }
     }
@@ -123,6 +137,10 @@ macro_rules! impl_for_nonzero_uint_type {
 
             fn to_index(self) -> usize {
                 unsafe { self.get().unchecked_sub(1) as usize }
+            }
+
+            fn checked_add_usize(self, rhs: usize) -> Result<Self, IndexTooBigError> {
+                self.checked_add(rhs.try_into().map_err(|_| IndexTooBigError)?).ok_or(IndexTooBigError)
             }
 
             unsafe fn unchecked_add_usize(self, rhs: usize) -> Self {

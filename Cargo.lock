@@ -7,7 +7,6 @@ name = "index_type"
 version = "0.1.0"
 dependencies = [
  "thiserror-no-std",
- "uniq",
 ]
 
 [[package]]
@@ -64,9 +63,3 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
-
-[[package]]
-name = "uniq"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c52ee7ef44150a3f6f55959cfb8ec4e9fb8576e51fc1a8ed6abc022ae7504a8"
