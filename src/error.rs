@@ -5,3 +5,6 @@ impl core::fmt::Display for IndexTooBigError {
         write!(f, "index too big")
     }
 }
+
+#[cfg(feature = "std")]
+impl std::error::Error for IndexTooBigError {}
