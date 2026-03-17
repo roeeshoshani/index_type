@@ -6,9 +6,11 @@ mod index;
 
 pub use index::TypedSliceIndex;
 
+type PhantomIndexType<I: IndexType> = PhantomData<fn(&I)>;
+
 #[repr(transparent)]
 pub struct TypedSlice<I: IndexType, T> {
-    _marker: PhantomData<fn(&I)>,
+    phantom: PhantomIndexType<I>,
     raw: [T],
 }
 impl<I: IndexType, T> TypedSlice<I, T> {
@@ -539,51 +541,46 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn select_nth_unstable(&mut self, index: usize) -> (&mut [T], &mut T, &mut [T])
+    pub fn select_nth_unstable(&mut self, index: I) -> (&mut [T], &mut T, &mut [T])
     where
         T: Ord,
     {
-        // TODO: replace index with typed index
-        self.raw.select_nth_unstable(index)
+        self.raw.select_nth_unstable(index.to_index())
     }
 
     #[inline]
     pub fn select_nth_unstable_by<F>(
         &mut self,
-        index: usize,
+        index: I,
         compare: F,
     ) -> (&mut [T], &mut T, &mut [T])
     where
         F: FnMut(&T, &T) -> core::cmp::Ordering,
     {
-        // TODO: replace index with typed index
-        self.raw.select_nth_unstable_by(index, compare)
+        self.raw.select_nth_unstable_by(index.to_index(), compare)
     }
 
     #[inline]
     pub fn select_nth_unstable_by_key<K, F>(
         &mut self,
-        index: usize,
+        index: I,
         f: F,
     ) -> (&mut [T], &mut T, &mut [T])
     where
         F: FnMut(&T) -> K,
         K: Ord,
     {
-        // TODO: replace index with typed index
-        self.raw.select_nth_unstable_by_key(index, f)
+        self.raw.select_nth_unstable_by_key(index.to_index(), f)
     }
 
     #[inline]
-    pub const fn rotate_left(&mut self, mid: usize) {
-        // TODO: replace index with typed index
-        self.raw.rotate_left(mid)
+    pub fn rotate_left(&mut self, mid: I) {
+        self.raw.rotate_left(mid.to_index())
     }
 
     #[inline]
-    pub const fn rotate_right(&mut self, k: usize) {
-        // TODO: replace index with typed index
-        self.raw.rotate_right(k)
+    pub fn rotate_right(&mut self, k: I) {
+        self.raw.rotate_right(k.to_index())
     }
 
     #[inline]
@@ -624,12 +621,15 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[track_caller]
-    pub fn copy_within<R: core::ops::RangeBounds<usize>>(&mut self, src: R, dest: usize)
+    pub fn copy_within<R: core::ops::RangeBounds<I>>(&mut self, src: R, dest: usize)
     where
         T: Copy,
     {
-        // TODO: replace indices with typed indices/ranges
-        self.raw.copy_within(src, dest)
+        let raw_bounds = (
+            src.start_bound().map(|x| x.to_index()),
+            src.end_bound().map(|x| x.to_index()),
+        );
+        self.raw.copy_within(raw_bounds, dest)
     }
 
     #[inline]
