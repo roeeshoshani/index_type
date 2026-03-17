@@ -30,12 +30,24 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub unsafe fn from_slice_unchecked(slice: &[T]) -> &Self {
+    pub unsafe fn from_raw_parts<'a>(data: *const T, len: I) -> &'a TypedSlice<I, T> {
+        let slice = unsafe { core::slice::from_raw_parts(data, len.to_index()) };
+        unsafe { Self::from_slice_unchecked(slice) }
+    }
+
+    #[inline]
+    pub unsafe fn from_raw_parts_mut<'a>(data: *mut T, len: I) -> &'a mut TypedSlice<I, T> {
+        let slice = unsafe { core::slice::from_raw_parts_mut(data, len.to_index()) };
+        unsafe { Self::from_slice_unchecked_mut(slice) }
+    }
+
+    #[inline]
+    pub const unsafe fn from_slice_unchecked(slice: &[T]) -> &Self {
         unsafe { core::mem::transmute(slice) }
     }
 
     #[inline]
-    pub unsafe fn from_slice_unchecked_mut(slice: &mut [T]) -> &mut Self {
+    pub const unsafe fn from_slice_unchecked_mut(slice: &mut [T]) -> &mut Self {
         unsafe { core::mem::transmute(slice) }
     }
 }
