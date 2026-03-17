@@ -44,8 +44,8 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
-    pub const fn len(&self) -> usize {
-        self.raw.len()
+    pub fn len(&self) -> I {
+        unsafe { I::from_index_unchecked(self.raw.len()) }
     }
 
     #[inline]
