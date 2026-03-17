@@ -1,10 +1,6 @@
-use core::{mem::MaybeUninit, ptr::NonNull};
+use core::{mem::MaybeUninit, ops::RangeBounds, ptr::NonNull};
 
-use alloc::{
-    boxed::Box,
-    collections::TryReserveError,
-    vec::{Drain, Vec},
-};
+use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 use thiserror_no_std::Error;
 use uniq::Unique;
 
@@ -108,12 +104,15 @@ impl<I: IndexType, T> TypedVec<I, T> {
             v.reserve_exact(additional);
         })
     }
+
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), TypedVecTryReserveError> {
         Ok(self.modify_as_vec(|v| v.try_reserve(additional))??)
     }
+
     pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TypedVecTryReserveError> {
         Ok(self.modify_as_vec(|v| v.try_reserve_exact(additional))??)
     }
+
     pub fn shrink_to_fit(&mut self) {
         unsafe {
             self.modify_as_vec_unchecked(|v| {
@@ -121,6 +120,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
             })
         }
     }
+
     pub fn shrink_to(&mut self, min_capacity: I) {
         unsafe {
             self.modify_as_vec_unchecked(|v| {
@@ -128,9 +128,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
             })
         }
     }
+
     pub fn into_boxed_slice(self) -> Box<TypedSlice<I, T>> {
         unsafe { core::mem::transmute(self.into_vec().into_boxed_slice()) }
     }
+
     pub fn truncate(&mut self, len: I) {
         unsafe {
             self.modify_as_vec_unchecked(|v| {
@@ -138,94 +140,114 @@ impl<I: IndexType, T> TypedVec<I, T> {
             })
         }
     }
+
     pub fn as_slice(&self) -> &TypedSlice<I, T> {
         unsafe { TypedSlice::from_raw_parts(self.ptr.as_ptr(), self.len) }
     }
+
     pub fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
         unsafe { TypedSlice::from_raw_parts_mut(self.ptr.as_ptr(), self.len) }
     }
+
     pub const fn as_ptr(&self) -> *const T {
         self.ptr.as_ptr()
     }
+
     pub const fn as_non_null(&mut self) -> NonNull<T> {
         self.ptr.as_non_null_ptr()
     }
+
     pub unsafe fn set_len(&mut self, new_len: I) -> Result<(), IndexTooBigError> {
         self.modify_as_vec(|v| {
             unsafe { v.set_len(new_len.to_index()) };
         })
     }
+
     pub fn swap_remove(&mut self, index: I) -> T {
         unsafe { self.modify_as_vec_unchecked(|v| v.swap_remove(index.to_index())) }
     }
+
     pub fn insert(&mut self, index: I, element: T) {
         unsafe { self.modify_as_vec_unchecked(|v| v.insert(index.to_index(), element)) }
     }
+
     pub fn remove(&mut self, index: I) -> T {
         unsafe { self.modify_as_vec_unchecked(|v| v.remove(index.to_index())) }
     }
+
     pub fn retain<F>(&mut self, f: F)
     where
         F: FnMut(&T) -> bool,
     {
         unsafe { self.modify_as_vec_unchecked(|v| v.retain(f)) }
     }
+
     pub fn retain_mut<F>(&mut self, f: F)
     where
         F: FnMut(&mut T) -> bool,
     {
         unsafe { self.modify_as_vec_unchecked(|v| v.retain_mut(f)) }
     }
-    pub fn dedup_by_key<F, K>(&mut self, mut key: F) {
-        todo!()
+
+    pub fn dedup_by_key<F, K>(&mut self, key: F)
+    where
+        F: FnMut(&mut T) -> K,
+        K: PartialEq,
+    {
+        unsafe { self.modify_as_vec_unchecked(|v| v.dedup_by_key(key)) }
     }
-    pub fn dedup_by<F>(&mut self, mut same_bucket: F) {
-        todo!()
+
+    pub fn dedup_by<F>(&mut self, same_bucket: F)
+    where
+        F: FnMut(&mut T, &mut T) -> bool,
+    {
+        unsafe { self.modify_as_vec_unchecked(|v| v.dedup_by(same_bucket)) }
     }
-    pub fn push_within_capacity(&mut self, value: T) -> Result<&mut T, T> {
-        todo!()
-    }
-    pub fn push_mut(&mut self, value: T) -> &mut T {
-        todo!()
-    }
+
     pub fn pop(&mut self) -> Option<T> {
-        todo!()
+        unsafe { self.modify_as_vec_unchecked(|v| v.pop()) }
     }
+
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
-        todo!()
+        unsafe { self.modify_as_vec_unchecked(|v| v.pop_if(predicate)) }
     }
-    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T> {
-        todo!()
-    }
+
     pub fn clear(&mut self) {
-        todo!()
+        unsafe { self.modify_as_vec_unchecked(|v| v.clear()) }
     }
 
     pub const fn len(&self) -> I {
         self.len
     }
 
-    pub const fn is_empty(&self) -> bool {
-        todo!()
+    pub fn is_empty(&self) -> bool {
+        self.len == I::ZERO
     }
+
     pub fn split_off(&mut self, at: usize) -> Self {
         todo!()
     }
+
     pub fn resize_with<F>(&mut self, new_len: usize, f: F) {
         todo!()
     }
+
     pub fn leak<'a>(self) -> &'a mut [T] {
         todo!()
     }
+
     pub fn spare_capacity_mut(&mut self) -> &mut [MaybeUninit<T>] {
         todo!()
     }
+
     pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [MaybeUninit<T>]) {
         todo!()
     }
+
     pub fn into_chunks<const N: usize>(mut self) -> TypedVec<I, [T; N]> {
         todo!()
     }
+
     pub fn recycle<U>(mut self) -> TypedVec<I, U> {
         todo!()
     }
