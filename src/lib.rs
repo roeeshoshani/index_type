@@ -21,5 +21,5 @@ pub unsafe trait IndexType:
 
     unsafe fn unchecked_add_usize(self, rhs: usize) -> Self;
 
-    unsafe fn unchecked_sub(self, rhs: Self) -> Self;
+    unsafe fn unchecked_sub(self, rhs: Self) -> usize;
 }
