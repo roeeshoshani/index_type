@@ -138,18 +138,18 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    pub fn get<I>(&self, index: I) -> Option<&I::Output>
+    pub fn get<X>(&self, index: X) -> Option<&X::Output>
     where
-        I: TypedSliceIndex<Self>,
+        X: TypedSliceIndex<Self>,
     {
         index.get(self)
     }
 
     #[inline]
     #[must_use]
-    pub fn get_mut<I>(&mut self, index: I) -> Option<&mut I::Output>
+    pub fn get_mut<X>(&mut self, index: X) -> Option<&mut X::Output>
     where
-        I: TypedSliceIndex<Self>,
+        X: TypedSliceIndex<Self>,
     {
         index.get_mut(self)
     }
@@ -157,9 +157,9 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
     #[track_caller]
-    pub unsafe fn get_unchecked<I>(&self, index: I) -> &I::Output
+    pub unsafe fn get_unchecked<X>(&self, index: X) -> &X::Output
     where
-        I: TypedSliceIndex<Self>,
+        X: TypedSliceIndex<Self>,
     {
         unsafe { &*index.get_unchecked(self) }
     }
@@ -167,9 +167,9 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
     #[track_caller]
-    pub unsafe fn get_unchecked_mut<I>(&mut self, index: I) -> &mut I::Output
+    pub unsafe fn get_unchecked_mut<X>(&mut self, index: X) -> &mut X::Output
     where
-        I: TypedSliceIndex<Self>,
+        X: TypedSliceIndex<Self>,
     {
         unsafe { &mut *index.get_unchecked_mut(self) }
     }
