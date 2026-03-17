@@ -251,6 +251,12 @@ impl<I: IndexType, T: PartialEq> TypedVec<I, T> {
         self.raw.dedup();
     }
 }
+impl<I: IndexType, T: Clone> TypedVec<I, T> {
+    #[inline(always)]
+    pub fn extend_from_slice(&mut self, other: &TypedSlice<I, T>) {
+        self.raw.extend_from_slice(other.to_slice())
+    }
+}
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(&self.raw, f)

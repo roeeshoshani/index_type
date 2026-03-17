@@ -50,6 +50,16 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub const unsafe fn from_slice_unchecked_mut(slice: &mut [T]) -> &mut Self {
         unsafe { core::mem::transmute(slice) }
     }
+
+    #[inline]
+    pub const fn to_slice(&self) -> &[T] {
+        unsafe { core::mem::transmute(self) }
+    }
+
+    #[inline]
+    pub const fn to_slice_mut(&mut self) -> &mut [T] {
+        unsafe { core::mem::transmute(self) }
+    }
 }
 
 // methods copied from stdlib's slice implementation
