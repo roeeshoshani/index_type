@@ -30,7 +30,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         unsafe { core::mem::transmute(slice) }
     }
 }
-impl<ITmp: IndexType, T> TypedSlice<ITmp, T> {
+impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
     pub const fn len(&self) -> usize {
@@ -210,9 +210,8 @@ impl<ITmp: IndexType, T> TypedSlice<ITmp, T> {
 
     #[inline]
     #[track_caller]
-    pub const fn swap(&mut self, a: usize, b: usize) {
-        // TODO: replace index with typed index
-        self.raw.swap(a, b);
+    pub fn swap(&mut self, a: I, b: I) {
+        self.raw.swap(a.to_index(), b.to_index());
     }
 
     #[inline]
@@ -345,47 +344,41 @@ impl<ITmp: IndexType, T> TypedSlice<ITmp, T> {
     #[inline]
     #[track_caller]
     #[must_use]
-    pub const fn split_at(&self, mid: usize) -> (&[T], &[T]) {
-        // TODO: replace index with typed index
-        self.raw.split_at(mid)
+    pub fn split_at(&self, mid: I) -> (&[T], &[T]) {
+        self.raw.split_at(mid.to_index())
     }
 
     #[inline]
     #[track_caller]
     #[must_use]
-    pub const fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]) {
-        // TODO: replace index with typed index
-        self.raw.split_at_mut(mid)
+    pub fn split_at_mut(&mut self, mid: I) -> (&mut [T], &mut [T]) {
+        self.raw.split_at_mut(mid.to_index())
     }
 
     #[inline]
     #[must_use]
     #[track_caller]
-    pub const unsafe fn split_at_unchecked(&self, mid: usize) -> (&[T], &[T]) {
-        // TODO: replace index with typed index
-        unsafe { self.raw.split_at_unchecked(mid) }
+    pub unsafe fn split_at_unchecked(&self, mid: I) -> (&[T], &[T]) {
+        unsafe { self.raw.split_at_unchecked(mid.to_index()) }
     }
 
     #[inline]
     #[must_use]
     #[track_caller]
-    pub const unsafe fn split_at_mut_unchecked(&mut self, mid: usize) -> (&mut [T], &mut [T]) {
-        // TODO: replace index with typed index
-        unsafe { self.raw.split_at_mut_unchecked(mid) }
+    pub unsafe fn split_at_mut_unchecked(&mut self, mid: I) -> (&mut [T], &mut [T]) {
+        unsafe { self.raw.split_at_mut_unchecked(mid.to_index()) }
     }
 
     #[inline]
     #[must_use]
-    pub const fn split_at_checked(&self, mid: usize) -> Option<(&[T], &[T])> {
-        // TODO: replace index with typed index
-        self.raw.split_at_checked(mid)
+    pub fn split_at_checked(&self, mid: I) -> Option<(&[T], &[T])> {
+        self.raw.split_at_checked(mid.to_index())
     }
 
     #[inline]
     #[must_use]
-    pub const fn split_at_mut_checked(&mut self, mid: usize) -> Option<(&mut [T], &mut [T])> {
-        // TODO: replace index with typed index
-        self.raw.split_at_mut_checked(mid)
+    pub fn split_at_mut_checked(&mut self, mid: I) -> Option<(&mut [T], &mut [T])> {
+        self.raw.split_at_mut_checked(mid.to_index())
     }
 
     #[inline]
@@ -496,31 +489,28 @@ impl<ITmp: IndexType, T> TypedSlice<ITmp, T> {
     }
 
     #[inline]
-    pub fn binary_search(&self, x: &T) -> Result<usize, usize>
+    pub fn binary_search(&self, x: &T) -> Result<I, I>
     where
         T: Ord,
     {
-        // TODO: replace returned usize with typed index
-        self.raw.binary_search(x)
+        unsafe { typify_binary_search_res(self.raw.binary_search(x)) }
     }
 
     #[inline]
-    pub fn binary_search_by<'a, F>(&'a self, f: F) -> Result<usize, usize>
+    pub fn binary_search_by<'a, F>(&'a self, f: F) -> Result<I, I>
     where
         F: FnMut(&'a T) -> core::cmp::Ordering,
     {
-        // TODO: replace returned usize with typed index
-        self.raw.binary_search_by(f)
+        unsafe { typify_binary_search_res(self.raw.binary_search_by(f)) }
     }
 
     #[inline]
-    pub fn binary_search_by_key<'a, B, F>(&'a self, b: &B, f: F) -> Result<usize, usize>
+    pub fn binary_search_by_key<'a, B, F>(&'a self, b: &B, f: F) -> Result<I, I>
     where
         F: FnMut(&'a T) -> B,
         B: Ord,
     {
-        // TODO: replace returned usize with typed index
-        self.raw.binary_search_by_key(b, f)
+        unsafe { typify_binary_search_res(self.raw.binary_search_by_key(b, f)) }
     }
 
     #[inline]
@@ -734,5 +724,12 @@ impl<I: IndexType, T: Eq> Eq for TypedSlice<I, T> {}
 impl<I: IndexType, T: core::hash::Hash> core::hash::Hash for TypedSlice<I, T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.raw.hash(state);
+    }
+}
+
+unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> Result<I, I> {
+    match res {
+        Ok(v) => Ok(unsafe { I::from_index_unchecked(v) }),
+        Err(v) => Err(unsafe { I::from_index_unchecked(v) }),
     }
 }
