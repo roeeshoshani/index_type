@@ -2,7 +2,10 @@ use core::marker::PhantomData;
 
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
-use crate::{IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice};
+use crate::{
+    IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice,
+    utils::range_bounds_to_raw,
+};
 
 #[repr(transparent)]
 pub struct TypedVec<I: IndexType, T> {
@@ -230,11 +233,16 @@ impl<I: IndexType, T> TypedVec<I, T> {
     where
         R: core::ops::RangeBounds<I>,
     {
-        let raw_bounds = (
-            range.start_bound().map(|x| x.to_raw_index()),
-            range.end_bound().map(|x| x.to_raw_index()),
-        );
-        self.raw.drain(raw_bounds)
+        self.raw.drain(range_bounds_to_raw(range))
+    }
+
+    #[inline(always)]
+    pub fn splice<R, X>(&mut self, range: R, replace_with: X) -> alloc::vec::Splice<'_, X::IntoIter>
+    where
+        R: core::ops::RangeBounds<I>,
+        X: IntoIterator<Item = T>,
+    {
+        self.raw.splice(range_bounds_to_raw(range), replace_with)
     }
 }
 impl<I: IndexType, T: PartialEq> TypedVec<I, T> {

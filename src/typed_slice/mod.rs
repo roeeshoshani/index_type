@@ -4,7 +4,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexTooBigError, IndexType};
+use crate::{IndexTooBigError, IndexType, utils::range_bounds_to_raw};
 
 mod index;
 
@@ -653,11 +653,8 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Copy,
     {
-        let raw_bounds = (
-            src.start_bound().map(|x| x.to_raw_index()),
-            src.end_bound().map(|x| x.to_raw_index()),
-        );
-        self.raw.copy_within(raw_bounds, dest.to_raw_index())
+        self.raw
+            .copy_within(range_bounds_to_raw(src), dest.to_raw_index())
     }
 
     #[inline]

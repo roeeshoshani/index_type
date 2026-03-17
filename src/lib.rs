@@ -9,6 +9,7 @@ mod error;
 mod index_scalar_types;
 pub mod typed_slice;
 pub mod typed_vec;
+mod utils;
 
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
