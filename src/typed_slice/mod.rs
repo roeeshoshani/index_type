@@ -680,12 +680,11 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    pub fn partition_point<P>(&self, pred: P) -> usize
+    pub fn partition_point<P>(&self, pred: P) -> I
     where
         P: FnMut(&T) -> bool,
     {
-        // TODO: replace returned usize with typed index
-        self.raw.partition_point(pred)
+        unsafe { I::from_index_unchecked(self.raw.partition_point(pred)) }
     }
 
     #[inline]
