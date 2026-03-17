@@ -291,7 +291,13 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
     {
         self.raw.extract_if(range_bounds_to_raw(range), filter)
     }
+
+    #[inline(always)]
+    pub fn resize(&mut self, new_len: I, value: T) {
+        self.raw.resize(new_len.to_raw_index(), value);
+    }
 }
+
 impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
     pub fn into_flattened(self) -> Result<TypedVec<I, T>, IndexTooBigError> {
         let _new_len = self
