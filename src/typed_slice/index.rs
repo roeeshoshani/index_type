@@ -191,3 +191,38 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
         (self.start..len).index_mut(slice)
     }
 }
+
+impl private_typed_slice_index::Sealed for core::ops::RangeFull {}
+unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::RangeFull {
+    type Output = TypedSlice<I, T>;
+
+    #[inline]
+    fn get(self, slice: &TypedSlice<I, T>) -> Option<&TypedSlice<I, T>> {
+        Some(slice)
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut TypedSlice<I, T>) -> Option<&mut TypedSlice<I, T>> {
+        Some(slice)
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const TypedSlice<I, T> {
+        slice
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut TypedSlice<I, T> {
+        slice
+    }
+
+    #[inline(always)]
+    fn index(self, slice: &TypedSlice<I, T>) -> &TypedSlice<I, T> {
+        slice
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut TypedSlice<I, T> {
+        slice
+    }
+}
