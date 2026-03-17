@@ -205,11 +205,13 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.is_empty()
     }
 
+    #[inline(always)]
     pub fn split_off(&mut self, at: I) -> Self {
         let new_vec = self.raw.split_off(at.to_raw_index());
         unsafe { Self::from_vec_unchecked(new_vec) }
     }
 
+    #[inline(always)]
     pub fn resize_with<F>(&mut self, new_len: I, f: F)
     where
         F: FnMut() -> T,
@@ -217,6 +219,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.resize_with(new_len.to_scalar().to_usize(), f);
     }
 
+    #[inline(always)]
     pub fn leak<'a>(self) -> &'a mut [T] {
         self.into_vec().leak()
     }
