@@ -11,13 +11,13 @@ macro_rules! impl_for_uint_type {
             const ONE: Self = 1;
 
             #[inline(always)]
-            fn try_from_usize(index: usize) -> Result<Self, IndexTooBigError> {
-                index.try_into().map_err(|_| IndexTooBigError)
+            fn try_from_usize(value: usize) -> Result<Self, IndexTooBigError> {
+                value.try_into().map_err(|_| IndexTooBigError)
             }
 
             #[inline(always)]
-            unsafe fn from_usize_unchecked(index: usize) -> Self {
-                index as Self
+            unsafe fn from_usize_unchecked(value: usize) -> Self {
+                value as Self
             }
 
             #[inline(always)]

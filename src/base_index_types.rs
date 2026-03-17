@@ -50,6 +50,11 @@ macro_rules! impl_for_uint_type {
             }
 
             #[inline(always)]
+            fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError> {
+                self.checked_mul(rhs).ok_or(IndexTooBigError)
+            }
+
+            #[inline(always)]
             unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self {
                 unsafe { self.unchecked_add(rhs) }
             }
@@ -122,6 +127,12 @@ macro_rules! impl_for_nonzero_uint_type {
             #[inline(always)]
             fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError> {
                 self.checked_add(rhs).ok_or(IndexTooBigError)
+            }
+
+            #[inline(always)]
+            fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError> {
+                let rhs = Self::new(rhs).ok_or(IndexTooBigError)?;
+                self.checked_mul(rhs).ok_or(IndexTooBigError)
             }
 
             #[inline(always)]

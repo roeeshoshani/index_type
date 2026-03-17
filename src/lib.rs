@@ -27,6 +27,7 @@ pub unsafe trait IndexType:
     fn to_scalar(self) -> Self::Scalar;
 
     fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError>;
+    fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError>;
     unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self;
     unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar;
 }
@@ -40,8 +41,8 @@ pub unsafe trait IndexScalarType:
     const ZERO: Self;
     const ONE: Self;
 
-    fn try_from_usize(index: usize) -> Result<Self, IndexTooBigError>;
-    unsafe fn from_usize_unchecked(index: usize) -> Self;
+    fn try_from_usize(value: usize) -> Result<Self, IndexTooBigError>;
+    unsafe fn from_usize_unchecked(value: usize) -> Self;
     fn to_usize(self) -> usize;
 
     fn checked_add_scalar(self, rhs: Self) -> Result<Self, IndexTooBigError>;

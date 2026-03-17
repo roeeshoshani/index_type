@@ -287,6 +287,14 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         self.raw.extract_if(range_bounds_to_raw(range), filter)
     }
 }
+impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
+    pub fn into_flattened(self) -> Result<TypedVec<I, T>, IndexTooBigError> {
+        let _new_len = self
+            .len_as_index()
+            .checked_mul_scalar(<I::Scalar as IndexScalarType>::try_from_usize(N)?)?;
+        Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.into_flattened()) })
+    }
+}
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(&self.raw, f)
