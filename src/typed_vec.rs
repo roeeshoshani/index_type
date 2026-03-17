@@ -1,9 +1,23 @@
-use core::ptr::NonNull;
+use core::{mem::MaybeUninit, ptr::NonNull};
 
-use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
+use alloc::{
+    boxed::Box,
+    collections::TryReserveError,
+    vec::{Drain, Vec},
+};
+use thiserror_no_std::Error;
 use uniq::Unique;
 
 use crate::{IndexTooBigError, IndexType, typed_slice::TypedSlice};
+
+#[derive(Debug, Error)]
+pub enum TypedVecTryReserveError {
+    #[error(transparent)]
+    TryReserveError(#[from] TryReserveError),
+
+    #[error(transparent)]
+    IndexTooBigError(#[from] IndexTooBigError),
+}
 
 pub struct TypedVec<I: IndexType, T> {
     ptr: Unique<T>,
@@ -94,12 +108,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
             v.reserve_exact(additional);
         })
     }
-    pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
-        // TODO: wrap TryReserveError in our custom error which also has a IndexTooBigError variant
-        todo!()
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), TypedVecTryReserveError> {
+        Ok(self.modify_as_vec(|v| v.try_reserve(additional))??)
     }
-    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError> {
-        todo!()
+    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TypedVecTryReserveError> {
+        Ok(self.modify_as_vec(|v| v.try_reserve_exact(additional))??)
     }
     pub fn shrink_to_fit(&mut self) {
         unsafe {
@@ -181,10 +194,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         todo!()
     }
-    pub fn peek_mut(&mut self) -> Option<PeekMut<'_, T, A>> {
-        todo!()
-    }
-    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T, A> {
+    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T> {
         todo!()
     }
     pub fn clear(&mut self) {
@@ -213,10 +223,10 @@ impl<I: IndexType, T> TypedVec<I, T> {
     pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [MaybeUninit<T>]) {
         todo!()
     }
-    pub fn into_chunks<const N: usize>(mut self) -> Vec<[T; N], A> {
+    pub fn into_chunks<const N: usize>(mut self) -> TypedVec<I, [T; N]> {
         todo!()
     }
-    pub fn recycle<U>(mut self) -> Vec<U, A> {
+    pub fn recycle<U>(mut self) -> TypedVec<I, U> {
         todo!()
     }
 }

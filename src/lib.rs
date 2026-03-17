@@ -1,11 +1,15 @@
 #![no_std]
 
+use thiserror_no_std::Error;
+
 extern crate alloc;
 
 mod base_index_types;
 pub mod typed_slice;
 pub mod typed_vec;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Error)]
+#[error("index too big")]
 pub struct IndexTooBigError;
 
 pub unsafe trait IndexType:
