@@ -630,7 +630,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[track_caller]
-    pub fn copy_within<R: core::ops::RangeBounds<I>>(&mut self, src: R, dest: usize)
+    pub fn copy_within<R: core::ops::RangeBounds<I>>(&mut self, src: R, dest: I)
     where
         T: Copy,
     {
@@ -638,7 +638,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             src.start_bound().map(|x| x.to_index()),
             src.end_bound().map(|x| x.to_index()),
         );
-        self.raw.copy_within(raw_bounds, dest)
+        self.raw.copy_within(raw_bounds, dest.to_index())
     }
 
     #[inline]
