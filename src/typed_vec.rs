@@ -237,28 +237,17 @@ impl<I: IndexType, T> TypedVec<I, T> {
         unsafe { Self::from_vec_unchecked(raw_vec) }
     }
 
-    pub fn resize_with<F>(&mut self, new_len: usize, f: F) {
-        todo!()
+    pub fn resize_with<F>(&mut self, new_len: usize, f: F) -> Result<(), IndexTooBigError>
+    where
+        F: FnMut() -> T,
+    {
+        self.modify_as_vec(|v| {
+            v.resize_with(new_len, f);
+        })
     }
 
     pub fn leak<'a>(self) -> &'a mut [T] {
-        todo!()
-    }
-
-    pub fn spare_capacity_mut(&mut self) -> &mut [MaybeUninit<T>] {
-        todo!()
-    }
-
-    pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [MaybeUninit<T>]) {
-        todo!()
-    }
-
-    pub fn into_chunks<const N: usize>(mut self) -> TypedVec<I, [T; N]> {
-        todo!()
-    }
-
-    pub fn recycle<U>(mut self) -> TypedVec<I, U> {
-        todo!()
+        self.into_vec().leak()
     }
 }
 impl<I: IndexType, T> Drop for TypedVec<I, T> {
