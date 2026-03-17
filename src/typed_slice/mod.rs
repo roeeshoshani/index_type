@@ -11,6 +11,7 @@ pub struct TypedSlice<I: IndexType, T> {
     phantom: PhantomData<fn(&I)>,
     raw: [T],
 }
+
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub fn from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
@@ -727,6 +728,12 @@ impl<I: IndexType, T: Eq> Eq for TypedSlice<I, T> {}
 impl<I: IndexType, T: core::hash::Hash> core::hash::Hash for TypedSlice<I, T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.raw.hash(state);
+    }
+}
+
+impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedSlice<I, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.raw.fmt(f)
     }
 }
 
