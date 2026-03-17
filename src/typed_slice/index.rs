@@ -1,3 +1,5 @@
+use core::{hint::unreachable_unchecked, ops::RangeBounds};
+
 use crate::{IndexType, typed_slice::TypedSlice};
 
 mod private_typed_slice_index {
@@ -224,5 +226,64 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
     #[inline]
     fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut TypedSlice<I, T> {
         slice
+    }
+}
+
+fn range_inclusive_to_exclusive<I: IndexType>(
+    r: core::ops::RangeInclusive<I>,
+) -> core::ops::Range<I> {
+    // this special code is used to handle the quirks of `RangeInclusive` related to the `exhausted` field.
+    // see `RangeInclusive::into_slice_range`. the `end_bound` function can be used as a "side channel" to get the value of the
+    // `exhausted` field which is not exposed directly in any public API.
+    let exclusive_end_index = match r.end_bound() {
+        core::ops::Bound::Included(&i) => unsafe { i.unchecked_add_usize(1) },
+        core::ops::Bound::Excluded(&i) => i,
+        core::ops::Bound::Unbounded => unsafe { unreachable_unchecked() },
+    };
+    *r.start()..exclusive_end_index
+}
+
+impl<I: IndexType> private_typed_slice_index::Sealed for core::ops::RangeInclusive<I> {}
+unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::RangeInclusive<I> {
+    type Output = TypedSlice<I, T>;
+
+    #[inline]
+    fn get(self, slice: &TypedSlice<I, T>) -> Option<&Self::Output> {
+        let raw_range = self.start().to_index()..=self.end().to_index();
+        slice
+            .raw
+            .get(raw_range)
+            .map(|new_slice| unsafe { TypedSlice::from_slice_unchecked(new_slice) })
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut TypedSlice<I, T>) -> Option<&mut Self::Output> {
+        let raw_range = self.start().to_index()..=self.end().to_index();
+        slice
+            .raw
+            .get_mut(raw_range)
+            .map(|new_slice| unsafe { TypedSlice::from_slice_unchecked_mut(new_slice) })
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const Self::Output {
+        unsafe { range_inclusive_to_exclusive(self).get_unchecked(slice) }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut Self::Output {
+        unsafe { range_inclusive_to_exclusive(self).get_unchecked_mut(slice) }
+    }
+
+    #[inline]
+    fn index(self, slice: &TypedSlice<I, T>) -> &Self::Output {
+        let raw_range = self.start().to_index()..=self.end().to_index();
+        unsafe { TypedSlice::from_slice_unchecked(&slice.raw[raw_range]) }
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut Self::Output {
+        let raw_range = self.start().to_index()..=self.end().to_index();
+        unsafe { TypedSlice::from_slice_unchecked_mut(&mut slice.raw[raw_range]) }
     }
 }

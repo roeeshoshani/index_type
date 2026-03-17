@@ -18,6 +18,8 @@ pub unsafe trait IndexType:
 
     fn to_index(self) -> usize;
 
+    unsafe fn unchecked_add_usize(self, rhs: usize) -> Self;
+
     unsafe fn unchecked_sub(self, rhs: Self) -> Self;
 }
 unsafe impl IndexType for usize {
@@ -36,6 +38,11 @@ unsafe impl IndexType for usize {
     #[inline(always)]
     fn to_index(self) -> usize {
         self
+    }
+
+    #[inline(always)]
+    unsafe fn unchecked_add_usize(self, rhs: usize) -> Self {
+        unsafe { self.unchecked_add(rhs) }
     }
 
     #[inline(always)]
