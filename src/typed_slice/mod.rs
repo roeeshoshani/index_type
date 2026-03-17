@@ -19,25 +19,25 @@ pub struct TypedSlice<I: IndexType, T> {
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub fn from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
-        let _ = I::try_from_index(slice.len())?;
+        let _ = I::try_from_raw_index(slice.len())?;
         Ok(unsafe { core::mem::transmute(slice) })
     }
 
     #[inline]
     pub fn from_slice_mut(slice: &mut [T]) -> Result<&mut Self, IndexTooBigError> {
-        let _ = I::try_from_index(slice.len())?;
+        let _ = I::try_from_raw_index(slice.len())?;
         Ok(unsafe { core::mem::transmute(slice) })
     }
 
     #[inline]
     pub unsafe fn from_raw_parts<'a>(data: *const T, len: I) -> &'a TypedSlice<I, T> {
-        let slice = unsafe { core::slice::from_raw_parts(data, len.to_index()) };
+        let slice = unsafe { core::slice::from_raw_parts(data, len.to_raw_index()) };
         unsafe { Self::from_slice_unchecked(slice) }
     }
 
     #[inline]
     pub unsafe fn from_raw_parts_mut<'a>(data: *mut T, len: I) -> &'a mut TypedSlice<I, T> {
-        let slice = unsafe { core::slice::from_raw_parts_mut(data, len.to_index()) };
+        let slice = unsafe { core::slice::from_raw_parts_mut(data, len.to_raw_index()) };
         unsafe { Self::from_slice_unchecked_mut(slice) }
     }
 
@@ -63,7 +63,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
     pub fn len(&self) -> I {
-        unsafe { I::from_index_unchecked(self.raw.len()) }
+        unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
     #[inline]
@@ -240,7 +240,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[track_caller]
     pub fn swap(&mut self, a: I, b: I) {
-        self.raw.swap(a.to_index(), b.to_index());
+        self.raw.swap(a.to_raw_index(), b.to_raw_index());
     }
 
     #[inline]
@@ -374,40 +374,40 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[track_caller]
     #[must_use]
     pub fn split_at(&self, mid: I) -> (&[T], &[T]) {
-        self.raw.split_at(mid.to_index())
+        self.raw.split_at(mid.to_raw_index())
     }
 
     #[inline]
     #[track_caller]
     #[must_use]
     pub fn split_at_mut(&mut self, mid: I) -> (&mut [T], &mut [T]) {
-        self.raw.split_at_mut(mid.to_index())
+        self.raw.split_at_mut(mid.to_raw_index())
     }
 
     #[inline]
     #[must_use]
     #[track_caller]
     pub unsafe fn split_at_unchecked(&self, mid: I) -> (&[T], &[T]) {
-        unsafe { self.raw.split_at_unchecked(mid.to_index()) }
+        unsafe { self.raw.split_at_unchecked(mid.to_raw_index()) }
     }
 
     #[inline]
     #[must_use]
     #[track_caller]
     pub unsafe fn split_at_mut_unchecked(&mut self, mid: I) -> (&mut [T], &mut [T]) {
-        unsafe { self.raw.split_at_mut_unchecked(mid.to_index()) }
+        unsafe { self.raw.split_at_mut_unchecked(mid.to_raw_index()) }
     }
 
     #[inline]
     #[must_use]
     pub fn split_at_checked(&self, mid: I) -> Option<(&[T], &[T])> {
-        self.raw.split_at_checked(mid.to_index())
+        self.raw.split_at_checked(mid.to_raw_index())
     }
 
     #[inline]
     #[must_use]
     pub fn split_at_mut_checked(&mut self, mid: I) -> Option<(&mut [T], &mut [T])> {
-        self.raw.split_at_mut_checked(mid.to_index())
+        self.raw.split_at_mut_checked(mid.to_raw_index())
     }
 
     #[inline]
@@ -572,7 +572,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Ord,
     {
-        self.raw.select_nth_unstable(index.to_index())
+        self.raw.select_nth_unstable(index.to_raw_index())
     }
 
     #[inline]
@@ -584,7 +584,8 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         F: FnMut(&T, &T) -> core::cmp::Ordering,
     {
-        self.raw.select_nth_unstable_by(index.to_index(), compare)
+        self.raw
+            .select_nth_unstable_by(index.to_raw_index(), compare)
     }
 
     #[inline]
@@ -597,17 +598,17 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         F: FnMut(&T) -> K,
         K: Ord,
     {
-        self.raw.select_nth_unstable_by_key(index.to_index(), f)
+        self.raw.select_nth_unstable_by_key(index.to_raw_index(), f)
     }
 
     #[inline]
     pub fn rotate_left(&mut self, mid: I) {
-        self.raw.rotate_left(mid.to_index())
+        self.raw.rotate_left(mid.to_raw_index())
     }
 
     #[inline]
     pub fn rotate_right(&mut self, k: I) {
-        self.raw.rotate_right(k.to_index())
+        self.raw.rotate_right(k.to_raw_index())
     }
 
     #[inline]
@@ -653,10 +654,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         T: Copy,
     {
         let raw_bounds = (
-            src.start_bound().map(|x| x.to_index()),
-            src.end_bound().map(|x| x.to_index()),
+            src.start_bound().map(|x| x.to_raw_index()),
+            src.end_bound().map(|x| x.to_raw_index()),
         );
-        self.raw.copy_within(raw_bounds, dest.to_index())
+        self.raw.copy_within(raw_bounds, dest.to_raw_index())
     }
 
     #[inline]
@@ -711,7 +712,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         P: FnMut(&T) -> bool,
     {
-        unsafe { I::from_index_unchecked(self.raw.partition_point(pred)) }
+        unsafe { I::from_raw_index_unchecked(self.raw.partition_point(pred)) }
     }
 
     #[inline]
@@ -805,8 +806,8 @@ impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> IndexMut<X> for Type
 
 unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> Result<I, I> {
     match res {
-        Ok(v) => Ok(unsafe { I::from_index_unchecked(v) }),
-        Err(v) => Err(unsafe { I::from_index_unchecked(v) }),
+        Ok(v) => Ok(unsafe { I::from_raw_index_unchecked(v) }),
+        Err(v) => Err(unsafe { I::from_raw_index_unchecked(v) }),
     }
 }
 
@@ -826,7 +827,7 @@ impl<I: IndexType> private_get_disjoint_mut_typed_index::Sealed for I {}
 unsafe impl<I: IndexType> GetDisjointMutTypedIndex for I {
     #[inline]
     fn is_in_bounds(&self, len: usize) -> bool {
-        self.to_index() < len
+        self.to_raw_index() < len
     }
 
     #[inline]
@@ -839,7 +840,7 @@ impl<I: IndexType> private_get_disjoint_mut_typed_index::Sealed for core::ops::R
 unsafe impl<I: IndexType> GetDisjointMutTypedIndex for core::ops::Range<I> {
     #[inline]
     fn is_in_bounds(&self, len: usize) -> bool {
-        (self.start <= self.end) & (self.end.to_index() <= len)
+        (self.start <= self.end) & (self.end.to_raw_index() <= len)
     }
 
     #[inline]
@@ -852,7 +853,7 @@ impl<I: IndexType> private_get_disjoint_mut_typed_index::Sealed for core::ops::R
 unsafe impl<I: IndexType> GetDisjointMutTypedIndex for core::ops::RangeInclusive<I> {
     #[inline]
     fn is_in_bounds(&self, len: usize) -> bool {
-        (self.start() <= self.end()) & (self.end().to_index() < len)
+        (self.start() <= self.end()) & (self.end().to_raw_index() < len)
     }
 
     #[inline]

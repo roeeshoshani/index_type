@@ -1,24 +1,15 @@
-use core::{marker::PhantomData, ptr::NonNull};
+use core::marker::PhantomData;
 
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
-use thiserror_no_std::Error;
 
-use crate::{IndexTooBigError, IndexType, typed_slice::TypedSlice};
-
-#[derive(Debug, Error)]
-pub enum TypedVecTryReserveError {
-    #[error(transparent)]
-    TryReserveError(#[from] TryReserveError),
-
-    #[error(transparent)]
-    IndexTooBigError(#[from] IndexTooBigError),
-}
+use crate::{IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice};
 
 pub struct TypedVec<I: IndexType, T> {
     raw: Vec<T>,
     phantom: PhantomData<fn(&I)>,
 }
 impl<I: IndexType, T> TypedVec<I, T> {
+    #[inline(always)]
     pub const fn new() -> Self {
         Self {
             raw: Vec::new(),
@@ -26,20 +17,17 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
-    fn check_len_in_bounds(&self) -> Result<(), IndexTooBigError> {
-        let _ = I::try_from_index(self.raw.len())?;
-        Ok(())
-    }
-
+    #[inline]
     pub fn try_from_vec(vec: Vec<T>) -> Result<Self, IndexTooBigError> {
+        let _ = I::try_from_raw_index(vec.len())?;
         let res = Self {
             raw: vec,
             phantom: PhantomData,
         };
-        res.check_len_in_bounds()?;
         Ok(res)
     }
 
+    #[inline]
     pub unsafe fn from_vec_unchecked(vec: Vec<T>) -> Self {
         Self {
             raw: vec,
@@ -47,178 +35,186 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
+    #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.raw
     }
 
+    #[inline(always)]
+    pub fn len(&self) -> I::Scalar {
+        unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(self.raw.len()) }
+    }
+
+    #[inline(always)]
+    pub fn len_as_index(&self) -> I {
+        unsafe { I::from_raw_index_unchecked(self.raw.len()) }
+    }
+
+    #[inline(always)]
+    pub fn capacity(&self) -> usize {
+        self.raw.capacity()
+    }
+
+    #[inline]
     pub fn push(&mut self, value: T) -> Result<I, IndexTooBigError> {
-        let _ = self.len().checked_add_usize(1)?;
-        let res = self.len();
+        let res = self.len_as_index();
+        let _new_len = res.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
         self.raw.push(value);
         Ok(res)
     }
 
+    #[inline]
     pub fn append(&mut self, other: &mut TypedVec<I, T>) -> Result<(), IndexTooBigError> {
-        // let _ = self.len().checked_add_usize(rhs)
-        self.append(other)
-        self.modify_as_vec(|self_vec| {
-            other.modify_as_vec(|other_vec| {
-                self_vec.append(other_vec);
-            })
-        })?
+        let _new_len = self.len_as_index().checked_add_scalar(other.len())?;
+        self.raw.append(&mut other.raw);
+        Ok(())
     }
 
+    #[inline(always)]
     pub const fn as_mut_ptr(&mut self) -> *mut T {
-        self.ptr.as_ptr()
+        self.raw.as_mut_ptr()
     }
 
-    pub const fn capacity(&self) -> usize {
-        self.raw.capacity()
+    #[inline(always)]
+    pub fn reserve(&mut self, additional: usize) {
+        self.raw.reserve(additional);
     }
 
-    pub fn reserve(&mut self, additional: usize) -> Result<(), IndexTooBigError> {
-        self.modify_as_vec(|v| {
-            v.reserve(additional);
-        })
+    #[inline(always)]
+    pub fn reserve_exact(&mut self, additional: usize) {
+        self.raw.reserve_exact(additional)
     }
 
-    pub fn reserve_exact(&mut self, additional: usize) -> Result<(), IndexTooBigError> {
-        self.modify_as_vec(|v| {
-            v.reserve_exact(additional);
-        })
+    #[inline(always)]
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
+        self.raw.try_reserve(additional)
     }
 
-    pub fn try_reserve(&mut self, additional: usize) -> Result<(), TypedVecTryReserveError> {
-        Ok(self.modify_as_vec(|v| v.try_reserve(additional))??)
+    #[inline(always)]
+    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError> {
+        self.raw.try_reserve_exact(additional)
     }
 
-    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TypedVecTryReserveError> {
-        Ok(self.modify_as_vec(|v| v.try_reserve_exact(additional))??)
-    }
-
+    #[inline(always)]
     pub fn shrink_to_fit(&mut self) {
-        unsafe {
-            self.modify_as_vec_unchecked(|v| {
-                v.shrink_to_fit();
-            })
-        }
+        self.raw.shrink_to_fit();
     }
 
-    pub fn shrink_to(&mut self, min_capacity: I) {
-        unsafe {
-            self.modify_as_vec_unchecked(|v| {
-                v.shrink_to(min_capacity.to_index());
-            })
-        }
+    #[inline(always)]
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.raw.shrink_to(min_capacity);
     }
 
+    #[inline(always)]
     pub fn into_boxed_slice(self) -> Box<TypedSlice<I, T>> {
-        unsafe { core::mem::transmute(self.into_vec().into_boxed_slice()) }
+        unsafe { core::mem::transmute(self.raw.into_boxed_slice()) }
     }
 
-    pub fn truncate(&mut self, len: I) {
-        unsafe {
-            self.modify_as_vec_unchecked(|v| {
-                v.truncate(len.to_index());
-            })
-        }
+    #[inline(always)]
+    pub fn truncate(&mut self, len: I::Scalar) {
+        self.raw.truncate(len.to_usize());
     }
 
+    #[inline(always)]
     pub fn as_slice(&self) -> &TypedSlice<I, T> {
-        unsafe { TypedSlice::from_raw_parts(self.ptr.as_ptr(), self.len) }
+        unsafe { TypedSlice::from_slice_unchecked(self.raw.as_slice()) }
     }
 
+    #[inline(always)]
     pub fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
-        unsafe { TypedSlice::from_raw_parts_mut(self.ptr.as_ptr(), self.len) }
+        unsafe { TypedSlice::from_slice_unchecked_mut(self.raw.as_mut_slice()) }
     }
 
+    #[inline(always)]
     pub const fn as_ptr(&self) -> *const T {
-        self.ptr.as_ptr()
+        self.raw.as_ptr()
     }
 
-    pub const fn as_non_null(&mut self) -> NonNull<T> {
-        self.ptr.as_non_null_ptr()
+    #[inline(always)]
+    pub unsafe fn set_len(&mut self, new_len: I) {
+        unsafe { self.raw.set_len(new_len.to_scalar().to_usize()) };
     }
 
-    pub unsafe fn set_len(&mut self, new_len: I) -> Result<(), IndexTooBigError> {
-        self.modify_as_vec(|v| {
-            unsafe { v.set_len(new_len.to_index()) };
-        })
-    }
-
+    #[inline(always)]
     pub fn swap_remove(&mut self, index: I) -> T {
-        unsafe { self.modify_as_vec_unchecked(|v| v.swap_remove(index.to_index())) }
+        self.raw.swap_remove(index.to_raw_index())
     }
 
-    pub fn insert(&mut self, index: I, element: T) {
-        unsafe { self.modify_as_vec_unchecked(|v| v.insert(index.to_index(), element)) }
+    #[inline(always)]
+    pub fn insert(&mut self, index: I, element: T) -> Result<(), IndexTooBigError> {
+        let _new_potential_len = index.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
+        self.raw.insert(index.to_raw_index(), element);
+        Ok(())
     }
 
+    #[inline(always)]
     pub fn remove(&mut self, index: I) -> T {
-        unsafe { self.modify_as_vec_unchecked(|v| v.remove(index.to_index())) }
+        self.raw.remove(index.to_raw_index())
     }
 
+    #[inline(always)]
     pub fn retain<F>(&mut self, f: F)
     where
         F: FnMut(&T) -> bool,
     {
-        unsafe { self.modify_as_vec_unchecked(|v| v.retain(f)) }
+        self.raw.retain(f)
     }
 
+    #[inline(always)]
     pub fn retain_mut<F>(&mut self, f: F)
     where
         F: FnMut(&mut T) -> bool,
     {
-        unsafe { self.modify_as_vec_unchecked(|v| v.retain_mut(f)) }
+        self.raw.retain_mut(f)
     }
 
+    #[inline(always)]
     pub fn dedup_by_key<F, K>(&mut self, key: F)
     where
         F: FnMut(&mut T) -> K,
         K: PartialEq,
     {
-        unsafe { self.modify_as_vec_unchecked(|v| v.dedup_by_key(key)) }
+        self.raw.dedup_by_key(key);
     }
 
+    #[inline(always)]
     pub fn dedup_by<F>(&mut self, same_bucket: F)
     where
         F: FnMut(&mut T, &mut T) -> bool,
     {
-        unsafe { self.modify_as_vec_unchecked(|v| v.dedup_by(same_bucket)) }
+        self.raw.dedup_by(same_bucket);
     }
 
+    #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
-        unsafe { self.modify_as_vec_unchecked(|v| v.pop()) }
+        self.raw.pop()
     }
 
+    #[inline(always)]
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
-        unsafe { self.modify_as_vec_unchecked(|v| v.pop_if(predicate)) }
+        self.raw.pop_if(predicate)
     }
 
+    #[inline(always)]
     pub fn clear(&mut self) {
-        unsafe { self.modify_as_vec_unchecked(|v| v.clear()) }
+        self.raw.clear();
     }
 
-    pub const fn len(&self) -> I {
-        self.len
-    }
-
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.len == I::ZERO
+        self.raw.is_empty()
     }
 
     pub fn split_off(&mut self, at: I) -> Self {
-        let raw_vec = unsafe { self.modify_as_vec_unchecked(|v| v.split_off(at.to_index())) };
-        unsafe { Self::from_vec_unchecked(raw_vec) }
+        let new_vec = self.raw.split_off(at.to_raw_index());
+        unsafe { Self::from_vec_unchecked(new_vec) }
     }
 
-    pub fn resize_with<F>(&mut self, new_len: usize, f: F) -> Result<(), IndexTooBigError>
+    pub fn resize_with<F>(&mut self, new_len: I, f: F)
     where
         F: FnMut() -> T,
     {
-        self.modify_as_vec(|v| {
-            v.resize_with(new_len, f);
-        })
+        self.raw.resize_with(new_len.to_scalar().to_usize(), f);
     }
 
     pub fn leak<'a>(self) -> &'a mut [T] {

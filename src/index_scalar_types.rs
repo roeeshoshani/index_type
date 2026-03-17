@@ -1,11 +1,39 @@
-use crate::IndexScalarType;
+use crate::{IndexScalarType, IndexTooBigError};
 
 macro_rules! impl_for_uint_type {
     {$t: ty} => {
+        const _: () = if <$t>::BITS > usize::BITS {
+            panic!()
+        };
         impl crate::index_scalar_type_private::Sealed for $t {}
         unsafe impl IndexScalarType for $t {
             const ZERO: Self = 0;
             const ONE: Self = 1;
+
+            #[inline(always)]
+            fn try_from_usize(index: usize) -> Result<Self, IndexTooBigError> {
+                index.try_into().map_err(|_| IndexTooBigError)
+            }
+
+            #[inline(always)]
+            unsafe fn from_usize_unchecked(index: usize) -> Self {
+                index as Self
+            }
+
+            #[inline(always)]
+            fn to_usize(self) -> usize {
+                self as usize
+            }
+
+            #[inline(always)]
+            fn checked_add_scalar(self, rhs: Self) -> Result<Self, IndexTooBigError> {
+                self.checked_add(rhs).ok_or(IndexTooBigError)
+            }
+
+            #[inline(always)]
+            unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self {
+                unsafe { self.unchecked_add(rhs) }
+            }
         }
     };
 }

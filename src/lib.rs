@@ -1,7 +1,5 @@
 #![no_std]
 
-use thiserror_no_std::Error;
-
 extern crate alloc;
 
 mod base_index_types;
@@ -9,8 +7,7 @@ mod index_scalar_types;
 pub mod typed_slice;
 pub mod typed_vec;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Error)]
-#[error("index too big")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct IndexTooBigError;
 
 pub unsafe trait IndexType:
@@ -41,4 +38,11 @@ pub unsafe trait IndexScalarType:
 {
     const ZERO: Self;
     const ONE: Self;
+
+    fn try_from_usize(index: usize) -> Result<Self, IndexTooBigError>;
+    unsafe fn from_usize_unchecked(index: usize) -> Self;
+    fn to_usize(self) -> usize;
+
+    fn checked_add_scalar(self, rhs: Self) -> Result<Self, IndexTooBigError>;
+    unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self;
 }
