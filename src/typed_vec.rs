@@ -221,7 +221,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
 
     #[inline(always)]
     pub fn leak<'a>(self) -> &'a mut [T] {
-        self.into_vec().leak()
+        self.raw.leak()
     }
 }
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
