@@ -12,24 +12,30 @@ pub struct TypedSlice<I: IndexType, T> {
     raw: [T],
 }
 impl<I: IndexType, T> TypedSlice<I, T> {
+    #[inline]
     pub fn from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
         let _ = I::try_from_index(slice.len())?;
         Ok(unsafe { core::mem::transmute(slice) })
     }
 
+    #[inline]
     pub fn from_slice_mut(slice: &mut [T]) -> Result<&mut Self, IndexTooBigError> {
         let _ = I::try_from_index(slice.len())?;
         Ok(unsafe { core::mem::transmute(slice) })
     }
 
+    #[inline]
     pub unsafe fn from_slice_unchecked(slice: &[T]) -> &Self {
         unsafe { core::mem::transmute(slice) }
     }
 
+    #[inline]
     pub unsafe fn from_slice_unchecked_mut(slice: &mut [T]) -> &mut Self {
         unsafe { core::mem::transmute(slice) }
     }
 }
+
+// methods copied from stdlib's slice implementation
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
