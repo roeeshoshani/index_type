@@ -4,6 +4,7 @@ use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice};
 
+#[repr(transparent)]
 pub struct TypedVec<I: IndexType, T> {
     raw: Vec<T>,
     phantom: PhantomData<fn(&I)>,
@@ -234,6 +235,12 @@ impl<I: IndexType, T> TypedVec<I, T> {
             range.end_bound().map(|x| x.to_raw_index()),
         );
         self.raw.drain(raw_bounds)
+    }
+}
+impl<I: IndexType, T: PartialEq> TypedVec<I, T> {
+    #[inline(always)]
+    pub fn dedup(&mut self) {
+        self.raw.dedup();
     }
 }
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
