@@ -44,6 +44,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
+    pub const fn len_usize(&self) -> usize {
+        self.raw.len()
+    }
+
+    #[inline]
+    #[must_use]
     pub fn len(&self) -> I {
         unsafe { I::from_index_unchecked(self.raw.len()) }
     }
@@ -721,6 +727,18 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
+    pub fn get_disjoint_mut<X, const N: usize>(
+        &mut self,
+        indices: [X; N],
+    ) -> Result<[&mut X::Output; N], GetDisjointMutError>
+    where
+        X: GetDisjointMutTypedIndex + TypedSliceIndex<Self>,
+    {
+        get_disjoint_check_valid(&indices, self.len_usize())?;
+        unsafe { Ok(self.get_disjoint_unchecked_mut(indices)) }
+    }
+
+    #[inline]
     #[track_caller]
     pub unsafe fn get_disjoint_unchecked_mut<X, const N: usize>(
         &mut self,
@@ -777,5 +795,97 @@ unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> R
     match res {
         Ok(v) => Ok(unsafe { I::from_index_unchecked(v) }),
         Err(v) => Err(unsafe { I::from_index_unchecked(v) }),
+    }
+}
+
+mod private_get_disjoint_mut_typed_index {
+    pub trait Sealed {}
+}
+
+pub unsafe trait GetDisjointMutTypedIndex:
+    private_get_disjoint_mut_typed_index::Sealed
+{
+    fn is_in_bounds(&self, len: usize) -> bool;
+
+    fn is_overlapping(&self, other: &Self) -> bool;
+}
+
+impl<I: IndexType> private_get_disjoint_mut_typed_index::Sealed for I {}
+unsafe impl<I: IndexType> GetDisjointMutTypedIndex for I {
+    #[inline]
+    fn is_in_bounds(&self, len: usize) -> bool {
+        self.to_index() < len
+    }
+
+    #[inline]
+    fn is_overlapping(&self, other: &Self) -> bool {
+        *self == *other
+    }
+}
+
+impl<I: IndexType> private_get_disjoint_mut_typed_index::Sealed for core::ops::Range<I> {}
+unsafe impl<I: IndexType> GetDisjointMutTypedIndex for core::ops::Range<I> {
+    #[inline]
+    fn is_in_bounds(&self, len: usize) -> bool {
+        (self.start <= self.end) & (self.end.to_index() <= len)
+    }
+
+    #[inline]
+    fn is_overlapping(&self, other: &Self) -> bool {
+        (self.start < other.end) & (other.start < self.end)
+    }
+}
+
+impl<I: IndexType> private_get_disjoint_mut_typed_index::Sealed for core::ops::RangeInclusive<I> {}
+unsafe impl<I: IndexType> GetDisjointMutTypedIndex for core::ops::RangeInclusive<I> {
+    #[inline]
+    fn is_in_bounds(&self, len: usize) -> bool {
+        (self.start() <= self.end()) & (self.end().to_index() < len)
+    }
+
+    #[inline]
+    fn is_overlapping(&self, other: &Self) -> bool {
+        (self.start() <= other.end()) & (other.start() <= self.end())
+    }
+}
+
+#[inline]
+fn get_disjoint_check_valid<
+    I: IndexType,
+    T,
+    X: GetDisjointMutTypedIndex + TypedSliceIndex<TypedSlice<I, T>>,
+    const N: usize,
+>(
+    indices: &[X; N],
+    len: usize,
+) -> Result<(), GetDisjointMutError> {
+    for (i, idx) in indices.iter().enumerate() {
+        if !idx.is_in_bounds(len) {
+            return Err(GetDisjointMutError::IndexOutOfBounds);
+        }
+        for idx2 in &indices[..i] {
+            if idx.is_overlapping(idx2) {
+                return Err(GetDisjointMutError::OverlappingIndices);
+            }
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GetDisjointMutError {
+    /// An index provided was out-of-bounds for the slice.
+    IndexOutOfBounds,
+    /// Two indices provided were overlapping.
+    OverlappingIndices,
+}
+
+impl core::fmt::Display for GetDisjointMutError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let msg = match self {
+            GetDisjointMutError::IndexOutOfBounds => "an index is out of bounds",
+            GetDisjointMutError::OverlappingIndices => "there were overlapping indices",
+        };
+        core::fmt::Display::fmt(msg, f)
     }
 }

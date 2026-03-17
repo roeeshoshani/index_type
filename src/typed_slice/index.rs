@@ -157,14 +157,12 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
 
     #[inline]
     fn get(self, slice: &TypedSlice<I, T>) -> Option<&TypedSlice<I, T>> {
-        let len = unsafe { I::from_index_unchecked(slice.len()) };
-        (self.start..len).get(slice)
+        (self.start..slice.len()).get(slice)
     }
 
     #[inline]
     fn get_mut(self, slice: &mut TypedSlice<I, T>) -> Option<&mut TypedSlice<I, T>> {
-        let len = unsafe { I::from_index_unchecked(slice.len()) };
-        (self.start..len).get_mut(slice)
+        (self.start..slice.len()).get_mut(slice)
     }
 
     #[inline]
@@ -183,14 +181,12 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
 
     #[inline(always)]
     fn index(self, slice: &TypedSlice<I, T>) -> &TypedSlice<I, T> {
-        let len = unsafe { I::from_index_unchecked(slice.len()) };
-        (self.start..len).index(slice)
+        (self.start..slice.len()).index(slice)
     }
 
     #[inline]
     fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut TypedSlice<I, T> {
-        let len = unsafe { I::from_index_unchecked(slice.len()) };
-        (self.start..len).index_mut(slice)
+        (self.start..slice.len()).index_mut(slice)
     }
 }
 
