@@ -464,3 +464,18 @@ impl<'a, I: IndexType, T: Clone> IntoIterator for &'a mut TypedVec<I, T> {
         (&mut self.raw).into_iter()
     }
 }
+impl<I: IndexType, T: PartialEq> PartialEq<TypedSlice<I, T>> for TypedVec<I, T> {
+    fn eq(&self, other: &TypedSlice<I, T>) -> bool {
+        PartialEq::eq(&self.raw, other.to_slice())
+    }
+}
+impl<'a, I: IndexType, T: PartialEq> PartialEq<&'a TypedSlice<I, T>> for TypedVec<I, T> {
+    fn eq(&self, other: &&'a TypedSlice<I, T>) -> bool {
+        PartialEq::eq(&self.raw, other.to_slice())
+    }
+}
+impl<'a, I: IndexType, T: PartialEq> PartialEq<&'a mut TypedSlice<I, T>> for TypedVec<I, T> {
+    fn eq(&self, other: &&'a mut TypedSlice<I, T>) -> bool {
+        PartialEq::eq(&self.raw, other.to_slice())
+    }
+}
