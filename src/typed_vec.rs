@@ -1,4 +1,5 @@
 use core::{
+    borrow::{Borrow, BorrowMut},
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -335,6 +336,10 @@ impl<I: IndexType, T: Clone> Clone for TypedVec<I, T> {
             phantom: PhantomData,
         }
     }
+
+    fn clone_from(&mut self, source: &Self) {
+        Clone::clone_from(&mut self.raw, &source.raw);
+    }
 }
 impl<I: IndexType, T: core::hash::Hash> core::hash::Hash for TypedVec<I, T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -353,11 +358,41 @@ impl<I: IndexType, T> Deref for TypedVec<I, T> {
     type Target = TypedSlice<I, T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { TypedSlice::from_slice_unchecked(Deref::deref(&self.raw)) }
+        self.as_slice()
     }
 }
 impl<I: IndexType, T> DerefMut for TypedVec<I, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { TypedSlice::from_slice_unchecked_mut(DerefMut::deref_mut(&mut self.raw)) }
+        self.as_mut_slice()
+    }
+}
+impl<I: IndexType, T> AsRef<TypedSlice<I, T>> for TypedVec<I, T> {
+    fn as_ref(&self) -> &TypedSlice<I, T> {
+        self.as_slice()
+    }
+}
+impl<I: IndexType, T> AsMut<TypedSlice<I, T>> for TypedVec<I, T> {
+    fn as_mut(&mut self) -> &mut TypedSlice<I, T> {
+        self.as_mut_slice()
+    }
+}
+impl<I: IndexType, T> AsRef<TypedVec<I, T>> for TypedVec<I, T> {
+    fn as_ref(&self) -> &TypedVec<I, T> {
+        self
+    }
+}
+impl<I: IndexType, T> AsMut<TypedVec<I, T>> for TypedVec<I, T> {
+    fn as_mut(&mut self) -> &mut TypedVec<I, T> {
+        self
+    }
+}
+impl<I: IndexType, T> Borrow<TypedSlice<I, T>> for TypedVec<I, T> {
+    fn borrow(&self) -> &TypedSlice<I, T> {
+        self.as_slice()
+    }
+}
+impl<I: IndexType, T> BorrowMut<TypedSlice<I, T>> for TypedVec<I, T> {
+    fn borrow_mut(&mut self) -> &mut TypedSlice<I, T> {
+        self.as_mut_slice()
     }
 }
