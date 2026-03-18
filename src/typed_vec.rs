@@ -21,6 +21,14 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
+    #[inline(always)]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            raw: Vec::with_capacity(capacity),
+            phantom: PhantomData,
+        }
+    }
+
     #[inline]
     pub fn try_from_vec(vec: Vec<T>) -> Result<Self, IndexTooBigError> {
         let _ = I::try_from_raw_index(vec.len())?;
