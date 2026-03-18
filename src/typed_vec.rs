@@ -479,3 +479,13 @@ impl<'a, I: IndexType, T: PartialEq> PartialEq<&'a mut TypedSlice<I, T>> for Typ
         PartialEq::eq(&self.raw, other.to_slice())
     }
 }
+impl<I: IndexType, T: PartialOrd> PartialOrd for TypedVec<I, T> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        PartialOrd::partial_cmp(&self.raw, &other.raw)
+    }
+}
+impl<I: IndexType, T: Ord> Ord for TypedVec<I, T> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        Ord::cmp(&self.raw, &other.raw)
+    }
+}
