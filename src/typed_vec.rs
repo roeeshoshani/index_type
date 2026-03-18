@@ -432,8 +432,35 @@ impl<I: IndexType, T> BorrowMut<TypedSlice<I, T>> for TypedVec<I, T> {
         self.as_mut_slice()
     }
 }
-impl<I: IndexType, T: Clone> From<&TypedSlice<I, T>> for TypedVec<I, T> {
-    fn from(value: &TypedSlice<I, T>) -> Self {
+impl<'a, I: IndexType, T: Clone> From<&'a TypedSlice<I, T>> for TypedVec<I, T> {
+    fn from(value: &'a TypedSlice<I, T>) -> Self {
         unsafe { Self::from_vec_unchecked(Vec::from(value.to_slice())) }
+    }
+}
+impl<I: IndexType, T: Clone> IntoIterator for TypedVec<I, T> {
+    type Item = T;
+
+    type IntoIter = alloc::vec::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.raw.into_iter()
+    }
+}
+impl<'a, I: IndexType, T: Clone> IntoIterator for &'a TypedVec<I, T> {
+    type Item = &'a T;
+
+    type IntoIter = core::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&self.raw).into_iter()
+    }
+}
+impl<'a, I: IndexType, T: Clone> IntoIterator for &'a mut TypedVec<I, T> {
+    type Item = &'a mut T;
+
+    type IntoIter = core::slice::IterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&mut self.raw).into_iter()
     }
 }
