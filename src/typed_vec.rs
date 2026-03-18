@@ -274,6 +274,42 @@ impl<I: IndexType, T> TypedVec<I, T> {
     {
         self.raw.splice(range_bounds_to_raw(range), replace_with)
     }
+
+    #[inline]
+    pub fn try_extend<X: IntoIterator<Item = T>>(
+        &mut self,
+        iter: X,
+    ) -> Result<(), IndexTooBigError> {
+        let orig_raw_len = self.raw.len();
+        self.raw.extend(iter);
+        match I::try_from_raw_index(self.raw.len()) {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                self.raw.truncate(orig_raw_len);
+                Err(err)
+            }
+        }
+    }
+}
+impl<I: IndexType, T: Copy> TypedVec<I, T> {
+    #[inline]
+    pub fn try_extend_copy<'a, X: IntoIterator<Item = &'a T>>(
+        &mut self,
+        iter: X,
+    ) -> Result<(), IndexTooBigError>
+    where
+        T: 'a,
+    {
+        let orig_raw_len = self.raw.len();
+        self.raw.extend(iter);
+        match I::try_from_raw_index(self.raw.len()) {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                self.raw.truncate(orig_raw_len);
+                Err(err)
+            }
+        }
+    }
 }
 impl<I: IndexType, T: PartialEq> TypedVec<I, T> {
     #[inline(always)]
