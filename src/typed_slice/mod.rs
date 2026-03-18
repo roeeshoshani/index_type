@@ -18,13 +18,13 @@ pub struct TypedSlice<I: IndexType, T> {
 
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
-    pub fn from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
+    pub fn try_from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
         Ok(unsafe { core::mem::transmute(slice) })
     }
 
     #[inline]
-    pub fn from_slice_mut(slice: &mut [T]) -> Result<&mut Self, IndexTooBigError> {
+    pub fn try_from_slice_mut(slice: &mut [T]) -> Result<&mut Self, IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
         Ok(unsafe { core::mem::transmute(slice) })
     }
@@ -808,6 +808,22 @@ impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> Index<X> for TypedSl
 impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> IndexMut<X> for TypedSlice<I, T> {
     fn index_mut(&mut self, index: X) -> &mut Self::Output {
         index.index_mut(self)
+    }
+}
+
+impl<'a, I: IndexType, T> TryFrom<&'a [T]> for &'a TypedSlice<I, T> {
+    type Error = IndexTooBigError;
+
+    fn try_from(value: &'a [T]) -> Result<Self, Self::Error> {
+        TypedSlice::try_from_slice(value)
+    }
+}
+
+impl<'a, I: IndexType, T> TryFrom<&'a mut [T]> for &'a mut TypedSlice<I, T> {
+    type Error = IndexTooBigError;
+
+    fn try_from(value: &'a mut [T]) -> Result<Self, Self::Error> {
+        TypedSlice::try_from_slice_mut(value)
     }
 }
 
