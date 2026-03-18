@@ -1,4 +1,7 @@
-use core::marker::PhantomData;
+use core::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
 
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
@@ -344,5 +347,17 @@ impl<I: IndexType, T> Default for TypedVec<I, T> {
             raw: Default::default(),
             phantom: PhantomData,
         }
+    }
+}
+impl<I: IndexType, T> Deref for TypedVec<I, T> {
+    type Target = TypedSlice<I, T>;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { TypedSlice::from_slice_unchecked(Deref::deref(&self.raw)) }
+    }
+}
+impl<I: IndexType, T> DerefMut for TypedVec<I, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { TypedSlice::from_slice_unchecked_mut(DerefMut::deref_mut(&mut self.raw)) }
     }
 }
