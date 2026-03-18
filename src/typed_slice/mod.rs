@@ -193,7 +193,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    #[track_caller]
     pub unsafe fn get_unchecked<X>(&self, index: X) -> &X::Output
     where
         X: TypedSliceIndex<Self>,
@@ -203,7 +202,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    #[track_caller]
     pub unsafe fn get_unchecked_mut<X>(&mut self, index: X) -> &mut X::Output
     where
         X: TypedSliceIndex<Self>,
@@ -248,7 +246,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[track_caller]
     pub fn swap(&mut self, a: I, b: I) {
         self.raw.swap(a.to_raw_index(), b.to_raw_index());
     }
@@ -269,51 +266,43 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[track_caller]
     pub fn windows(&self, size: usize) -> core::slice::Windows<'_, T> {
         self.raw.windows(size)
     }
 
     #[inline]
-    #[track_caller]
     pub fn chunks(&self, chunk_size: usize) -> core::slice::Chunks<'_, T> {
         self.raw.chunks(chunk_size)
     }
 
     #[inline]
-    #[track_caller]
     pub fn chunks_mut(&mut self, chunk_size: usize) -> core::slice::ChunksMut<'_, T> {
         self.raw.chunks_mut(chunk_size)
     }
 
     #[inline]
-    #[track_caller]
     pub fn chunks_exact(&self, chunk_size: usize) -> core::slice::ChunksExact<'_, T> {
         self.raw.chunks_exact(chunk_size)
     }
 
     #[inline]
-    #[track_caller]
     pub fn chunks_exact_mut(&mut self, chunk_size: usize) -> core::slice::ChunksExactMut<'_, T> {
         self.raw.chunks_exact_mut(chunk_size)
     }
 
     #[inline]
     #[must_use]
-    #[track_caller]
     pub const unsafe fn as_chunks_unchecked<const N: usize>(&self) -> &[[T; N]] {
         unsafe { self.raw.as_chunks_unchecked() }
     }
 
     #[inline]
-    #[track_caller]
     #[must_use]
     pub const fn as_chunks<const N: usize>(&self) -> (&[[T; N]], &[T]) {
         self.raw.as_chunks()
     }
 
     #[inline]
-    #[track_caller]
     #[must_use]
     pub const fn as_rchunks<const N: usize>(&self) -> (&[T], &[[T; N]]) {
         self.raw.as_rchunks()
@@ -321,45 +310,38 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    #[track_caller]
     pub const unsafe fn as_chunks_unchecked_mut<const N: usize>(&mut self) -> &mut [[T; N]] {
         unsafe { self.raw.as_chunks_unchecked_mut() }
     }
 
     #[inline]
-    #[track_caller]
     #[must_use]
     pub const fn as_chunks_mut<const N: usize>(&mut self) -> (&mut [[T; N]], &mut [T]) {
         self.raw.as_chunks_mut()
     }
 
     #[inline]
-    #[track_caller]
     #[must_use]
     pub const fn as_rchunks_mut<const N: usize>(&mut self) -> (&mut [T], &mut [[T; N]]) {
         self.raw.as_rchunks_mut()
     }
 
     #[inline]
-    #[track_caller]
     pub fn rchunks(&self, chunk_size: usize) -> core::slice::RChunks<'_, T> {
         self.raw.rchunks(chunk_size)
     }
 
     #[inline]
-    #[track_caller]
     pub fn rchunks_mut(&mut self, chunk_size: usize) -> core::slice::RChunksMut<'_, T> {
         self.raw.rchunks_mut(chunk_size)
     }
 
     #[inline]
-    #[track_caller]
     pub fn rchunks_exact(&self, chunk_size: usize) -> core::slice::RChunksExact<'_, T> {
         self.raw.rchunks_exact(chunk_size)
     }
 
     #[inline]
-    #[track_caller]
     pub fn rchunks_exact_mut(&mut self, chunk_size: usize) -> core::slice::RChunksExactMut<'_, T> {
         self.raw.rchunks_exact_mut(chunk_size)
     }
@@ -381,14 +363,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[track_caller]
     #[must_use]
     pub fn split_at(&self, mid: I) -> (&[T], &[T]) {
         self.raw.split_at(mid.to_raw_index())
     }
 
     #[inline]
-    #[track_caller]
     #[must_use]
     pub fn split_at_mut(&mut self, mid: I) -> (&mut [T], &mut [T]) {
         self.raw.split_at_mut(mid.to_raw_index())
@@ -396,14 +376,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    #[track_caller]
     pub unsafe fn split_at_unchecked(&self, mid: I) -> (&[T], &[T]) {
         unsafe { self.raw.split_at_unchecked(mid.to_raw_index()) }
     }
 
     #[inline]
     #[must_use]
-    #[track_caller]
     pub unsafe fn split_at_mut_unchecked(&mut self, mid: I) -> (&mut [T], &mut [T]) {
         unsafe { self.raw.split_at_mut_unchecked(mid.to_raw_index()) }
     }
@@ -639,7 +617,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[track_caller]
     pub fn clone_from_slice(&mut self, src: &[T])
     where
         T: Clone,
@@ -649,7 +626,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[doc(alias = "memcpy")]
-    #[track_caller]
     pub const fn copy_from_slice(&mut self, src: &[T])
     where
         T: Copy,
@@ -658,7 +634,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[track_caller]
     pub fn copy_within<R: core::ops::RangeBounds<I>>(&mut self, src: R, dest: I)
     where
         T: Copy,
@@ -668,7 +643,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[track_caller]
     pub fn swap_with_slice(&mut self, other: &mut [T]) {
         self.raw.swap_with_slice(other)
     }
@@ -759,7 +733,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[track_caller]
     pub unsafe fn get_disjoint_unchecked_mut<X, const N: usize>(
         &mut self,
         indices: [X; N],

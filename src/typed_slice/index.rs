@@ -17,10 +17,8 @@ pub unsafe trait TypedSliceIndex<T: ?Sized>: private_typed_slice_index::Sealed {
 
     unsafe fn get_unchecked_mut(self, slice: *mut T) -> *mut Self::Output;
 
-    #[track_caller]
     fn index(self, slice: &T) -> &Self::Output;
 
-    #[track_caller]
     fn index_mut(self, slice: &mut T) -> &mut Self::Output;
 }
 
