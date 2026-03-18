@@ -432,3 +432,8 @@ impl<I: IndexType, T> BorrowMut<TypedSlice<I, T>> for TypedVec<I, T> {
         self.as_mut_slice()
     }
 }
+impl<I: IndexType, T: Clone> From<&TypedSlice<I, T>> for TypedVec<I, T> {
+    fn from(value: &TypedSlice<I, T>) -> Self {
+        unsafe { Self::from_vec_unchecked(Vec::from(value.to_slice())) }
+    }
+}
