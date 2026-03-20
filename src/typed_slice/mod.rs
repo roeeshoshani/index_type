@@ -1,4 +1,5 @@
 use core::{
+    iter::FusedIterator,
     marker::PhantomData,
     mem::MaybeUninit,
     ops::{Index, IndexMut},
@@ -299,18 +300,47 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn windows(&self, size: usize) -> core::slice::Windows<'_, T> {
-        self.raw.windows(size)
+    pub fn windows<'a>(
+        &'a self,
+        size: usize,
+    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
+    + Clone
+    + DoubleEndedIterator
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
+            .windows(size)
+            .map(|x| unsafe { TypedSlice::from_slice_unchecked(x) })
     }
 
     #[inline]
-    pub fn chunks(&self, chunk_size: usize) -> core::slice::Chunks<'_, T> {
-        self.raw.chunks(chunk_size)
+    pub fn chunks<'a>(
+        &'a self,
+        chunk_size: usize,
+    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
+    + Clone
+    + DoubleEndedIterator
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
+            .chunks(chunk_size)
+            .map(|x| unsafe { TypedSlice::from_slice_unchecked(x) })
     }
 
     #[inline]
-    pub fn chunks_mut(&mut self, chunk_size: usize) -> core::slice::ChunksMut<'_, T> {
-        self.raw.chunks_mut(chunk_size)
+    pub fn chunks_mut<'a>(
+        &'a mut self,
+        chunk_size: usize,
+    ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
+    + DoubleEndedIterator
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
+            .chunks_mut(chunk_size)
+            .map(|x| unsafe { TypedSlice::from_slice_unchecked_mut(x) })
     }
 
     #[inline]
