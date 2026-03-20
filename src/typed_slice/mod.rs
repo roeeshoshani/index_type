@@ -5,7 +5,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexTooBigError, IndexType, utils::range_bounds_to_raw};
+use crate::{utils::range_bounds_to_raw, IndexTooBigError, IndexType};
 
 mod index;
 
@@ -63,7 +63,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 }
 
-// methods copied from stdlib's slice implementation
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
@@ -300,60 +299,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn windows<'a>(
-        &'a self,
-        size: usize,
-    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
-    + Clone
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
-        self.raw
-            .windows(size)
-            .map(|x| unsafe { TypedSlice::from_slice_unchecked(x) })
-    }
-
-    #[inline]
-    pub fn chunks<'a>(
-        &'a self,
-        chunk_size: usize,
-    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
-    + Clone
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
-        self.raw
-            .chunks(chunk_size)
-            .map(|x| unsafe { TypedSlice::from_slice_unchecked(x) })
-    }
-
-    #[inline]
-    pub fn chunks_mut<'a>(
-        &'a mut self,
-        chunk_size: usize,
-    ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
-        self.raw
-            .chunks_mut(chunk_size)
-            .map(|x| unsafe { TypedSlice::from_slice_unchecked_mut(x) })
-    }
-
-    #[inline]
-    pub fn chunks_exact(&self, chunk_size: usize) -> core::slice::ChunksExact<'_, T> {
-        self.raw.chunks_exact(chunk_size)
-    }
-
-    #[inline]
-    pub fn chunks_exact_mut(&mut self, chunk_size: usize) -> core::slice::ChunksExactMut<'_, T> {
-        self.raw.chunks_exact_mut(chunk_size)
-    }
-
-    #[inline]
     #[must_use]
     pub const unsafe fn as_chunks_unchecked<const N: usize>(&self) -> &[[T; N]] {
         unsafe { self.raw.as_chunks_unchecked() }
@@ -403,123 +348,49 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn rchunks(&self, chunk_size: usize) -> core::slice::RChunks<'_, T> {
-        self.raw.rchunks(chunk_size)
-    }
-
-    #[inline]
-    pub fn rchunks_mut(&mut self, chunk_size: usize) -> core::slice::RChunksMut<'_, T> {
-        self.raw.rchunks_mut(chunk_size)
-    }
-
-    #[inline]
-    pub fn rchunks_exact(&self, chunk_size: usize) -> core::slice::RChunksExact<'_, T> {
-        self.raw.rchunks_exact(chunk_size)
-    }
-
-    #[inline]
-    pub fn rchunks_exact_mut(&mut self, chunk_size: usize) -> core::slice::RChunksExactMut<'_, T> {
-        self.raw.rchunks_exact_mut(chunk_size)
-    }
-
-    #[inline]
-    pub fn chunk_by<F>(&self, pred: F) -> core::slice::ChunkBy<'_, T, F>
-    where
-        F: FnMut(&T, &T) -> bool,
-    {
-        self.raw.chunk_by(pred)
-    }
-
-    #[inline]
-    pub fn chunk_by_mut<F>(&mut self, pred: F) -> core::slice::ChunkByMut<'_, T, F>
-    where
-        F: FnMut(&T, &T) -> bool,
-    {
-        self.raw.chunk_by_mut(pred)
+    #[must_use]
+    pub unsafe fn split_at_unchecked(&self, mid: I) -> (&TypedSlice<I, T>, &TypedSlice<I, T>) {
+        let (a, b) = unsafe { self.raw.split_at_unchecked(mid.to_raw_index()) };
+        unsafe { (Self::from_slice_unchecked(a), Self::from_slice_unchecked(b)) }
     }
 
     #[inline]
     #[must_use]
-    pub fn split_at(&self, mid: I) -> (&[T], &[T]) {
-        self.raw.split_at(mid.to_raw_index())
+    pub unsafe fn split_at_mut_unchecked(
+        &mut self,
+        mid: I,
+    ) -> (&mut TypedSlice<I, T>, &mut TypedSlice<I, T>) {
+        let (a, b) = unsafe { self.raw.split_at_mut_unchecked(mid.to_raw_index()) };
+        unsafe {
+            (
+                Self::from_slice_unchecked_mut(a),
+                Self::from_slice_unchecked_mut(b),
+            )
+        }
     }
 
     #[inline]
     #[must_use]
-    pub fn split_at_mut(&mut self, mid: I) -> (&mut [T], &mut [T]) {
-        self.raw.split_at_mut(mid.to_raw_index())
+    pub fn split_at_checked(&self, mid: I) -> Option<(&TypedSlice<I, T>, &TypedSlice<I, T>)> {
+        self.raw
+            .split_at_checked(mid.to_raw_index())
+            .map(|(a, b)| unsafe { (Self::from_slice_unchecked(a), Self::from_slice_unchecked(b)) })
     }
 
     #[inline]
     #[must_use]
-    pub unsafe fn split_at_unchecked(&self, mid: I) -> (&[T], &[T]) {
-        unsafe { self.raw.split_at_unchecked(mid.to_raw_index()) }
-    }
-
-    #[inline]
-    #[must_use]
-    pub unsafe fn split_at_mut_unchecked(&mut self, mid: I) -> (&mut [T], &mut [T]) {
-        unsafe { self.raw.split_at_mut_unchecked(mid.to_raw_index()) }
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn split_at_checked(&self, mid: I) -> Option<(&[T], &[T])> {
-        self.raw.split_at_checked(mid.to_raw_index())
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn split_at_mut_checked(&mut self, mid: I) -> Option<(&mut [T], &mut [T])> {
-        self.raw.split_at_mut_checked(mid.to_raw_index())
-    }
-
-    #[inline]
-    pub fn split<F>(&self, pred: F) -> core::slice::Split<'_, T, F>
-    where
-        F: FnMut(&T) -> bool,
-    {
-        self.raw.split(pred)
-    }
-
-    #[inline]
-    pub fn split_mut<F>(&mut self, pred: F) -> core::slice::SplitMut<'_, T, F>
-    where
-        F: FnMut(&T) -> bool,
-    {
-        self.raw.split_mut(pred)
-    }
-
-    #[inline]
-    pub fn split_inclusive<F>(&self, pred: F) -> core::slice::SplitInclusive<'_, T, F>
-    where
-        F: FnMut(&T) -> bool,
-    {
-        self.raw.split_inclusive(pred)
-    }
-
-    #[inline]
-    pub fn split_inclusive_mut<F>(&mut self, pred: F) -> core::slice::SplitInclusiveMut<'_, T, F>
-    where
-        F: FnMut(&T) -> bool,
-    {
-        self.raw.split_inclusive_mut(pred)
-    }
-
-    #[inline]
-    pub fn rsplit<F>(&self, pred: F) -> core::slice::RSplit<'_, T, F>
-    where
-        F: FnMut(&T) -> bool,
-    {
-        self.raw.rsplit(pred)
-    }
-
-    #[inline]
-    pub fn rsplit_mut<F>(&mut self, pred: F) -> core::slice::RSplitMut<'_, T, F>
-    where
-        F: FnMut(&T) -> bool,
-    {
-        self.raw.rsplit_mut(pred)
+    pub fn split_at_mut_checked(
+        &mut self,
+        mid: I,
+    ) -> Option<(&mut TypedSlice<I, T>, &mut TypedSlice<I, T>)> {
+        self.raw
+            .split_at_mut_checked(mid.to_raw_index())
+            .map(|(a, b)| unsafe {
+                (
+                    Self::from_slice_unchecked_mut(a),
+                    Self::from_slice_unchecked_mut(b),
+                )
+            })
     }
 
     #[inline]
@@ -826,6 +697,206 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 }
 
+impl<I: IndexType, T> TypedSlice<I, T> {
+    #[inline]
+    pub fn windows<'a>(
+        &'a self,
+        size: usize,
+    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
+    + Clone
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + 'a {
+               self.raw
+            .windows(size)
+            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+    }
+
+    #[inline]
+    pub fn chunks<'a>(
+        &'a self,
+        size: usize,
+    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
+    + Clone
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + 'a {
+               self.raw
+            .chunks(size)
+            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+    }
+
+    #[inline]
+    pub fn chunks_mut<'a>(
+        &'a mut self,
+        size: usize,
+    ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
+    + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + 'a {
+               self.raw
+            .chunks_mut(size)
+            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+    }
+
+    #[inline]
+    pub fn rchunks<'a>(
+        &'a self,
+        size: usize,
+    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
+    + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + 'a {
+               self.raw
+            .rchunks(size)
+            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+    }
+
+    #[inline]
+    pub fn rchunks_mut<'a>(
+        &'a mut self,
+        size: usize,
+    ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
+    + DoubleEndedIterator
+           + ExactSizeIterator
+           + FusedIterator
+           + 'a {
+               self.raw
+            .rchunks_mut(size)
+            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+    }
+
+    #[inline]
+    pub fn split_at(&self, mid: I) -> (&TypedSlice<I, T>, &TypedSlice<I, T>) {
+        let (a, b) = self.raw.split_at(mid.to_raw_index());
+        unsafe { (Self::from_slice_unchecked(a), Self::from_slice_unchecked(b)) }
+    }
+
+    #[inline]
+    pub fn split_at_mut(&mut self, mid: I) -> (&mut TypedSlice<I, T>, &mut TypedSlice<I, T>) {
+        let (a, b) = self.raw.split_at_mut(mid.to_raw_index());
+        unsafe {
+            (
+                Self::from_slice_unchecked_mut(a),
+                Self::from_slice_unchecked_mut(b),
+            )
+        }
+    }
+
+    #[inline]
+    pub fn split<F>(&self, pred: F) -> impl Iterator<Item = &TypedSlice<I, T>> + FusedIterator
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.raw
+            .split(pred)
+            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+    }
+
+    #[inline]
+    pub fn split_mut<F>(
+        &mut self,
+        pred: F,
+    ) -> impl Iterator<Item = &mut TypedSlice<I, T>> + FusedIterator
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.raw
+            .split_mut(pred)
+            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+    }
+
+    #[inline]
+    pub fn split_inclusive<F>(
+        &self,
+        pred: F,
+    ) -> impl Iterator<Item = &TypedSlice<I, T>> + FusedIterator
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.raw
+            .split_inclusive(pred)
+            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+    }
+
+    #[inline]
+    pub fn split_inclusive_mut<F>(
+        &mut self,
+        pred: F,
+    ) -> impl Iterator<Item = &mut TypedSlice<I, T>> + FusedIterator
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.raw
+            .split_inclusive_mut(pred)
+            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+    }
+
+    #[inline]
+    pub fn starts_with(&self, needle: &TypedSlice<I, T>) -> bool
+    where
+        T: PartialEq,
+    {
+        self.raw.starts_with(needle.to_slice())
+    }
+
+    #[inline]
+    pub fn ends_with(&self, needle: &TypedSlice<I, T>) -> bool
+    where
+        T: PartialEq,
+    {
+        self.raw.ends_with(needle.to_slice())
+    }
+
+    #[inline]
+    pub fn clone_from_slice(&mut self, src: &TypedSlice<I, T>)
+    where
+        T: Clone,
+    {
+        self.raw.clone_from_slice(src.to_slice())
+    }
+
+    #[inline]
+    pub fn copy_from_slice(&mut self, src: &TypedSlice<I, T>)
+    where
+        T: Copy,
+    {
+        self.raw.copy_from_slice(src.to_slice())
+    }
+
+    #[inline]
+    pub fn swap_with_slice(&mut self, other: &mut TypedSlice<I, T>) {
+        self.raw.swap_with_slice(other.to_slice_mut())
+    }
+
+    #[inline]
+    pub fn align_to<U>(&self) -> (&TypedSlice<I, T>, &[U], &TypedSlice<I, T>) {
+        let (a, b, c) = unsafe { self.raw.align_to::<U>() };
+        unsafe {
+            (
+                Self::from_slice_unchecked(a),
+                b,
+                Self::from_slice_unchecked(c),
+            )
+        }
+    }
+
+    #[inline]
+    pub fn align_to_mut<U>(&mut self) -> (&mut TypedSlice<I, T>, &mut [U], &mut TypedSlice<I, T>) {
+        let (a, b, c) = unsafe { self.raw.align_to_mut::<U>() };
+        unsafe {
+            (
+                Self::from_slice_unchecked_mut(a),
+                b,
+                Self::from_slice_unchecked_mut(c),
+            )
+        }
+    }
+}
 impl<I: IndexType, T: PartialEq> PartialEq for TypedSlice<I, T> {
     fn eq(&self, other: &Self) -> bool {
         PartialEq::eq(&self.raw, &other.raw)
