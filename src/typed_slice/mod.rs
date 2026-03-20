@@ -96,26 +96,42 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    pub const fn split_first(&self) -> Option<(&T, &[T])> {
-        self.raw.split_first()
+    pub const fn split_first(&self) -> Option<(&T, &TypedSlice<I, T>)> {
+        match self.raw.split_first() {
+            Some((first, rest)) => Some((first, unsafe { TypedSlice::from_slice_unchecked(rest) })),
+            None => None,
+        }
     }
 
     #[inline]
     #[must_use]
-    pub const fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])> {
-        self.raw.split_first_mut()
+    pub const fn split_first_mut(&mut self) -> Option<(&mut T, &mut TypedSlice<I, T>)> {
+        match self.raw.split_first_mut() {
+            Some((first, rest)) => {
+                Some((first, unsafe { TypedSlice::from_slice_unchecked_mut(rest) }))
+            }
+            None => None,
+        }
     }
 
     #[inline]
     #[must_use]
-    pub const fn split_last(&self) -> Option<(&T, &[T])> {
-        self.raw.split_last()
+    pub const fn split_last(&self) -> Option<(&T, &TypedSlice<I, T>)> {
+        match self.raw.split_last() {
+            Some((last, rest)) => Some((last, unsafe { TypedSlice::from_slice_unchecked(rest) })),
+            None => None,
+        }
     }
 
     #[inline]
     #[must_use]
-    pub const fn split_last_mut(&mut self) -> Option<(&mut T, &mut [T])> {
-        self.raw.split_last_mut()
+    pub const fn split_last_mut(&mut self) -> Option<(&mut T, &mut TypedSlice<I, T>)> {
+        match self.raw.split_last_mut() {
+            Some((last, rest)) => {
+                Some((last, unsafe { TypedSlice::from_slice_unchecked_mut(rest) }))
+            }
+            None => None,
+        }
     }
 
     #[inline]
@@ -141,26 +157,43 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub const fn split_first_chunk<const N: usize>(&self) -> Option<(&[T; N], &[T])> {
-        self.raw.split_first_chunk()
+    pub const fn split_first_chunk<const N: usize>(&self) -> Option<(&[T; N], &TypedSlice<I, T>)> {
+        match self.raw.split_first_chunk() {
+            Some((chunk, rest)) => Some((chunk, unsafe { TypedSlice::from_slice_unchecked(rest) })),
+            None => None,
+        }
     }
 
     #[inline]
     pub const fn split_first_chunk_mut<const N: usize>(
         &mut self,
-    ) -> Option<(&mut [T; N], &mut [T])> {
-        self.raw.split_first_chunk_mut()
+    ) -> Option<(&mut [T; N], &mut TypedSlice<I, T>)> {
+        match self.raw.split_first_chunk_mut() {
+            Some((chunk, rest)) => {
+                Some((chunk, unsafe { TypedSlice::from_slice_unchecked_mut(rest) }))
+            }
+            None => None,
+        }
     }
+
     #[inline]
-    pub const fn split_last_chunk<const N: usize>(&self) -> Option<(&[T], &[T; N])> {
-        self.raw.split_last_chunk()
+    pub const fn split_last_chunk<const N: usize>(&self) -> Option<(&TypedSlice<I, T>, &[T; N])> {
+        match self.raw.split_last_chunk() {
+            Some((rest, chunk)) => Some((unsafe { TypedSlice::from_slice_unchecked(rest) }, chunk)),
+            None => None,
+        }
     }
 
     #[inline]
     pub const fn split_last_chunk_mut<const N: usize>(
         &mut self,
-    ) -> Option<(&mut [T], &mut [T; N])> {
-        self.raw.split_last_chunk_mut()
+    ) -> Option<(&mut TypedSlice<I, T>, &mut [T; N])> {
+        match self.raw.split_last_chunk_mut() {
+            Some((rest, chunk)) => {
+                Some((unsafe { TypedSlice::from_slice_unchecked_mut(rest) }, chunk))
+            }
+            None => None,
+        }
     }
 
     #[inline]
@@ -298,14 +331,16 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    pub const fn as_chunks<const N: usize>(&self) -> (&[[T; N]], &[T]) {
-        self.raw.as_chunks()
+    pub const fn as_chunks<const N: usize>(&self) -> (&[[T; N]], &TypedSlice<I, T>) {
+        let (chunks, rest) = self.raw.as_chunks();
+        (chunks, unsafe { TypedSlice::from_slice_unchecked(rest) })
     }
 
     #[inline]
     #[must_use]
-    pub const fn as_rchunks<const N: usize>(&self) -> (&[T], &[[T; N]]) {
-        self.raw.as_rchunks()
+    pub const fn as_rchunks<const N: usize>(&self) -> (&TypedSlice<I, T>, &[[T; N]]) {
+        let (rest, chunks) = self.raw.as_rchunks();
+        (unsafe { TypedSlice::from_slice_unchecked(rest) }, chunks)
     }
 
     #[inline]
@@ -316,14 +351,25 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     #[inline]
     #[must_use]
-    pub const fn as_chunks_mut<const N: usize>(&mut self) -> (&mut [[T; N]], &mut [T]) {
-        self.raw.as_chunks_mut()
+    pub const fn as_chunks_mut<const N: usize>(
+        &mut self,
+    ) -> (&mut [[T; N]], &mut TypedSlice<I, T>) {
+        let (chunks, rest) = self.raw.as_chunks_mut();
+        (chunks, unsafe {
+            TypedSlice::from_slice_unchecked_mut(rest)
+        })
     }
 
     #[inline]
     #[must_use]
-    pub const fn as_rchunks_mut<const N: usize>(&mut self) -> (&mut [T], &mut [[T; N]]) {
-        self.raw.as_rchunks_mut()
+    pub const fn as_rchunks_mut<const N: usize>(
+        &mut self,
+    ) -> (&mut TypedSlice<I, T>, &mut [[T; N]]) {
+        let (rest, chunks) = self.raw.as_rchunks_mut();
+        (
+            unsafe { TypedSlice::from_slice_unchecked_mut(rest) },
+            chunks,
+        )
     }
 
     #[inline]
