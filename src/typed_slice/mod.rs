@@ -455,24 +455,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
-    pub fn starts_with(&self, needle: &[T]) -> bool
-    where
-        T: PartialEq,
-    {
-        self.raw.starts_with(needle)
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn ends_with(&self, needle: &[T]) -> bool
-    where
-        T: PartialEq,
-    {
-        self.raw.ends_with(needle)
-    }
-
-    #[inline]
     pub fn binary_search(&self, x: &T) -> Result<I, I>
     where
         T: Ord,
@@ -584,46 +566,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn clone_from_slice(&mut self, src: &[T])
-    where
-        T: Clone,
-    {
-        self.raw.clone_from_slice(src)
-    }
-
-    #[inline]
-    #[doc(alias = "memcpy")]
-    pub const fn copy_from_slice(&mut self, src: &[T])
-    where
-        T: Copy,
-    {
-        self.raw.copy_from_slice(src)
-    }
-
-    #[inline]
     pub fn copy_within<R: core::ops::RangeBounds<I>>(&mut self, src: R, dest: I)
     where
         T: Copy,
     {
         self.raw
             .copy_within(range_bounds_to_raw(src), dest.to_raw_index())
-    }
-
-    #[inline]
-    pub fn swap_with_slice(&mut self, other: &mut [T]) {
-        self.raw.swap_with_slice(other)
-    }
-
-    #[inline]
-    #[must_use]
-    pub unsafe fn align_to<U>(&self) -> (&[T], &[U], &[T]) {
-        unsafe { self.raw.align_to::<U>() }
-    }
-
-    #[inline]
-    #[must_use]
-    pub unsafe fn align_to_mut<U>(&mut self) -> (&mut [T], &mut [U], &mut [T]) {
-        unsafe { self.raw.align_to_mut::<U>() }
     }
 
     #[inline]
@@ -715,9 +663,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         }
         unsafe { arr.assume_init() }
     }
-}
 
-impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub fn windows<'a>(
         &'a self,
