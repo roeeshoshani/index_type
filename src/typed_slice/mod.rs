@@ -1,5 +1,4 @@
 use core::{
-    iter::FusedIterator,
     marker::PhantomData,
     mem::MaybeUninit,
     ops::{Index, IndexMut},
@@ -452,19 +451,31 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn rsplitn<F>(&self, n: usize, pred: F) -> core::slice::RSplitN<'_, T, F>
+    pub fn rsplitn<F>(
+        &self,
+        n: usize,
+        pred: F,
+    ) -> core::iter::Map<core::slice::RSplitN<'_, T, F>, fn(&[T]) -> &TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
-        self.raw.rsplitn(n, pred)
+        self.raw
+            .rsplitn(n, pred)
+            .map(unsafe_typed_slice_from_slice_unchecked::<I, T>)
     }
 
     #[inline]
-    pub fn rsplitn_mut<F>(&mut self, n: usize, pred: F) -> core::slice::RSplitNMut<'_, T, F>
+    pub fn rsplitn_mut<F>(
+        &mut self,
+        n: usize,
+        pred: F,
+    ) -> core::iter::Map<core::slice::RSplitNMut<'_, T, F>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
-        self.raw.rsplitn_mut(n, pred)
+        self.raw
+            .rsplitn_mut(n, pred)
+            .map(unsafe_typed_slice_from_slice_unchecked_mut::<I, T>)
     }
 
     #[inline]
@@ -687,75 +698,53 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn windows<'a>(
-        &'a self,
+    pub fn windows(
+        &self,
         size: usize,
-    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
-    + Clone
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
+    ) -> core::iter::Map<core::slice::Windows<'_, T>, fn(&[T]) -> &TypedSlice<I, T>> {
         self.raw
             .windows(size)
-            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked::<I, T>)
     }
 
     #[inline]
-    pub fn chunks<'a>(
-        &'a self,
+    pub fn chunks(
+        &self,
         size: usize,
-    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
-    + Clone
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
+    ) -> core::iter::Map<core::slice::Chunks<'_, T>, fn(&[T]) -> &TypedSlice<I, T>> {
         self.raw
             .chunks(size)
-            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked::<I, T>)
     }
 
     #[inline]
-    pub fn chunks_mut<'a>(
-        &'a mut self,
+    pub fn chunks_mut(
+        &mut self,
         size: usize,
-    ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
+    ) -> core::iter::Map<core::slice::ChunksMut<'_, T>, fn(&mut [T]) -> &mut TypedSlice<I, T>> {
         self.raw
             .chunks_mut(size)
-            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked_mut::<I, T>)
     }
 
     #[inline]
-    pub fn rchunks<'a>(
-        &'a self,
+    pub fn rchunks(
+        &self,
         size: usize,
-    ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
+    ) -> core::iter::Map<core::slice::RChunks<'_, T>, fn(&[T]) -> &TypedSlice<I, T>> {
         self.raw
             .rchunks(size)
-            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked::<I, T>)
     }
 
     #[inline]
-    pub fn rchunks_mut<'a>(
-        &'a mut self,
+    pub fn rchunks_mut(
+        &mut self,
         size: usize,
-    ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
-    + DoubleEndedIterator
-    + ExactSizeIterator
-    + FusedIterator
-    + 'a {
+    ) -> core::iter::Map<core::slice::RChunksMut<'_, T>, fn(&mut [T]) -> &mut TypedSlice<I, T>> {
         self.raw
             .rchunks_mut(size)
-            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked_mut::<I, T>)
     }
 
     #[inline]
@@ -776,7 +765,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn split<F>(&self, pred: F) -> impl Iterator<Item = &TypedSlice<I, T>> + FusedIterator
+    pub fn split<F>(
+        &self,
+        pred: F,
+    ) -> core::iter::Map<core::slice::Split<'_, T, F>, fn(&[T]) -> &TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
@@ -789,7 +781,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn split_mut<F>(
         &mut self,
         pred: F,
-    ) -> impl Iterator<Item = &mut TypedSlice<I, T>> + FusedIterator
+    ) -> core::iter::Map<core::slice::SplitMut<'_, T, F>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
@@ -802,7 +794,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn split_inclusive<F>(
         &self,
         pred: F,
-    ) -> impl Iterator<Item = &TypedSlice<I, T>> + FusedIterator
+    ) -> core::iter::Map<core::slice::SplitInclusive<'_, T, F>, fn(&[T]) -> &TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
@@ -815,7 +807,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn split_inclusive_mut<F>(
         &mut self,
         pred: F,
-    ) -> impl Iterator<Item = &mut TypedSlice<I, T>> + FusedIterator
+    ) -> core::iter::Map<core::slice::SplitInclusiveMut<'_, T, F>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
