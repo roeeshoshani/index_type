@@ -5,7 +5,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{utils::range_bounds_to_raw, IndexTooBigError, IndexType};
+use crate::{IndexTooBigError, IndexType, utils::range_bounds_to_raw};
 
 mod index;
 
@@ -61,9 +61,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub const fn to_slice_mut(&mut self) -> &mut [T] {
         unsafe { core::mem::transmute(self) }
     }
-}
 
-impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     #[must_use]
     pub const fn len_usize(&self) -> usize {
@@ -704,11 +702,11 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         size: usize,
     ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
     + Clone
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + 'a {
-               self.raw
+    + DoubleEndedIterator
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
             .windows(size)
             .map(|x| unsafe { Self::from_slice_unchecked(x) })
     }
@@ -719,11 +717,11 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         size: usize,
     ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
     + Clone
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + 'a {
-               self.raw
+    + DoubleEndedIterator
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
             .chunks(size)
             .map(|x| unsafe { Self::from_slice_unchecked(x) })
     }
@@ -734,10 +732,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         size: usize,
     ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
     + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + 'a {
-               self.raw
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
             .chunks_mut(size)
             .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
     }
@@ -748,10 +746,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         size: usize,
     ) -> impl Iterator<Item = &'a TypedSlice<I, T>>
     + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + 'a {
-               self.raw
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
             .rchunks(size)
             .map(|x| unsafe { Self::from_slice_unchecked(x) })
     }
@@ -762,10 +760,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         size: usize,
     ) -> impl Iterator<Item = &'a mut TypedSlice<I, T>>
     + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + 'a {
-               self.raw
+    + ExactSizeIterator
+    + FusedIterator
+    + 'a {
+        self.raw
             .rchunks_mut(size)
             .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
     }
