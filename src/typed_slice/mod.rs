@@ -30,13 +30,13 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub fn try_from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
-        Ok(unsafe { core::mem::transmute(slice) })
+        Ok(unsafe { Self::from_slice_unchecked(slice) })
     }
 
     #[inline]
     pub fn try_from_slice_mut(slice: &mut [T]) -> Result<&mut Self, IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
-        Ok(unsafe { core::mem::transmute(slice) })
+        Ok(unsafe { Self::from_slice_unchecked_mut(slice) })
     }
 
     #[inline]
@@ -348,7 +348,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub const unsafe fn as_chunks_unchecked<const N: usize>(
         &self,
     ) -> &TypedSlice<I, TypedArray<I, T, N>> {
-        unsafe { core::mem::transmute(self.raw.as_chunks_unchecked::<N>()) }
+        unsafe { typed_slice_from_chunks_unchecked(self.raw.as_chunks_unchecked::<N>()) }
     }
 
     #[inline]
@@ -358,7 +358,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         let (chunks, rest) = self.raw.as_chunks::<N>();
         unsafe {
             (
-                core::mem::transmute(chunks),
+                typed_slice_from_chunks_unchecked(chunks),
                 TypedSlice::from_slice_unchecked(rest),
             )
         }
@@ -372,7 +372,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         unsafe {
             (
                 TypedSlice::from_slice_unchecked(rest),
-                core::mem::transmute(chunks),
+                typed_slice_from_chunks_unchecked(chunks),
             )
         }
     }
@@ -381,7 +381,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub const unsafe fn as_chunks_unchecked_mut<const N: usize>(
         &mut self,
     ) -> &mut TypedSlice<I, TypedArray<I, T, N>> {
-        unsafe { core::mem::transmute(self.raw.as_chunks_unchecked_mut::<N>()) }
+        unsafe { typed_slice_from_chunks_unchecked_mut(self.raw.as_chunks_unchecked_mut::<N>()) }
     }
 
     #[inline]
@@ -394,7 +394,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         let (chunks, rest) = self.raw.as_chunks_mut::<N>();
         unsafe {
             (
-                core::mem::transmute(chunks),
+                typed_slice_from_chunks_unchecked_mut(chunks),
                 TypedSlice::from_slice_unchecked_mut(rest),
             )
         }
@@ -411,7 +411,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         unsafe {
             (
                 TypedSlice::from_slice_unchecked_mut(rest),
-                core::mem::transmute(chunks),
+                typed_slice_from_chunks_unchecked_mut(chunks),
             )
         }
     }
@@ -685,30 +685,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn split_off_first<'a>(self: &mut &'a Self) -> Option<&'a T> {
-        let raw_self: &mut &'a [T] = unsafe { core::mem::transmute(self) };
-        raw_self.split_off_first()
-    }
-
-    #[inline]
-    pub fn split_off_first_mut<'a>(self: &mut &'a mut Self) -> Option<&'a mut T> {
-        let raw_self: &mut &'a mut [T] = unsafe { core::mem::transmute(self) };
-        raw_self.split_off_first_mut()
-    }
-
-    #[inline]
-    pub fn split_off_last<'a>(self: &mut &'a Self) -> Option<&'a T> {
-        let raw_self: &mut &'a [T] = unsafe { core::mem::transmute(self) };
-        raw_self.split_off_last()
-    }
-
-    #[inline]
-    pub fn split_off_last_mut<'a>(self: &mut &'a mut Self) -> Option<&'a mut T> {
-        let raw_self: &mut &'a mut [T] = unsafe { core::mem::transmute(self) };
-        raw_self.split_off_last_mut()
-    }
-
-    #[inline]
     pub fn get_disjoint_mut<X, const N: usize>(
         &mut self,
         indices: [X; N],
@@ -977,6 +953,7 @@ unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> R
         Err(v) => Err(unsafe { I::from_raw_index_unchecked(v) }),
     }
 }
+
 unsafe fn typify_select_nth_res<'a, I: IndexType, T>(
     res: (&'a mut [T], &'a mut T, &'a mut [T]),
 ) -> (
@@ -991,6 +968,20 @@ unsafe fn typify_select_nth_res<'a, I: IndexType, T>(
             TypedSlice::from_slice_unchecked_mut(res.2),
         )
     }
+}
+
+#[inline]
+const unsafe fn typed_slice_from_chunks_unchecked<I: IndexType, T, const N: usize>(
+    slice: &[[T; N]],
+) -> &TypedSlice<I, TypedArray<I, T, N>> {
+    unsafe { core::mem::transmute(slice) }
+}
+
+#[inline]
+const unsafe fn typed_slice_from_chunks_unchecked_mut<I: IndexType, T, const N: usize>(
+    slice: &mut [[T; N]],
+) -> &mut TypedSlice<I, TypedArray<I, T, N>> {
+    unsafe { core::mem::transmute(slice) }
 }
 
 mod private_get_disjoint_mut_typed_index {
