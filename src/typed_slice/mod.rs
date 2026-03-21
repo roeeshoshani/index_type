@@ -17,6 +17,16 @@ pub struct TypedSlice<I: IndexType, T> {
     raw: [T],
 }
 
+fn unsafe_typed_slice_from_slice_unchecked<I: IndexType, T>(slice: &[T]) -> &TypedSlice<I, T> {
+    unsafe { TypedSlice::from_slice_unchecked(slice) }
+}
+
+fn unsafe_typed_slice_from_slice_unchecked_mut<I: IndexType, T>(
+    slice: &mut [T],
+) -> &mut TypedSlice<I, T> {
+    unsafe { TypedSlice::from_slice_unchecked_mut(slice) }
+}
+
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub fn try_from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
@@ -414,19 +424,31 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn splitn<F>(&self, n: usize, pred: F) -> core::slice::SplitN<'_, T, F>
+    pub fn splitn<F>(
+        &self,
+        n: usize,
+        pred: F,
+    ) -> core::iter::Map<core::slice::SplitN<'_, T, F>, fn(&[T]) -> &TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
-        self.raw.splitn(n, pred)
+        self.raw
+            .splitn(n, pred)
+            .map(unsafe_typed_slice_from_slice_unchecked::<I, T>)
     }
 
     #[inline]
-    pub fn splitn_mut<F>(&mut self, n: usize, pred: F) -> core::slice::SplitNMut<'_, T, F>
+    pub fn splitn_mut<F>(
+        &mut self,
+        n: usize,
+        pred: F,
+    ) -> core::iter::Map<core::slice::SplitNMut<'_, T, F>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
     where
         F: FnMut(&T) -> bool,
     {
-        self.raw.splitn_mut(n, pred)
+        self.raw
+            .splitn_mut(n, pred)
+            .map(unsafe_typed_slice_from_slice_unchecked_mut::<I, T>)
     }
 
     #[inline]
