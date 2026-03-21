@@ -94,37 +94,31 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub const fn len_usize(&self) -> usize {
         self.raw.len()
     }
 
     #[inline]
-    #[must_use]
     pub fn len(&self) -> I {
         unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
     #[inline]
-    #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.raw.is_empty()
     }
 
     #[inline]
-    #[must_use]
     pub const fn first(&self) -> Option<&T> {
         self.raw.first()
     }
 
     #[inline]
-    #[must_use]
     pub const fn first_mut(&mut self) -> Option<&mut T> {
         self.raw.first_mut()
     }
 
     #[inline]
-    #[must_use]
     pub const fn split_first(&self) -> Option<(&T, &TypedSlice<I, T>)> {
         match self.raw.split_first() {
             Some((first, rest)) => Some((first, unsafe { TypedSlice::from_slice_unchecked(rest) })),
@@ -133,7 +127,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub const fn split_first_mut(&mut self) -> Option<(&mut T, &mut TypedSlice<I, T>)> {
         match self.raw.split_first_mut() {
             Some((first, rest)) => {
@@ -144,7 +137,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub const fn split_last(&self) -> Option<(&T, &TypedSlice<I, T>)> {
         match self.raw.split_last() {
             Some((last, rest)) => Some((last, unsafe { TypedSlice::from_slice_unchecked(rest) })),
@@ -153,7 +145,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub const fn split_last_mut(&mut self) -> Option<(&mut T, &mut TypedSlice<I, T>)> {
         match self.raw.split_last_mut() {
             Some((last, rest)) => {
@@ -164,13 +155,11 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub const fn last(&self) -> Option<&T> {
         self.raw.last()
     }
 
     #[inline]
-    #[must_use]
     pub const fn last_mut(&mut self) -> Option<&mut T> {
         self.raw.last_mut()
     }
@@ -236,7 +225,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn get<X>(&self, index: X) -> Option<&X::Output>
     where
         X: TypedSliceIndex<Self>,
@@ -245,7 +233,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn get_mut<X>(&mut self, index: X) -> Option<&mut X::Output>
     where
         X: TypedSliceIndex<Self>,
@@ -254,7 +241,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub unsafe fn get_unchecked<X>(&self, index: X) -> &X::Output
     where
         X: TypedSliceIndex<Self>,
@@ -263,7 +249,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub unsafe fn get_unchecked_mut<X>(&mut self, index: X) -> &mut X::Output
     where
         X: TypedSliceIndex<Self>,
@@ -272,37 +257,31 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline(always)]
-    #[must_use]
     pub const fn as_ptr(&self) -> *const T {
         self.raw.as_ptr()
     }
 
     #[inline(always)]
-    #[must_use]
     pub const fn as_mut_ptr(&mut self) -> *mut T {
         self.raw.as_mut_ptr()
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_ptr_range(&self) -> core::ops::Range<*const T> {
         self.raw.as_ptr_range()
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_mut_ptr_range(&mut self) -> core::ops::Range<*mut T> {
         self.raw.as_mut_ptr_range()
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_array<const N: usize>(&self) -> Option<&[T; N]> {
         self.raw.as_array()
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_mut_array<const N: usize>(&mut self) -> Option<&mut [T; N]> {
         self.raw.as_mut_array()
     }
@@ -328,33 +307,28 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub const unsafe fn as_chunks_unchecked<const N: usize>(&self) -> &[[T; N]] {
         unsafe { self.raw.as_chunks_unchecked() }
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_chunks<const N: usize>(&self) -> (&[[T; N]], &TypedSlice<I, T>) {
         let (chunks, rest) = self.raw.as_chunks();
         (chunks, unsafe { TypedSlice::from_slice_unchecked(rest) })
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_rchunks<const N: usize>(&self) -> (&TypedSlice<I, T>, &[[T; N]]) {
         let (rest, chunks) = self.raw.as_rchunks();
         (unsafe { TypedSlice::from_slice_unchecked(rest) }, chunks)
     }
 
     #[inline]
-    #[must_use]
     pub const unsafe fn as_chunks_unchecked_mut<const N: usize>(&mut self) -> &mut [[T; N]] {
         unsafe { self.raw.as_chunks_unchecked_mut() }
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_chunks_mut<const N: usize>(
         &mut self,
     ) -> (&mut [[T; N]], &mut TypedSlice<I, T>) {
@@ -365,7 +339,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_rchunks_mut<const N: usize>(
         &mut self,
     ) -> (&mut TypedSlice<I, T>, &mut [[T; N]]) {
@@ -377,14 +350,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub unsafe fn split_at_unchecked(&self, mid: I) -> (&TypedSlice<I, T>, &TypedSlice<I, T>) {
         let (a, b) = unsafe { self.raw.split_at_unchecked(mid.to_raw_index()) };
         unsafe { (Self::from_slice_unchecked(a), Self::from_slice_unchecked(b)) }
     }
 
     #[inline]
-    #[must_use]
     pub unsafe fn split_at_mut_unchecked(
         &mut self,
         mid: I,
@@ -399,7 +370,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn split_at_checked(&self, mid: I) -> Option<(&TypedSlice<I, T>, &TypedSlice<I, T>)> {
         self.raw
             .split_at_checked(mid.to_raw_index())
@@ -407,7 +377,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn split_at_mut_checked(
         &mut self,
         mid: I,
@@ -479,7 +448,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn contains(&self, x: &T) -> bool
     where
         T: PartialEq,
@@ -608,7 +576,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn is_sorted(&self) -> bool
     where
         T: PartialOrd,
@@ -617,7 +584,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn is_sorted_by<'a, F>(&'a self, compare: F) -> bool
     where
         F: FnMut(&'a T, &'a T) -> bool,
@@ -626,7 +592,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn is_sorted_by_key<'a, F, K>(&'a self, f: F) -> bool
     where
         F: FnMut(&'a T) -> K,
@@ -636,7 +601,6 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    #[must_use]
     pub fn partition_point<P>(&self, pred: P) -> I
     where
         P: FnMut(&T) -> bool,
@@ -741,7 +705,8 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn rchunks_mut(
         &mut self,
         size: usize,
-    ) -> core::iter::Map<core::slice::RChunksMut<'_, T>, fn(&mut [T]) -> &mut TypedSlice<I, T>> {
+    ) -> core::iter::Map<core::slice::RChunksMut<'_, T>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
+    {
         self.raw
             .rchunks_mut(size)
             .map(unsafe_typed_slice_from_slice_unchecked_mut::<I, T>)
@@ -807,7 +772,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn split_inclusive_mut<F>(
         &mut self,
         pred: F,
-    ) -> core::iter::Map<core::slice::SplitInclusiveMut<'_, T, F>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
+    ) -> core::iter::Map<
+        core::slice::SplitInclusiveMut<'_, T, F>,
+        fn(&mut [T]) -> &mut TypedSlice<I, T>,
+    >
     where
         F: FnMut(&T) -> bool,
     {

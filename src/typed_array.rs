@@ -16,31 +16,26 @@ pub struct TypedArray<I: IndexType, T, const SIZE: usize> {
 
 impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     #[inline]
-    #[must_use]
     pub const fn as_slice(&self) -> &TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 
     #[inline]
-    #[must_use]
     pub const fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 
     #[inline]
-    #[must_use]
     pub fn as_array(&self) -> &[T; SIZE] {
         &self.raw
     }
 
     #[inline]
-    #[must_use]
     pub fn as_mut_array(&mut self) -> &mut [T; SIZE] {
         &mut self.raw
     }
 
     #[inline]
-    #[must_use]
     pub fn into_array(self) -> [T; SIZE] {
         self.raw
     }
@@ -89,14 +84,12 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     }
 
     #[inline]
-    #[must_use]
     pub const fn each_ref(&self) -> TypedArray<I, &T, SIZE> {
         let refs = self.raw.each_ref();
         unsafe { TypedArray::from_array_unchecked(refs) }
     }
 
     #[inline]
-    #[must_use]
     pub fn each_mut(&mut self) -> TypedArray<I, &mut T, SIZE> {
         let refs = self.raw.each_mut();
         unsafe { TypedArray::from_array_unchecked(refs) }
