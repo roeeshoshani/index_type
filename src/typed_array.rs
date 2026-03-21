@@ -92,28 +92,8 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     }
 
     #[inline]
-    pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> TypedArray<I, U, N> {
-        let mapped = core::array::from_fn(|i| f(unsafe { core::ptr::read(&self.raw[i]) }));
-        TypedArray {
-            raw: mapped,
-            phantom: PhantomData,
-        }
-    }
-
-    #[inline]
-    pub fn try_map<U, F: FnMut(T) -> Result<U, E>, E>(
-        self,
-        mut f: F,
-    ) -> Result<TypedArray<I, U, N>, E> {
-        let mut result = core::array::from_fn(|_| None);
-        for (i, elem) in self.raw.into_iter().enumerate() {
-            result[i] = Some(f(elem)?);
-        }
-        let mapped = unsafe { result.map(|x| x.unwrap_unchecked()) };
-        Ok(TypedArray {
-            raw: mapped,
-            phantom: PhantomData,
-        })
+    pub fn map<U, F: FnMut(T) -> U>(self, f: F) -> TypedArray<I, U, N> {
+        unsafe { TypedArray::from_array_unchecked(self.raw.map(f)) }
     }
 }
 
