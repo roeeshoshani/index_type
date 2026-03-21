@@ -1064,6 +1064,14 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         let raw: &mut &'a mut [T] = unsafe { core::mem::transmute(self) };
         raw.split_off_last_mut()
     }
+
+    #[inline]
+    pub fn to_vec(&self) -> TypedVec<I, T>
+    where
+        T: Clone,
+    {
+        unsafe { TypedVec::from_vec_unchecked(self.raw.to_vec()) }
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
