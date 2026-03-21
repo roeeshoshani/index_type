@@ -26,12 +26,12 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     }
 
     #[inline]
-    pub fn as_array(&self) -> &[T; SIZE] {
+    pub const fn as_array(&self) -> &[T; SIZE] {
         &self.raw
     }
 
     #[inline]
-    pub fn as_mut_array(&mut self) -> &mut [T; SIZE] {
+    pub const fn as_mut_array(&mut self) -> &mut [T; SIZE] {
         &mut self.raw
     }
 
@@ -79,7 +79,9 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     }
 
     #[inline]
-    pub unsafe fn from_array_mut_unchecked(raw: &mut [T; SIZE]) -> &mut TypedArray<I, T, SIZE> {
+    pub const unsafe fn from_array_mut_unchecked(
+        raw: &mut [T; SIZE],
+    ) -> &mut TypedArray<I, T, SIZE> {
         unsafe { core::mem::transmute::<&mut [T; SIZE], &mut TypedArray<I, T, SIZE>>(raw) }
     }
 
