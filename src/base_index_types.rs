@@ -2,7 +2,7 @@
 use core::num::NonZeroU64;
 use core::num::{NonZeroU8, NonZeroU16, NonZeroU32, NonZeroUsize};
 
-use crate::{IndexType, error::IndexTooBigError};
+use crate::{IndexType, error::GenericIndexTooBigError};
 
 macro_rules! impl_for_uint_type {
     {$t: ty} => {
@@ -10,6 +10,8 @@ macro_rules! impl_for_uint_type {
             panic!()
         };
         unsafe impl IndexType for $t {
+            type IndexTooBigError = GenericIndexTooBigError;
+
             type Scalar = Self;
 
             const ZERO: Self = 0;
@@ -17,8 +19,8 @@ macro_rules! impl_for_uint_type {
             const MAX_RAW_INDEX: usize = (Self::MAX) as usize;
 
             #[inline]
-            fn try_from_raw_index(index: usize) -> Result<Self, IndexTooBigError> {
-                index.try_into().map_err(|_| IndexTooBigError)
+            fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError> {
+                index.try_into().map_err(|_| GenericIndexTooBigError)
             }
 
             #[inline]
@@ -32,7 +34,7 @@ macro_rules! impl_for_uint_type {
             }
 
             #[inline]
-            fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, IndexTooBigError> {
+            fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
                 Ok(scalar)
             }
 
@@ -47,13 +49,13 @@ macro_rules! impl_for_uint_type {
             }
 
             #[inline]
-            fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError> {
-                self.checked_add(rhs).ok_or(IndexTooBigError)
+            fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
+                self.checked_add(rhs).ok_or(GenericIndexTooBigError)
             }
 
             #[inline]
-            fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError> {
-                self.checked_mul(rhs).ok_or(IndexTooBigError)
+            fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
+                self.checked_mul(rhs).ok_or(GenericIndexTooBigError)
             }
 
             #[inline]
@@ -86,6 +88,8 @@ macro_rules! impl_for_nonzero_uint_type {
             panic!()
         };
         unsafe impl IndexType for $t {
+            type IndexTooBigError = GenericIndexTooBigError;
+
             type Scalar = $scalar;
 
             const ZERO: Self = unsafe { Self::new_unchecked(1) };
@@ -93,12 +97,12 @@ macro_rules! impl_for_nonzero_uint_type {
             const MAX_RAW_INDEX: usize = (<$scalar>::MAX - 1) as usize;
 
             #[inline]
-            fn try_from_raw_index(index: usize) -> Result<Self, IndexTooBigError> {
+            fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError> {
                 let raw = index
                     .checked_add(1)
-                    .ok_or(IndexTooBigError)?
+                    .ok_or(GenericIndexTooBigError)?
                     .try_into()
-                    .map_err(|_| IndexTooBigError)?;
+                    .map_err(|_| GenericIndexTooBigError)?;
                 Ok(unsafe { Self::new_unchecked(raw) })
             }
 
@@ -113,8 +117,8 @@ macro_rules! impl_for_nonzero_uint_type {
             }
 
             #[inline]
-            fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, IndexTooBigError> {
-                let raw = scalar.checked_add(1).ok_or(IndexTooBigError)?;
+            fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
+                let raw = scalar.checked_add(1).ok_or(GenericIndexTooBigError)?;
                 Ok(unsafe { Self::new_unchecked(raw) })
             }
 
@@ -129,14 +133,14 @@ macro_rules! impl_for_nonzero_uint_type {
             }
 
             #[inline]
-            fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError> {
-                self.checked_add(rhs).ok_or(IndexTooBigError)
+            fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
+                self.checked_add(rhs).ok_or(GenericIndexTooBigError)
             }
 
             #[inline]
-            fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, IndexTooBigError> {
-                let rhs = Self::new(rhs).ok_or(IndexTooBigError)?;
-                self.checked_mul(rhs).ok_or(IndexTooBigError)
+            fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
+                let rhs = Self::new(rhs).ok_or(GenericIndexTooBigError)?;
+                self.checked_mul(rhs).ok_or(GenericIndexTooBigError)
             }
 
             #[inline]

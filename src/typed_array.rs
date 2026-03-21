@@ -4,7 +4,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexTooBigError, IndexType, typed_slice::TypedSlice};
+use crate::{IndexType, typed_slice::TypedSlice};
 
 #[repr(transparent)]
 pub struct TypedArray<I: IndexType, T, const N: usize> {
@@ -39,7 +39,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     }
 
     #[inline]
-    pub fn try_from_array(array: [T; N]) -> Result<Self, IndexTooBigError> {
+    pub fn try_from_array(array: [T; N]) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
         Ok(TypedArray {
             raw: array,
@@ -48,7 +48,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     }
 
     #[inline]
-    pub fn try_from_array_ref(array: &[T; N]) -> Result<&TypedArray<I, T, N>, IndexTooBigError> {
+    pub fn try_from_array_ref(array: &[T; N]) -> Result<&TypedArray<I, T, N>, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
         Ok(unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(array) })
     }
@@ -56,7 +56,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     #[inline]
     pub fn try_from_array_mut(
         array: &mut [T; N],
-    ) -> Result<&mut TypedArray<I, T, N>, IndexTooBigError> {
+    ) -> Result<&mut TypedArray<I, T, N>, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
         Ok(unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(array) })
     }

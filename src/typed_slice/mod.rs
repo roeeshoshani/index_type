@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::{
-    IndexScalarType, IndexTooBigError, IndexType, typed_array::TypedArray, typed_vec::TypedVec,
+    IndexScalarType, IndexType, typed_array::TypedArray, typed_vec::TypedVec,
     utils::range_bounds_to_raw,
 };
 
@@ -33,13 +33,13 @@ fn unsafe_typed_slice_from_slice_unchecked_mut<I: IndexType, T>(
 
 impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
-    pub fn try_from_slice(slice: &[T]) -> Result<&Self, IndexTooBigError> {
+    pub fn try_from_slice(slice: &[T]) -> Result<&Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
         Ok(unsafe { Self::from_slice_unchecked(slice) })
     }
 
     #[inline]
-    pub fn try_from_slice_mut(slice: &mut [T]) -> Result<&mut Self, IndexTooBigError> {
+    pub fn try_from_slice_mut(slice: &mut [T]) -> Result<&mut Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
         Ok(unsafe { Self::from_slice_unchecked_mut(slice) })
     }
@@ -77,7 +77,9 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn cast_index_type<I2: IndexType>(&self) -> Result<&TypedSlice<I2, T>, IndexTooBigError> {
+    pub fn cast_index_type<I2: IndexType>(
+        &self,
+    ) -> Result<&TypedSlice<I2, T>, I2::IndexTooBigError> {
         if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
             // we know that the length of this slice must be in bounds for the new index type
             Ok(unsafe { TypedSlice::from_slice_unchecked(self.as_slice()) })
@@ -89,7 +91,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub fn cast_index_type_mut<I2: IndexType>(
         &mut self,
-    ) -> Result<&mut TypedSlice<I2, T>, IndexTooBigError> {
+    ) -> Result<&mut TypedSlice<I2, T>, I2::IndexTooBigError> {
         if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
             // we know that the length of this slice must be in bounds for the new index type
             Ok(unsafe { TypedSlice::from_slice_unchecked_mut(self.as_mut_slice()) })
@@ -971,7 +973,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn repeat(&self, n: usize) -> Result<TypedVec<I, T>, IndexTooBigError>
+    pub fn repeat(&self, n: usize) -> Result<TypedVec<I, T>, I::IndexTooBigError>
     where
         T: Copy,
     {
@@ -1075,13 +1077,13 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
-    pub fn as_flattened(&self) -> Result<&TypedSlice<I, T>, IndexTooBigError> {
+    pub fn as_flattened(&self) -> Result<&TypedSlice<I, T>, I::IndexTooBigError> {
         let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
         Ok(unsafe { TypedSlice::from_raw_parts(self.as_ptr().cast(), flattened_len) })
     }
 
-    pub fn as_flattened_mut(&mut self) -> Result<&mut TypedSlice<I, T>, IndexTooBigError> {
+    pub fn as_flattened_mut(&mut self) -> Result<&mut TypedSlice<I, T>, I::IndexTooBigError> {
         let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
         Ok(unsafe { TypedSlice::from_raw_parts_mut(self.as_mut_ptr().cast(), flattened_len) })
@@ -1128,7 +1130,7 @@ impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> IndexMut<X> for Type
 }
 
 impl<'a, I: IndexType, T> TryFrom<&'a [T]> for &'a TypedSlice<I, T> {
-    type Error = IndexTooBigError;
+    type Error = I::IndexTooBigError;
 
     #[inline]
     fn try_from(value: &'a [T]) -> Result<Self, Self::Error> {
@@ -1137,7 +1139,7 @@ impl<'a, I: IndexType, T> TryFrom<&'a [T]> for &'a TypedSlice<I, T> {
 }
 
 impl<'a, I: IndexType, T> TryFrom<&'a mut [T]> for &'a mut TypedSlice<I, T> {
-    type Error = IndexTooBigError;
+    type Error = I::IndexTooBigError;
 
     #[inline]
     fn try_from(value: &'a mut [T]) -> Result<Self, Self::Error> {
