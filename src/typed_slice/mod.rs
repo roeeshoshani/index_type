@@ -1031,6 +1031,15 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     {
         self.raw.sort_by_key(f);
     }
+
+    #[inline]
+    pub fn sort_by_cached_key<K, F>(&mut self, f: F)
+    where
+        F: FnMut(&T) -> K,
+        K: Ord,
+    {
+        self.raw.sort_by_cached_key(f);
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
