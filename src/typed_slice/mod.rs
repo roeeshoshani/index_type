@@ -4,7 +4,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexTooBigError, IndexType, utils::range_bounds_to_raw};
+use crate::{IndexTooBigError, IndexType, typed_array::TypedArray, utils::range_bounds_to_raw};
 
 mod index;
 
@@ -165,19 +165,32 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub const fn first_chunk<const N: usize>(&self) -> Option<&[T; N]> {
-        self.raw.first_chunk()
+    pub const fn first_chunk<const N: usize>(&self) -> Option<&TypedArray<I, T, N>> {
+        match self.raw.first_chunk() {
+            Some(x) => Some(unsafe { TypedArray::from_array_ref_unchecked(x) }),
+            None => None,
+        }
     }
 
     #[inline]
-    pub const fn first_chunk_mut<const N: usize>(&mut self) -> Option<&mut [T; N]> {
-        self.raw.first_chunk_mut()
+    pub const fn first_chunk_mut<const N: usize>(&mut self) -> Option<&mut TypedArray<I, T, N>> {
+        match self.raw.first_chunk_mut() {
+            Some(x) => Some(unsafe { TypedArray::from_array_mut_unchecked(x) }),
+            None => None,
+        }
     }
 
     #[inline]
-    pub const fn split_first_chunk<const N: usize>(&self) -> Option<(&[T; N], &TypedSlice<I, T>)> {
+    pub const fn split_first_chunk<const N: usize>(
+        &self,
+    ) -> Option<(&TypedArray<I, T, N>, &TypedSlice<I, T>)> {
         match self.raw.split_first_chunk() {
-            Some((chunk, rest)) => Some((chunk, unsafe { TypedSlice::from_slice_unchecked(rest) })),
+            Some((chunk, rest)) => unsafe {
+                Some((
+                    TypedArray::from_array_ref_unchecked(chunk),
+                    TypedSlice::from_slice_unchecked(rest),
+                ))
+            },
             None => None,
         }
     }
@@ -185,19 +198,29 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn split_first_chunk_mut<const N: usize>(
         &mut self,
-    ) -> Option<(&mut [T; N], &mut TypedSlice<I, T>)> {
+    ) -> Option<(&mut TypedArray<I, T, N>, &mut TypedSlice<I, T>)> {
         match self.raw.split_first_chunk_mut() {
-            Some((chunk, rest)) => {
-                Some((chunk, unsafe { TypedSlice::from_slice_unchecked_mut(rest) }))
-            }
+            Some((chunk, rest)) => unsafe {
+                Some((
+                    TypedArray::from_array_mut_unchecked(chunk),
+                    TypedSlice::from_slice_unchecked_mut(rest),
+                ))
+            },
             None => None,
         }
     }
 
     #[inline]
-    pub const fn split_last_chunk<const N: usize>(&self) -> Option<(&TypedSlice<I, T>, &[T; N])> {
+    pub const fn split_last_chunk<const N: usize>(
+        &self,
+    ) -> Option<(&TypedSlice<I, T>, &TypedArray<I, T, N>)> {
         match self.raw.split_last_chunk() {
-            Some((rest, chunk)) => Some((unsafe { TypedSlice::from_slice_unchecked(rest) }, chunk)),
+            Some((rest, chunk)) => unsafe {
+                Some((
+                    TypedSlice::from_slice_unchecked(rest),
+                    TypedArray::from_array_ref_unchecked(chunk),
+                ))
+            },
             None => None,
         }
     }
@@ -205,23 +228,32 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn split_last_chunk_mut<const N: usize>(
         &mut self,
-    ) -> Option<(&mut TypedSlice<I, T>, &mut [T; N])> {
+    ) -> Option<(&mut TypedSlice<I, T>, &mut TypedArray<I, T, N>)> {
         match self.raw.split_last_chunk_mut() {
-            Some((rest, chunk)) => {
-                Some((unsafe { TypedSlice::from_slice_unchecked_mut(rest) }, chunk))
-            }
+            Some((rest, chunk)) => unsafe {
+                Some((
+                    TypedSlice::from_slice_unchecked_mut(rest),
+                    TypedArray::from_array_mut_unchecked(chunk),
+                ))
+            },
             None => None,
         }
     }
 
     #[inline]
-    pub const fn last_chunk<const N: usize>(&self) -> Option<&[T; N]> {
-        self.raw.last_chunk()
+    pub const fn last_chunk<const N: usize>(&self) -> Option<&TypedArray<I, T, N>> {
+        match self.raw.last_chunk() {
+            Some(x) => Some(unsafe { TypedArray::from_array_ref_unchecked(x) }),
+            None => None,
+        }
     }
 
     #[inline]
-    pub const fn last_chunk_mut<const N: usize>(&mut self) -> Option<&mut [T; N]> {
-        self.raw.last_chunk_mut()
+    pub const fn last_chunk_mut<const N: usize>(&mut self) -> Option<&mut TypedArray<I, T, N>> {
+        match self.raw.last_chunk_mut() {
+            Some(x) => Some(unsafe { TypedArray::from_array_mut_unchecked(x) }),
+            None => None,
+        }
     }
 
     #[inline]
@@ -277,13 +309,19 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub const fn as_array<const N: usize>(&self) -> Option<&[T; N]> {
-        self.raw.as_array()
+    pub const fn as_array<const N: usize>(&self) -> Option<&TypedArray<I, T, N>> {
+        match self.raw.as_array() {
+            Some(x) => Some(unsafe { TypedArray::from_array_ref_unchecked(x) }),
+            None => None,
+        }
     }
 
     #[inline]
-    pub const fn as_mut_array<const N: usize>(&mut self) -> Option<&mut [T; N]> {
-        self.raw.as_mut_array()
+    pub const fn as_mut_array<const N: usize>(&mut self) -> Option<&mut TypedArray<I, T, N>> {
+        match self.raw.as_mut_array() {
+            Some(x) => Some(unsafe { TypedArray::from_array_mut_unchecked(x) }),
+            None => None,
+        }
     }
 
     #[inline]

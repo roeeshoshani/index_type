@@ -39,44 +39,44 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     }
 
     #[inline]
-    pub fn try_from_array(raw: [T; N]) -> Result<Self, IndexTooBigError> {
+    pub fn try_from_array(array: [T; N]) -> Result<Self, IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
         Ok(TypedArray {
-            raw,
+            raw: array,
             phantom: PhantomData,
         })
     }
 
     #[inline]
-    pub fn try_from_array_ref(raw: &[T; N]) -> Result<&TypedArray<I, T, N>, IndexTooBigError> {
+    pub fn try_from_array_ref(array: &[T; N]) -> Result<&TypedArray<I, T, N>, IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
-        Ok(unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(raw) })
+        Ok(unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(array) })
     }
 
     #[inline]
     pub fn try_from_array_mut(
-        raw: &mut [T; N],
+        array: &mut [T; N],
     ) -> Result<&mut TypedArray<I, T, N>, IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
-        Ok(unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(raw) })
+        Ok(unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(array) })
     }
 
     #[inline]
-    pub const unsafe fn from_array_unchecked(raw: [T; N]) -> Self {
+    pub const unsafe fn from_array_unchecked(array: [T; N]) -> Self {
         TypedArray {
-            raw,
+            raw: array,
             phantom: PhantomData,
         }
     }
 
     #[inline]
-    pub const unsafe fn from_array_ref_unchecked(raw: &[T; N]) -> &TypedArray<I, T, N> {
-        unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(raw) }
+    pub const unsafe fn from_array_ref_unchecked(array: &[T; N]) -> &TypedArray<I, T, N> {
+        unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(array) }
     }
 
     #[inline]
-    pub const unsafe fn from_array_mut_unchecked(raw: &mut [T; N]) -> &mut TypedArray<I, T, N> {
-        unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(raw) }
+    pub const unsafe fn from_array_mut_unchecked(array: &mut [T; N]) -> &mut TypedArray<I, T, N> {
+        unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(array) }
     }
 
     #[inline]
