@@ -63,9 +63,12 @@ macro_rules! impl_index_type {
 
 #[macro_export]
 macro_rules! define_index_type {
-    ($ident: ident, inner = $inner_ty: ty, err = $err_ty: ty) => {
+    {
+        $vis:vis struct $ident: ident($inner_ty: ty);
+        err = $err_ty: ty;
+    } => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-        pub struct $ident(pub $inner_ty);
+        $vis struct $ident(pub $inner_ty);
 
         $crate::impl_index_type!($ident, inner = $inner_ty, err = $err_ty);
     };
@@ -73,10 +76,10 @@ macro_rules! define_index_type {
 
 #[macro_export]
 macro_rules! impl_index_too_big_error {
-    ($ident: ident = $msg:literal $(, $($tt: tt)*)?) => {
+    ($ident: ident = $err_msg:literal ) => {
         impl core::fmt::Display for $ident {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, $msg $($($tt)*)?)
+                write!(f, $err_msg)
             }
         }
 
@@ -89,12 +92,37 @@ macro_rules! impl_index_too_big_error {
         }
     };
 }
+
 #[macro_export]
 macro_rules! define_index_too_big_error {
-    ($ident: ident = $msg:literal $(, $($tt: tt)*)?) => {
+    ($vis:vis struct $ident: ident = $err_msg:literal ) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-        pub struct $ident;
+        $vis struct $ident;
 
-        $crate::impl_index_too_big_error!($ident = $msg $($($tt)*)?);
+        $crate::impl_index_too_big_error!($ident = $err_msg );
     };
 }
+
+#[macro_export]
+macro_rules! define_index_and_error_type {
+    {
+        $vis:vis struct $ident: ident($inner_ty: ty);
+        $err_vis:vis struct $err_ident: ident = $err_msg:literal ;
+    } => {
+        $crate::define_index_too_big_error!($vis struct $err_ident = $err_msg);
+        $crate::define_index_type!(
+            $err_vis struct $ident($inner_ty);
+            err = $err_ident;
+        );
+    };
+}
+
+define_index_and_error_type!(
+    pub struct FooId(core::num::NonZeroU32);
+    pub struct FooIdTooBigError = "foo id too big";
+);
+
+define_index_type!(
+    pub struct FooId2(core::num::NonZeroU32);
+    err = FooIdTooBigError;
+);
