@@ -63,6 +63,28 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
+    pub fn cast_index_type<I2: IndexType>(&self) -> Result<&TypedSlice<I2, T>, IndexTooBigError> {
+        if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
+            // we know that the length of this slice must be in bounds for the new index type
+            Ok(unsafe { TypedSlice::from_slice_unchecked(self.to_slice()) })
+        } else {
+            TypedSlice::try_from_slice(self.to_slice())
+        }
+    }
+
+    #[inline]
+    pub fn cast_index_type_mut<I2: IndexType>(
+        &mut self,
+    ) -> Result<&mut TypedSlice<I2, T>, IndexTooBigError> {
+        if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
+            // we know that the length of this slice must be in bounds for the new index type
+            Ok(unsafe { TypedSlice::from_slice_unchecked_mut(self.to_slice_mut()) })
+        } else {
+            TypedSlice::try_from_slice_mut(self.to_slice_mut())
+        }
+    }
+
+    #[inline]
     #[must_use]
     pub const fn len_usize(&self) -> usize {
         self.raw.len()
