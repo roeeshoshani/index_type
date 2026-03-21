@@ -914,6 +914,19 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .chunk_by(pred)
             .map(unsafe_typed_slice_from_slice_unchecked)
     }
+
+    #[inline]
+    pub fn chunk_by_mut<F>(
+        &mut self,
+        pred: F,
+    ) -> core::iter::Map<core::slice::ChunkByMut<'_, T, F>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
+    where
+        F: FnMut(&T, &T) -> bool,
+    {
+        self.raw
+            .chunk_by_mut(pred)
+            .map(unsafe_typed_slice_from_slice_unchecked_mut)
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
