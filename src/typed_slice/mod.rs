@@ -980,6 +980,19 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .checked_mul_scalar(<I::Scalar as IndexScalarType>::try_from_usize(n)?)?;
         Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.repeat(n)) })
     }
+
+    #[inline]
+    pub fn rsplit_mut<F>(
+        &mut self,
+        pred: F,
+    ) -> core::iter::Map<core::slice::RSplitMut<'_, T, F>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.raw
+            .rsplit_mut(pred)
+            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
