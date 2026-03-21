@@ -62,12 +62,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub const fn to_slice(&self) -> &[T] {
+    pub const fn as_slice(&self) -> &[T] {
         unsafe { core::mem::transmute(self) }
     }
 
     #[inline]
-    pub const fn to_slice_mut(&mut self) -> &mut [T] {
+    pub const fn as_mut_slice(&mut self) -> &mut [T] {
         unsafe { core::mem::transmute(self) }
     }
 
@@ -75,9 +75,9 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn cast_index_type<I2: IndexType>(&self) -> Result<&TypedSlice<I2, T>, IndexTooBigError> {
         if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
             // we know that the length of this slice must be in bounds for the new index type
-            Ok(unsafe { TypedSlice::from_slice_unchecked(self.to_slice()) })
+            Ok(unsafe { TypedSlice::from_slice_unchecked(self.as_slice()) })
         } else {
-            TypedSlice::try_from_slice(self.to_slice())
+            TypedSlice::try_from_slice(self.as_slice())
         }
     }
 
@@ -87,9 +87,9 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     ) -> Result<&mut TypedSlice<I2, T>, IndexTooBigError> {
         if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
             // we know that the length of this slice must be in bounds for the new index type
-            Ok(unsafe { TypedSlice::from_slice_unchecked_mut(self.to_slice_mut()) })
+            Ok(unsafe { TypedSlice::from_slice_unchecked_mut(self.as_mut_slice()) })
         } else {
-            TypedSlice::try_from_slice_mut(self.to_slice_mut())
+            TypedSlice::try_from_slice_mut(self.as_mut_slice())
         }
     }
 
@@ -789,7 +789,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: PartialEq,
     {
-        self.raw.starts_with(needle.to_slice())
+        self.raw.starts_with(needle.as_slice())
     }
 
     #[inline]
@@ -797,7 +797,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: PartialEq,
     {
-        self.raw.ends_with(needle.to_slice())
+        self.raw.ends_with(needle.as_slice())
     }
 
     #[inline]
@@ -805,7 +805,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Clone,
     {
-        self.raw.clone_from_slice(src.to_slice())
+        self.raw.clone_from_slice(src.as_slice())
     }
 
     #[inline]
@@ -813,12 +813,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Copy,
     {
-        self.raw.copy_from_slice(src.to_slice())
+        self.raw.copy_from_slice(src.as_slice())
     }
 
     #[inline]
     pub fn swap_with_slice(&mut self, other: &mut TypedSlice<I, T>) {
-        self.raw.swap_with_slice(other.to_slice_mut())
+        self.raw.swap_with_slice(other.as_mut_slice())
     }
 
     #[inline]

@@ -320,7 +320,7 @@ impl<I: IndexType, T: PartialEq> TypedVec<I, T> {
 impl<I: IndexType, T: Clone> TypedVec<I, T> {
     #[inline(always)]
     pub fn extend_from_slice(&mut self, other: &TypedSlice<I, T>) {
-        self.raw.extend_from_slice(other.to_slice())
+        self.raw.extend_from_slice(other.as_slice())
     }
 
     #[inline(always)]
@@ -434,7 +434,7 @@ impl<I: IndexType, T> BorrowMut<TypedSlice<I, T>> for TypedVec<I, T> {
 }
 impl<'a, I: IndexType, T: Clone> From<&'a TypedSlice<I, T>> for TypedVec<I, T> {
     fn from(value: &'a TypedSlice<I, T>) -> Self {
-        unsafe { Self::from_vec_unchecked(Vec::from(value.to_slice())) }
+        unsafe { Self::from_vec_unchecked(Vec::from(value.as_slice())) }
     }
 }
 impl<I: IndexType, T: Clone> IntoIterator for TypedVec<I, T> {
@@ -466,17 +466,17 @@ impl<'a, I: IndexType, T: Clone> IntoIterator for &'a mut TypedVec<I, T> {
 }
 impl<I: IndexType, T: PartialEq> PartialEq<TypedSlice<I, T>> for TypedVec<I, T> {
     fn eq(&self, other: &TypedSlice<I, T>) -> bool {
-        PartialEq::eq(&self.raw, other.to_slice())
+        PartialEq::eq(&self.raw, other.as_slice())
     }
 }
 impl<'a, I: IndexType, T: PartialEq> PartialEq<&'a TypedSlice<I, T>> for TypedVec<I, T> {
     fn eq(&self, other: &&'a TypedSlice<I, T>) -> bool {
-        PartialEq::eq(&self.raw, other.to_slice())
+        PartialEq::eq(&self.raw, other.as_slice())
     }
 }
 impl<'a, I: IndexType, T: PartialEq> PartialEq<&'a mut TypedSlice<I, T>> for TypedVec<I, T> {
     fn eq(&self, other: &&'a mut TypedSlice<I, T>) -> bool {
-        PartialEq::eq(&self.raw, other.to_slice())
+        PartialEq::eq(&self.raw, other.as_slice())
     }
 }
 impl<I: IndexType, T: PartialOrd> PartialOrd for TypedVec<I, T> {

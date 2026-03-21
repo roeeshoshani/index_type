@@ -3,10 +3,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{
-    IndexTooBigError, IndexType,
-    typed_slice::{TypedSlice, TypedSliceIndex},
-};
+use crate::{IndexTooBigError, IndexType, typed_slice::TypedSlice};
 
 #[repr(transparent)]
 pub struct TypedArray<I: IndexType, T, const SIZE: usize> {
@@ -186,23 +183,25 @@ impl<I: IndexType, T: Default, const SIZE: usize> Default for TypedArray<I, T, S
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize, X: TypedSliceIndex<TypedSlice<I, T>>> Index<X>
-    for TypedArray<I, T, SIZE>
+impl<I: IndexType, T, const SIZE: usize, X> Index<X> for TypedArray<I, T, SIZE>
+where
+    TypedSlice<I, T>: Index<X>,
 {
-    type Output = X::Output;
+    type Output = <TypedSlice<I, T> as Index<X>>::Output;
 
     #[inline]
     fn index(&self, index: X) -> &Self::Output {
-        index.index(unsafe { TypedSlice::from_slice_unchecked(&self.raw) })
+        self.as_slice().index(index)
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize, X: TypedSliceIndex<TypedSlice<I, T>>> IndexMut<X>
-    for TypedArray<I, T, SIZE>
+impl<I: IndexType, T, const SIZE: usize, X> IndexMut<X> for TypedArray<I, T, SIZE>
+where
+    TypedSlice<I, T>: IndexMut<X>,
 {
     #[inline]
     fn index_mut(&mut self, index: X) -> &mut Self::Output {
-        index.index_mut(unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) })
+        self.as_mut_slice().index_mut(index)
     }
 }
 
