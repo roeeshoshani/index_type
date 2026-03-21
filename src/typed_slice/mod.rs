@@ -927,6 +927,27 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .chunk_by_mut(pred)
             .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
+
+    #[inline]
+    pub fn chunks_exact(
+        &self,
+        chunk_size: usize,
+    ) -> core::iter::Map<core::slice::ChunksExact<'_, T>, fn(&[T]) -> &TypedSlice<I, T>> {
+        self.raw
+            .chunks_exact(chunk_size)
+            .map(unsafe_typed_slice_from_slice_unchecked)
+    }
+
+    #[inline]
+    pub fn chunks_exact_mut(
+        &mut self,
+        chunk_size: usize,
+    ) -> core::iter::Map<core::slice::ChunksExactMut<'_, T>, fn(&mut [T]) -> &mut TypedSlice<I, T>>
+    {
+        self.raw
+            .chunks_exact_mut(chunk_size)
+            .map(unsafe_typed_slice_from_slice_unchecked_mut)
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
