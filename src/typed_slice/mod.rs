@@ -1040,6 +1040,30 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     {
         self.raw.sort_by_cached_key(f);
     }
+
+    #[inline]
+    pub fn split_off_first<'a>(self: &mut &'a Self) -> Option<&'a T> {
+        let raw: &mut &'a [T] = unsafe { core::mem::transmute(self) };
+        raw.split_off_first()
+    }
+
+    #[inline]
+    pub fn split_off_first_mut<'a>(self: &mut &'a mut Self) -> Option<&'a mut T> {
+        let raw: &mut &'a mut [T] = unsafe { core::mem::transmute(self) };
+        raw.split_off_first_mut()
+    }
+
+    #[inline]
+    pub fn split_off_last<'a>(self: &mut &'a Self) -> Option<&'a T> {
+        let raw: &mut &'a [T] = unsafe { core::mem::transmute(self) };
+        raw.split_off_last()
+    }
+
+    #[inline]
+    pub fn split_off_last_mut<'a>(self: &mut &'a mut Self) -> Option<&'a mut T> {
+        let raw: &mut &'a mut [T] = unsafe { core::mem::transmute(self) };
+        raw.split_off_last_mut()
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
@@ -1228,9 +1252,7 @@ fn get_disjoint_check_valid<
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GetDisjointMutError {
-    /// An index provided was out-of-bounds for the slice.
     IndexOutOfBounds,
-    /// Two indices provided were overlapping.
     OverlappingIndices,
 }
 
