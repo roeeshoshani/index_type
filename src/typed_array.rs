@@ -177,7 +177,6 @@ impl<I: IndexType, T: Clone, const SIZE: usize> TypedArray<I, T, SIZE> {
 impl<I: IndexType, T: Default, const SIZE: usize> Default for TypedArray<I, T, SIZE> {
     #[inline]
     fn default() -> Self {
-        // Using array initialization that works with non-Copy types
         TypedArray {
             raw: core::array::from_fn(|_| T::default()),
             phantom: PhantomData,
