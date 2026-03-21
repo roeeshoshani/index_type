@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::{
-    IndexScalarType, IndexTooBigError, IndexType, typed_array::TypedArray,
+    IndexScalarType, IndexTooBigError, IndexType, typed_array::TypedArray, typed_vec::TypedVec,
     utils::range_bounds_to_raw,
 };
 
@@ -969,17 +969,28 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .rchunks_exact_mut(chunk_size)
             .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
+
+    #[inline]
+    pub fn repeat(&self, n: usize) -> Result<TypedVec<I, T>, IndexTooBigError>
+    where
+        T: Copy,
+    {
+        let _final_len = self
+            .len()
+            .checked_mul_scalar(<I::Scalar as IndexScalarType>::try_from_usize(n)?)?;
+        Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.repeat(n)) })
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
     pub fn as_flattened(&self) -> Result<&TypedSlice<I, T>, IndexTooBigError> {
-        let n = unsafe { <<I as IndexType>::Scalar as IndexScalarType>::from_usize_unchecked(N) };
+        let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
         Ok(unsafe { TypedSlice::from_raw_parts(self.as_ptr().cast(), flattened_len) })
     }
 
     pub fn as_flattened_mut(&mut self) -> Result<&mut TypedSlice<I, T>, IndexTooBigError> {
-        let n = unsafe { <<I as IndexType>::Scalar as IndexScalarType>::from_usize_unchecked(N) };
+        let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
         Ok(unsafe { TypedSlice::from_raw_parts_mut(self.as_mut_ptr().cast(), flattened_len) })
     }
