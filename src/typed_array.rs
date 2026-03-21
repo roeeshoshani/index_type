@@ -1,4 +1,5 @@
 use core::{
+    array::TryFromSliceError,
     marker::PhantomData,
     ops::{Index, IndexMut},
 };
@@ -6,12 +7,12 @@ use core::{
 use crate::{IndexTooBigError, IndexType, typed_slice::TypedSlice};
 
 #[repr(transparent)]
-pub struct TypedArray<I: IndexType, T, const SIZE: usize> {
-    raw: [T; SIZE],
+pub struct TypedArray<I: IndexType, T, const N: usize> {
+    raw: [T; N],
     phantom: PhantomData<fn(&I)>,
 }
 
-impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     #[inline]
     pub const fn as_slice(&self) -> &TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
@@ -23,23 +24,23 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     }
 
     #[inline]
-    pub const fn as_array(&self) -> &[T; SIZE] {
+    pub const fn as_array(&self) -> &[T; N] {
         &self.raw
     }
 
     #[inline]
-    pub const fn as_mut_array(&mut self) -> &mut [T; SIZE] {
+    pub const fn as_mut_array(&mut self) -> &mut [T; N] {
         &mut self.raw
     }
 
     #[inline]
-    pub fn into_array(self) -> [T; SIZE] {
+    pub fn into_array(self) -> [T; N] {
         self.raw
     }
 
     #[inline]
-    pub fn try_from_array(raw: [T; SIZE]) -> Result<Self, IndexTooBigError> {
-        let _ = I::try_from_raw_index(SIZE)?;
+    pub fn try_from_array(raw: [T; N]) -> Result<Self, IndexTooBigError> {
+        let _ = I::try_from_raw_index(N)?;
         Ok(TypedArray {
             raw,
             phantom: PhantomData,
@@ -47,23 +48,21 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     }
 
     #[inline]
-    pub fn try_from_array_ref(
-        raw: &[T; SIZE],
-    ) -> Result<&TypedArray<I, T, SIZE>, IndexTooBigError> {
-        let _ = I::try_from_raw_index(SIZE)?;
-        Ok(unsafe { core::mem::transmute::<&[T; SIZE], &TypedArray<I, T, SIZE>>(raw) })
+    pub fn try_from_array_ref(raw: &[T; N]) -> Result<&TypedArray<I, T, N>, IndexTooBigError> {
+        let _ = I::try_from_raw_index(N)?;
+        Ok(unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(raw) })
     }
 
     #[inline]
     pub fn try_from_array_mut(
-        raw: &mut [T; SIZE],
-    ) -> Result<&mut TypedArray<I, T, SIZE>, IndexTooBigError> {
-        let _ = I::try_from_raw_index(SIZE)?;
-        Ok(unsafe { core::mem::transmute::<&mut [T; SIZE], &mut TypedArray<I, T, SIZE>>(raw) })
+        raw: &mut [T; N],
+    ) -> Result<&mut TypedArray<I, T, N>, IndexTooBigError> {
+        let _ = I::try_from_raw_index(N)?;
+        Ok(unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(raw) })
     }
 
     #[inline]
-    pub const unsafe fn from_array_unchecked(raw: [T; SIZE]) -> Self {
+    pub const unsafe fn from_array_unchecked(raw: [T; N]) -> Self {
         TypedArray {
             raw,
             phantom: PhantomData,
@@ -71,31 +70,29 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     }
 
     #[inline]
-    pub const unsafe fn from_array_ref_unchecked(raw: &[T; SIZE]) -> &TypedArray<I, T, SIZE> {
-        unsafe { core::mem::transmute::<&[T; SIZE], &TypedArray<I, T, SIZE>>(raw) }
+    pub const unsafe fn from_array_ref_unchecked(raw: &[T; N]) -> &TypedArray<I, T, N> {
+        unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(raw) }
     }
 
     #[inline]
-    pub const unsafe fn from_array_mut_unchecked(
-        raw: &mut [T; SIZE],
-    ) -> &mut TypedArray<I, T, SIZE> {
-        unsafe { core::mem::transmute::<&mut [T; SIZE], &mut TypedArray<I, T, SIZE>>(raw) }
+    pub const unsafe fn from_array_mut_unchecked(raw: &mut [T; N]) -> &mut TypedArray<I, T, N> {
+        unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(raw) }
     }
 
     #[inline]
-    pub const fn each_ref(&self) -> TypedArray<I, &T, SIZE> {
+    pub const fn each_ref(&self) -> TypedArray<I, &T, N> {
         let refs = self.raw.each_ref();
         unsafe { TypedArray::from_array_unchecked(refs) }
     }
 
     #[inline]
-    pub fn each_mut(&mut self) -> TypedArray<I, &mut T, SIZE> {
+    pub fn each_mut(&mut self) -> TypedArray<I, &mut T, N> {
         let refs = self.raw.each_mut();
         unsafe { TypedArray::from_array_unchecked(refs) }
     }
 
     #[inline]
-    pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> TypedArray<I, U, SIZE> {
+    pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> TypedArray<I, U, N> {
         let mapped = core::array::from_fn(|i| f(unsafe { core::ptr::read(&self.raw[i]) }));
         TypedArray {
             raw: mapped,
@@ -107,7 +104,7 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     pub fn try_map<U, F: FnMut(T) -> Result<U, E>, E>(
         self,
         mut f: F,
-    ) -> Result<TypedArray<I, U, SIZE>, E> {
+    ) -> Result<TypedArray<I, U, N>, E> {
         let mut result = core::array::from_fn(|_| None);
         for (i, elem) in self.raw.into_iter().enumerate() {
             result[i] = Some(f(elem)?);
@@ -120,48 +117,44 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
     }
 }
 
-impl<I: IndexType, T: PartialEq, const SIZE: usize> PartialEq for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T: PartialEq, const N: usize> PartialEq for TypedArray<I, T, N> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.raw == other.raw
     }
 }
 
-impl<I: IndexType, T: Eq, const SIZE: usize> Eq for TypedArray<I, T, SIZE> {}
+impl<I: IndexType, T: Eq, const N: usize> Eq for TypedArray<I, T, N> {}
 
-impl<I: IndexType, T: PartialOrd, const SIZE: usize> PartialOrd for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T: PartialOrd, const N: usize> PartialOrd for TypedArray<I, T, N> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         self.raw.partial_cmp(&other.raw)
     }
 }
 
-impl<I: IndexType, T: Ord, const SIZE: usize> Ord for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T: Ord, const N: usize> Ord for TypedArray<I, T, N> {
     #[inline]
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.raw.cmp(&other.raw)
     }
 }
 
-impl<I: IndexType, T: core::hash::Hash, const SIZE: usize> core::hash::Hash
-    for TypedArray<I, T, SIZE>
-{
+impl<I: IndexType, T: core::hash::Hash, const N: usize> core::hash::Hash for TypedArray<I, T, N> {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.raw.hash(state);
     }
 }
 
-impl<I: IndexType, T: core::fmt::Debug, const SIZE: usize> core::fmt::Debug
-    for TypedArray<I, T, SIZE>
-{
+impl<I: IndexType, T: core::fmt::Debug, const N: usize> core::fmt::Debug for TypedArray<I, T, N> {
     #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(&self.raw, f)
     }
 }
 
-impl<I: IndexType, T: Clone, const SIZE: usize> Clone for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T: Clone, const N: usize> Clone for TypedArray<I, T, N> {
     #[inline]
     fn clone(&self) -> Self {
         unsafe { Self::from_array_unchecked(self.raw.clone()) }
@@ -173,7 +166,7 @@ impl<I: IndexType, T: Clone, const SIZE: usize> Clone for TypedArray<I, T, SIZE>
     }
 }
 
-impl<I: IndexType, T: Default, const SIZE: usize> Default for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T: Default, const N: usize> Default for TypedArray<I, T, N> {
     #[inline]
     fn default() -> Self {
         TypedArray {
@@ -183,7 +176,7 @@ impl<I: IndexType, T: Default, const SIZE: usize> Default for TypedArray<I, T, S
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize, X> Index<X> for TypedArray<I, T, SIZE>
+impl<I: IndexType, T, const N: usize, X> Index<X> for TypedArray<I, T, N>
 where
     TypedSlice<I, T>: Index<X>,
 {
@@ -195,7 +188,7 @@ where
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize, X> IndexMut<X> for TypedArray<I, T, SIZE>
+impl<I: IndexType, T, const N: usize, X> IndexMut<X> for TypedArray<I, T, N>
 where
     TypedSlice<I, T>: IndexMut<X>,
 {
@@ -205,22 +198,22 @@ where
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> AsRef<TypedSlice<I, T>> for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const N: usize> AsRef<TypedSlice<I, T>> for TypedArray<I, T, N> {
     #[inline]
     fn as_ref(&self) -> &TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> AsMut<TypedSlice<I, T>> for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const N: usize> AsMut<TypedSlice<I, T>> for TypedArray<I, T, N> {
     #[inline]
     fn as_mut(&mut self) -> &mut TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> core::borrow::Borrow<TypedSlice<I, T>>
-    for TypedArray<I, T, SIZE>
+impl<I: IndexType, T, const N: usize> core::borrow::Borrow<TypedSlice<I, T>>
+    for TypedArray<I, T, N>
 {
     #[inline]
     fn borrow(&self) -> &TypedSlice<I, T> {
@@ -228,8 +221,8 @@ impl<I: IndexType, T, const SIZE: usize> core::borrow::Borrow<TypedSlice<I, T>>
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> core::borrow::BorrowMut<TypedSlice<I, T>>
-    for TypedArray<I, T, SIZE>
+impl<I: IndexType, T, const N: usize> core::borrow::BorrowMut<TypedSlice<I, T>>
+    for TypedArray<I, T, N>
 {
     #[inline]
     fn borrow_mut(&mut self) -> &mut TypedSlice<I, T> {
@@ -237,7 +230,7 @@ impl<I: IndexType, T, const SIZE: usize> core::borrow::BorrowMut<TypedSlice<I, T
     }
 }
 
-impl<'a, I: IndexType, T, const SIZE: usize> IntoIterator for &'a TypedArray<I, T, SIZE> {
+impl<'a, I: IndexType, T, const N: usize> IntoIterator for &'a TypedArray<I, T, N> {
     type Item = &'a T;
     type IntoIter = core::slice::Iter<'a, T>;
 
@@ -247,7 +240,7 @@ impl<'a, I: IndexType, T, const SIZE: usize> IntoIterator for &'a TypedArray<I, 
     }
 }
 
-impl<'a, I: IndexType, T, const SIZE: usize> IntoIterator for &'a mut TypedArray<I, T, SIZE> {
+impl<'a, I: IndexType, T, const N: usize> IntoIterator for &'a mut TypedArray<I, T, N> {
     type Item = &'a mut T;
     type IntoIter = core::slice::IterMut<'a, T>;
 
@@ -257,12 +250,36 @@ impl<'a, I: IndexType, T, const SIZE: usize> IntoIterator for &'a mut TypedArray
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> IntoIterator for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const N: usize> IntoIterator for TypedArray<I, T, N> {
     type Item = T;
-    type IntoIter = core::array::IntoIter<T, SIZE>;
+    type IntoIter = core::array::IntoIter<T, N>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.raw.into_iter()
+    }
+}
+
+impl<'a, I: IndexType, T, const N: usize> TryFrom<&'a TypedSlice<I, T>>
+    for &'a TypedArray<I, T, N>
+{
+    type Error = TryFromSliceError;
+
+    #[inline]
+    fn try_from(slice: &'a TypedSlice<I, T>) -> Result<&'a TypedArray<I, T, N>, TryFromSliceError> {
+        Ok(unsafe { TypedArray::from_array_ref_unchecked(slice.as_slice().try_into()?) })
+    }
+}
+
+impl<'a, I: IndexType, T, const N: usize> TryFrom<&'a mut TypedSlice<I, T>>
+    for &'a mut TypedArray<I, T, N>
+{
+    type Error = TryFromSliceError;
+
+    #[inline]
+    fn try_from(
+        slice: &'a mut TypedSlice<I, T>,
+    ) -> Result<&'a mut TypedArray<I, T, N>, TryFromSliceError> {
+        Ok(unsafe { TypedArray::from_array_mut_unchecked(slice.as_mut_slice().try_into()?) })
     }
 }
