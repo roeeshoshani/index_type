@@ -16,10 +16,12 @@ pub struct TypedSlice<I: IndexType, T> {
     raw: [T],
 }
 
+#[inline]
 fn unsafe_typed_slice_from_slice_unchecked<I: IndexType, T>(slice: &[T]) -> &TypedSlice<I, T> {
     unsafe { TypedSlice::from_slice_unchecked(slice) }
 }
 
+#[inline]
 fn unsafe_typed_slice_from_slice_unchecked_mut<I: IndexType, T>(
     slice: &mut [T],
 ) -> &mut TypedSlice<I, T> {
@@ -898,6 +900,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 }
 impl<I: IndexType, T: PartialEq> PartialEq for TypedSlice<I, T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         PartialEq::eq(&self.raw, &other.raw)
     }
@@ -906,12 +909,14 @@ impl<I: IndexType, T: PartialEq> PartialEq for TypedSlice<I, T> {
 impl<I: IndexType, T: Eq> Eq for TypedSlice<I, T> {}
 
 impl<I: IndexType, T: core::hash::Hash> core::hash::Hash for TypedSlice<I, T> {
+    #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.raw.hash(state);
     }
 }
 
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedSlice<I, T> {
+    #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.raw.fmt(f)
     }
@@ -920,12 +925,14 @@ impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedSlice<I, T> {
 impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> Index<X> for TypedSlice<I, T> {
     type Output = X::Output;
 
+    #[inline]
     fn index(&self, index: X) -> &Self::Output {
         index.index(self)
     }
 }
 
 impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> IndexMut<X> for TypedSlice<I, T> {
+    #[inline]
     fn index_mut(&mut self, index: X) -> &mut Self::Output {
         index.index_mut(self)
     }
@@ -934,6 +941,7 @@ impl<I: IndexType, T, X: TypedSliceIndex<TypedSlice<I, T>>> IndexMut<X> for Type
 impl<'a, I: IndexType, T> TryFrom<&'a [T]> for &'a TypedSlice<I, T> {
     type Error = IndexTooBigError;
 
+    #[inline]
     fn try_from(value: &'a [T]) -> Result<Self, Self::Error> {
         TypedSlice::try_from_slice(value)
     }
@@ -942,11 +950,13 @@ impl<'a, I: IndexType, T> TryFrom<&'a [T]> for &'a TypedSlice<I, T> {
 impl<'a, I: IndexType, T> TryFrom<&'a mut [T]> for &'a mut TypedSlice<I, T> {
     type Error = IndexTooBigError;
 
+    #[inline]
     fn try_from(value: &'a mut [T]) -> Result<Self, Self::Error> {
         TypedSlice::try_from_slice_mut(value)
     }
 }
 
+#[inline]
 unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> Result<I, I> {
     match res {
         Ok(v) => Ok(unsafe { I::from_raw_index_unchecked(v) }),
@@ -954,6 +964,7 @@ unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> R
     }
 }
 
+#[inline]
 unsafe fn typify_select_nth_res<'a, I: IndexType, T>(
     res: (&'a mut [T], &'a mut T, &'a mut [T]),
 ) -> (
