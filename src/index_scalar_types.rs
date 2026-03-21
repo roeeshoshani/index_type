@@ -10,27 +10,27 @@ macro_rules! impl_for_uint_type {
             const ZERO: Self = 0;
             const ONE: Self = 1;
 
-            #[inline(always)]
+            #[inline]
             fn try_from_usize(value: usize) -> Result<Self, IndexTooBigError> {
                 value.try_into().map_err(|_| IndexTooBigError)
             }
 
-            #[inline(always)]
+            #[inline]
             unsafe fn from_usize_unchecked(value: usize) -> Self {
                 value as Self
             }
 
-            #[inline(always)]
+            #[inline]
             fn to_usize(self) -> usize {
                 self as usize
             }
 
-            #[inline(always)]
+            #[inline]
             fn checked_add_scalar(self, rhs: Self) -> Result<Self, IndexTooBigError> {
                 self.checked_add(rhs).ok_or(IndexTooBigError)
             }
 
-            #[inline(always)]
+            #[inline]
             unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self {
                 unsafe { self.unchecked_add(rhs) }
             }

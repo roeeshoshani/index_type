@@ -138,7 +138,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
         unsafe { (I::ZERO..self.end).get_unchecked_mut(slice) }
     }
 
-    #[inline(always)]
+    #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &TypedSlice<I, T> {
         (I::ZERO..self.end).index(slice)
     }
@@ -177,7 +177,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
         unsafe { (self.start..len).get_unchecked_mut(slice) }
     }
 
-    #[inline(always)]
+    #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &TypedSlice<I, T> {
         (self.start..slice.len()).index(slice)
     }
@@ -212,7 +212,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
         slice
     }
 
-    #[inline(always)]
+    #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &TypedSlice<I, T> {
         slice
     }
@@ -308,7 +308,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
         unsafe { (I::ZERO..=self.end).get_unchecked_mut(slice) }
     }
 
-    #[inline(always)]
+    #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &TypedSlice<I, T> {
         (I::ZERO..=self.end).index(slice)
     }

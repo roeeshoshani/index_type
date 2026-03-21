@@ -293,12 +293,12 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         unsafe { &mut *index.get_unchecked_mut(self) }
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn as_ptr(&self) -> *const T {
         self.raw.as_ptr()
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn as_mut_ptr(&mut self) -> *mut T {
         self.raw.as_mut_ptr()
     }

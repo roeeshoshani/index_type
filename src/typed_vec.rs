@@ -17,7 +17,7 @@ pub struct TypedVec<I: IndexType, T> {
     phantom: PhantomData<fn(&I)>,
 }
 impl<I: IndexType, T> TypedVec<I, T> {
-    #[inline(always)]
+    #[inline]
     pub const fn new() -> Self {
         Self {
             raw: Vec::new(),
@@ -25,7 +25,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             raw: Vec::with_capacity(capacity),
@@ -43,7 +43,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(res)
     }
 
-    #[inline(always)]
+    #[inline]
     pub unsafe fn from_vec_unchecked(vec: Vec<T>) -> Self {
         Self {
             raw: vec,
@@ -64,27 +64,27 @@ impl<I: IndexType, T> TypedVec<I, T> {
         })
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn into_raw_parts(self) -> (*mut T, usize, usize) {
         self.raw.into_raw_parts()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.raw
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn len(&self) -> I::Scalar {
         unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(self.raw.len()) }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn len_as_index(&self) -> I {
         unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.raw.capacity()
     }
@@ -104,89 +104,89 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn as_mut_ptr(&mut self) -> *mut T {
         self.raw.as_mut_ptr()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn reserve(&mut self, additional: usize) {
         self.raw.reserve(additional);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn reserve_exact(&mut self, additional: usize) {
         self.raw.reserve_exact(additional)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
         self.raw.try_reserve(additional)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError> {
         self.raw.try_reserve_exact(additional)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn shrink_to_fit(&mut self) {
         self.raw.shrink_to_fit();
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn shrink_to(&mut self, min_capacity: usize) {
         self.raw.shrink_to(min_capacity);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn into_boxed_slice(self) -> Box<TypedSlice<I, T>> {
         unsafe { core::mem::transmute(self.raw.into_boxed_slice()) }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn truncate(&mut self, len: I::Scalar) {
         self.raw.truncate(len.to_usize());
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn as_slice(&self) -> &TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked(self.raw.as_slice()) }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked_mut(self.raw.as_mut_slice()) }
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn as_ptr(&self) -> *const T {
         self.raw.as_ptr()
     }
 
-    #[inline(always)]
+    #[inline]
     pub unsafe fn set_len(&mut self, new_len: I) {
         unsafe { self.raw.set_len(new_len.to_scalar().to_usize()) };
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn swap_remove(&mut self, index: I) -> T {
         self.raw.swap_remove(index.to_raw_index())
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn insert(&mut self, index: I, element: T) -> Result<(), IndexTooBigError> {
         let _new_potential_len = index.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
         self.raw.insert(index.to_raw_index(), element);
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn remove(&mut self, index: I) -> T {
         self.raw.remove(index.to_raw_index())
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn retain<F>(&mut self, f: F)
     where
         F: FnMut(&T) -> bool,
@@ -194,7 +194,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.retain(f)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn retain_mut<F>(&mut self, f: F)
     where
         F: FnMut(&mut T) -> bool,
@@ -202,7 +202,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.retain_mut(f)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn dedup_by_key<F, K>(&mut self, key: F)
     where
         F: FnMut(&mut T) -> K,
@@ -211,7 +211,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.dedup_by_key(key);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn dedup_by<F>(&mut self, same_bucket: F)
     where
         F: FnMut(&mut T, &mut T) -> bool,
@@ -219,33 +219,33 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.dedup_by(same_bucket);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn pop(&mut self) -> Option<T> {
         self.raw.pop()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         self.raw.pop_if(predicate)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn clear(&mut self) {
         self.raw.clear();
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.raw.is_empty()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn split_off(&mut self, at: I) -> Self {
         let new_vec = self.raw.split_off(at.to_raw_index());
         unsafe { Self::from_vec_unchecked(new_vec) }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn resize_with<F>(&mut self, new_len: I, f: F)
     where
         F: FnMut() -> T,
@@ -253,12 +253,12 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.resize_with(new_len.to_scalar().to_usize(), f);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn leak<'a>(self) -> &'a mut [T] {
         self.raw.leak()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn drain<R>(&mut self, range: R) -> alloc::vec::Drain<'_, T>
     where
         R: core::ops::RangeBounds<I>,
@@ -266,7 +266,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.drain(range_bounds_to_raw(range))
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn splice<R, X>(&mut self, range: R, replace_with: X) -> alloc::vec::Splice<'_, X::IntoIter>
     where
         R: core::ops::RangeBounds<I>,
@@ -312,18 +312,18 @@ impl<I: IndexType, T: Copy> TypedVec<I, T> {
     }
 }
 impl<I: IndexType, T: PartialEq> TypedVec<I, T> {
-    #[inline(always)]
+    #[inline]
     pub fn dedup(&mut self) {
         self.raw.dedup();
     }
 }
 impl<I: IndexType, T: Clone> TypedVec<I, T> {
-    #[inline(always)]
+    #[inline]
     pub fn extend_from_slice(&mut self, other: &TypedSlice<I, T>) {
         self.raw.extend_from_slice(other.as_slice())
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn extend_from_within<R>(&mut self, src: R)
     where
         R: core::ops::RangeBounds<I>,
@@ -331,7 +331,7 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         self.raw.extend_from_within(range_bounds_to_raw(src));
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn extract_if<F, R>(&mut self, range: R, filter: F) -> alloc::vec::ExtractIf<'_, T, F>
     where
         F: FnMut(&mut T) -> bool,
@@ -340,7 +340,7 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         self.raw.extract_if(range_bounds_to_raw(range), filter)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn resize(&mut self, new_len: I, value: T) {
         self.raw.resize(new_len.to_raw_index(), value);
     }
