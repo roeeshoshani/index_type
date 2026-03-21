@@ -283,3 +283,25 @@ impl<'a, I: IndexType, T, const N: usize> TryFrom<&'a mut TypedSlice<I, T>>
         Ok(unsafe { TypedArray::from_array_mut_unchecked(slice.as_mut_slice().try_into()?) })
     }
 }
+
+impl<'a, I: IndexType, T: Copy, const N: usize> TryFrom<&'a TypedSlice<I, T>>
+    for TypedArray<I, T, N>
+{
+    type Error = TryFromSliceError;
+
+    #[inline]
+    fn try_from(slice: &'a TypedSlice<I, T>) -> Result<TypedArray<I, T, N>, TryFromSliceError> {
+        Ok(unsafe { TypedArray::from_array_unchecked(slice.as_slice().try_into()?) })
+    }
+}
+
+impl<'a, I: IndexType, T: Copy, const N: usize> TryFrom<&'a mut TypedSlice<I, T>>
+    for TypedArray<I, T, N>
+{
+    type Error = TryFromSliceError;
+
+    #[inline]
+    fn try_from(slice: &'a mut TypedSlice<I, T>) -> Result<TypedArray<I, T, N>, TryFromSliceError> {
+        Ok(unsafe { TypedArray::from_array_unchecked(slice.as_mut_slice().try_into()?) })
+    }
+}
