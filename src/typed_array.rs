@@ -157,7 +157,7 @@ impl<I: IndexType, T: core::fmt::Debug, const SIZE: usize> core::fmt::Debug
 {
     #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.raw.fmt(f)
+        core::fmt::Debug::fmt(&self.raw, f)
     }
 }
 
