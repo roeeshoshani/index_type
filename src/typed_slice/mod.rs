@@ -1006,6 +1006,31 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .rsplit(pred)
             .map(unsafe_typed_slice_from_slice_unchecked)
     }
+
+    #[inline]
+    pub fn sort(&mut self)
+    where
+        T: Ord,
+    {
+        self.raw.sort();
+    }
+
+    #[inline]
+    pub fn sort_by<F>(&mut self, compare: F)
+    where
+        F: FnMut(&T, &T) -> core::cmp::Ordering,
+    {
+        self.raw.sort_by(compare);
+    }
+
+    #[inline]
+    pub fn sort_by_key<K, F>(&mut self, f: F)
+    where
+        F: FnMut(&T) -> K,
+        K: Ord,
+    {
+        self.raw.sort_by_key(f);
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
