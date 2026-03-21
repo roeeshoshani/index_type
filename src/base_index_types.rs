@@ -14,6 +14,8 @@ macro_rules! impl_for_uint_type {
 
             const ZERO: Self = 0;
 
+            const MAX_RAW_INDEX: usize = (Self::MAX) as usize;
+
             #[inline(always)]
             fn try_from_raw_index(index: usize) -> Result<Self, IndexTooBigError> {
                 index.try_into().map_err(|_| IndexTooBigError)
@@ -87,6 +89,8 @@ macro_rules! impl_for_nonzero_uint_type {
             type Scalar = $scalar;
 
             const ZERO: Self = unsafe { Self::new_unchecked(1) };
+
+            const MAX_RAW_INDEX: usize = (<$scalar>::MAX - 1) as usize;
 
             #[inline(always)]
             fn try_from_raw_index(index: usize) -> Result<Self, IndexTooBigError> {

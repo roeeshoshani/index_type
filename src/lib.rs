@@ -18,6 +18,8 @@ pub unsafe trait IndexType:
 
     const ZERO: Self;
 
+    const MAX_RAW_INDEX: usize;
+
     fn try_from_raw_index(index: usize) -> Result<Self, IndexTooBigError>;
     unsafe fn from_raw_index_unchecked(index: usize) -> Self;
     fn to_raw_index(self) -> usize;
