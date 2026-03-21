@@ -205,31 +205,35 @@ impl<I: IndexType, T, const SIZE: usize, X: TypedSliceIndex<TypedSlice<I, T>>> I
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> AsRef<[T]> for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const SIZE: usize> AsRef<TypedSlice<I, T>> for TypedArray<I, T, SIZE> {
     #[inline]
-    fn as_ref(&self) -> &[T] {
-        &self.raw
+    fn as_ref(&self) -> &TypedSlice<I, T> {
+        unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> AsMut<[T]> for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const SIZE: usize> AsMut<TypedSlice<I, T>> for TypedArray<I, T, SIZE> {
     #[inline]
-    fn as_mut(&mut self) -> &mut [T] {
-        &mut self.raw
+    fn as_mut(&mut self) -> &mut TypedSlice<I, T> {
+        unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> core::borrow::Borrow<[T]> for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const SIZE: usize> core::borrow::Borrow<TypedSlice<I, T>>
+    for TypedArray<I, T, SIZE>
+{
     #[inline]
-    fn borrow(&self) -> &[T] {
-        &self.raw
+    fn borrow(&self) -> &TypedSlice<I, T> {
+        unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 }
 
-impl<I: IndexType, T, const SIZE: usize> core::borrow::BorrowMut<[T]> for TypedArray<I, T, SIZE> {
+impl<I: IndexType, T, const SIZE: usize> core::borrow::BorrowMut<TypedSlice<I, T>>
+    for TypedArray<I, T, SIZE>
+{
     #[inline]
-    fn borrow_mut(&mut self) -> &mut [T] {
-        &mut self.raw
+    fn borrow_mut(&mut self) -> &mut TypedSlice<I, T> {
+        unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 }
 
