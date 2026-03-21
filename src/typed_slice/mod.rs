@@ -796,7 +796,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     {
         self.raw
             .split(pred)
-            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked)
     }
 
     #[inline]
@@ -809,7 +809,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     {
         self.raw
             .split_mut(pred)
-            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
 
     #[inline]
@@ -822,7 +822,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     {
         self.raw
             .split_inclusive(pred)
-            .map(|x| unsafe { Self::from_slice_unchecked(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked)
     }
 
     #[inline]
@@ -838,7 +838,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     {
         self.raw
             .split_inclusive_mut(pred)
-            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
 
     #[inline]
@@ -991,7 +991,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     {
         self.raw
             .rsplit_mut(pred)
-            .map(|x| unsafe { Self::from_slice_unchecked_mut(x) })
+            .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
 }
 
