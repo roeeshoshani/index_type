@@ -139,10 +139,12 @@ impl<I: IndexType, T: core::fmt::Debug, const SIZE: usize> core::fmt::Debug
 impl<I: IndexType, T: Clone, const SIZE: usize> Clone for TypedArray<I, T, SIZE> {
     #[inline]
     fn clone(&self) -> Self {
-        TypedArray {
-            raw: self.raw.clone(),
-            phantom: PhantomData,
-        }
+        unsafe { Self::from_array_unchecked(self.raw.clone()) }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        self.raw.clone_from(source.as_array())
     }
 }
 
