@@ -4,7 +4,10 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexTooBigError, IndexType, typed_array::TypedArray, utils::range_bounds_to_raw};
+use crate::{
+    IndexScalarType, IndexTooBigError, IndexType, typed_array::TypedArray,
+    utils::range_bounds_to_raw,
+};
 
 mod index;
 
@@ -899,6 +902,21 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         }
     }
 }
+
+impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
+    pub fn as_flattened(&self) -> Result<&TypedSlice<I, T>, IndexTooBigError> {
+        let n = unsafe { <<I as IndexType>::Scalar as IndexScalarType>::from_usize_unchecked(N) };
+        let flattened_len = self.len().checked_mul_scalar(n)?;
+        Ok(unsafe { TypedSlice::from_raw_parts(self.as_ptr().cast(), flattened_len) })
+    }
+
+    pub fn as_flattened_mut(&mut self) -> Result<&mut TypedSlice<I, T>, IndexTooBigError> {
+        let n = unsafe { <<I as IndexType>::Scalar as IndexScalarType>::from_usize_unchecked(N) };
+        let flattened_len = self.len().checked_mul_scalar(n)?;
+        Ok(unsafe { TypedSlice::from_raw_parts_mut(self.as_mut_ptr().cast(), flattened_len) })
+    }
+}
+
 impl<I: IndexType, T: PartialEq> PartialEq for TypedSlice<I, T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
