@@ -6,10 +6,7 @@ use core::{
 
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
-use crate::{
-    IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice,
-    utils::range_bounds_to_raw,
-};
+use crate::{IndexScalarType, IndexType, typed_slice::TypedSlice, utils::range_bounds_to_raw};
 
 #[repr(transparent)]
 pub struct TypedVec<I: IndexType, T> {
@@ -34,7 +31,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     #[inline]
-    pub fn try_from_vec(vec: Vec<T>) -> Result<Self, IndexTooBigError> {
+    pub fn try_from_vec(vec: Vec<T>) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(vec.len())?;
         let res = Self {
             raw: vec,
@@ -56,7 +53,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         ptr: *mut T,
         length: usize,
         capacity: usize,
-    ) -> Result<Self, IndexTooBigError> {
+    ) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(length)?;
         Ok(Self {
             raw: unsafe { Vec::from_raw_parts(ptr, length, capacity) },
@@ -90,7 +87,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     #[inline]
-    pub fn push(&mut self, value: T) -> Result<I, IndexTooBigError> {
+    pub fn push(&mut self, value: T) -> Result<I, I::IndexTooBigError> {
         let res = self.len_as_index();
         let _new_len = res.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
         self.raw.push(value);
@@ -98,7 +95,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     #[inline]
-    pub fn append(&mut self, other: &mut TypedVec<I, T>) -> Result<(), IndexTooBigError> {
+    pub fn append(&mut self, other: &mut TypedVec<I, T>) -> Result<(), I::IndexTooBigError> {
         let _new_len = self.len_as_index().checked_add_scalar(other.len())?;
         self.raw.append(&mut other.raw);
         Ok(())
@@ -175,7 +172,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     #[inline]
-    pub fn insert(&mut self, index: I, element: T) -> Result<(), IndexTooBigError> {
+    pub fn insert(&mut self, index: I, element: T) -> Result<(), I::IndexTooBigError> {
         let _new_potential_len = index.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
         self.raw.insert(index.to_raw_index(), element);
         Ok(())
@@ -279,7 +276,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     pub fn try_extend<X: IntoIterator<Item = T>>(
         &mut self,
         iter: X,
-    ) -> Result<(), IndexTooBigError> {
+    ) -> Result<(), I::IndexTooBigError> {
         let orig_raw_len = self.raw.len();
         self.raw.extend(iter);
         match I::try_from_raw_index(self.raw.len()) {
@@ -296,7 +293,7 @@ impl<I: IndexType, T: Copy> TypedVec<I, T> {
     pub fn try_extend_copy<'a, X: IntoIterator<Item = &'a T>>(
         &mut self,
         iter: X,
-    ) -> Result<(), IndexTooBigError>
+    ) -> Result<(), I::IndexTooBigError>
     where
         T: 'a,
     {
@@ -347,7 +344,7 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
 }
 
 impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
-    pub fn into_flattened(self) -> Result<TypedVec<I, T>, IndexTooBigError> {
+    pub fn into_flattened(self) -> Result<TypedVec<I, T>, I::IndexTooBigError> {
         let _new_len = self
             .len_as_index()
             .checked_mul_scalar(<I::Scalar as IndexScalarType>::try_from_usize(N)?)?;
