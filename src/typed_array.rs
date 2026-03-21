@@ -100,7 +100,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
 impl<I: IndexType, T: PartialEq, const N: usize> PartialEq for TypedArray<I, T, N> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.raw == other.raw
+        PartialEq::eq(&self.raw, &other.raw)
     }
 }
 
