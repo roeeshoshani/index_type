@@ -6,7 +6,10 @@ use core::{
 
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
-use crate::{IndexScalarType, IndexType, typed_slice::TypedSlice, utils::range_bounds_to_raw};
+use crate::{
+    IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice,
+    utils::range_bounds_to_raw,
+};
 
 #[repr(transparent)]
 pub struct TypedVec<I: IndexType, T> {
@@ -345,9 +348,10 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
 
 impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
     pub fn into_flattened(self) -> Result<TypedVec<I, T>, I::IndexTooBigError> {
-        let _new_len = self
-            .len_as_index()
-            .checked_mul_scalar(<I::Scalar as IndexScalarType>::try_from_usize(N)?)?;
+        let _new_len = self.len_as_index().checked_mul_scalar(
+            <I::Scalar as IndexScalarType>::try_from_usize(N)
+                .ok_or(<I::IndexTooBigError as IndexTooBigError>::new())?,
+        )?;
         Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.into_flattened()) })
     }
 }

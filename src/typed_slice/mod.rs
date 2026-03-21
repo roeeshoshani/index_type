@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::{
-    IndexScalarType, IndexType, typed_array::TypedArray, typed_vec::TypedVec,
+    IndexScalarType, IndexTooBigError, IndexType, typed_array::TypedArray, typed_vec::TypedVec,
     utils::range_bounds_to_raw,
 };
 
@@ -977,9 +977,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Copy,
     {
-        let _final_len = self
-            .len()
-            .checked_mul_scalar(<I::Scalar as IndexScalarType>::try_from_usize(n)?)?;
+        let _final_len = self.len().checked_mul_scalar(
+            <I::Scalar as IndexScalarType>::try_from_usize(n)
+                .ok_or(<I::IndexTooBigError as IndexTooBigError>::new())?,
+        )?;
         Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.repeat(n)) })
     }
 

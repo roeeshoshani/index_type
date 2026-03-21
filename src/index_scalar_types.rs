@@ -1,4 +1,4 @@
-use crate::{IndexScalarType, error::GenericIndexTooBigError};
+use crate::IndexScalarType;
 
 macro_rules! impl_for_uint_type {
     {$t: ty} => {
@@ -7,14 +7,12 @@ macro_rules! impl_for_uint_type {
         };
         impl crate::index_scalar_type_private::Sealed for $t {}
         unsafe impl IndexScalarType for $t {
-            type IndexTooBigError = GenericIndexTooBigError;
-
             const ZERO: Self = 0;
             const ONE: Self = 1;
 
             #[inline]
-            fn try_from_usize(value: usize) -> Result<Self, Self::IndexTooBigError> {
-                value.try_into().map_err(|_| GenericIndexTooBigError)
+            fn try_from_usize(value: usize) -> Option<Self> {
+                value.try_into().ok()
             }
 
             #[inline]
@@ -28,8 +26,8 @@ macro_rules! impl_for_uint_type {
             }
 
             #[inline]
-            fn checked_add_scalar(self, rhs: Self) -> Result<Self, Self::IndexTooBigError> {
-                self.checked_add(rhs).ok_or(GenericIndexTooBigError)
+            fn checked_add_scalar(self, rhs: Self) -> Option<Self> {
+                self.checked_add(rhs)
             }
 
             #[inline]

@@ -12,12 +12,16 @@ pub mod typed_slice;
 pub mod typed_vec;
 mod utils;
 
+pub trait IndexTooBigError: core::error::Error {
+    fn new() -> Self;
+}
+
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
 {
-    type IndexTooBigError: core::error::Error;
+    type IndexTooBigError: IndexTooBigError;
 
-    type Scalar: IndexScalarType<IndexTooBigError = Self::IndexTooBigError>;
+    type Scalar: IndexScalarType;
 
     const ZERO: Self;
 
@@ -43,15 +47,13 @@ mod index_scalar_type_private {
 pub unsafe trait IndexScalarType:
     index_scalar_type_private::Sealed + Sized + Clone + Copy + PartialEq + PartialOrd + Ord
 {
-    type IndexTooBigError: core::error::Error;
-
     const ZERO: Self;
     const ONE: Self;
 
-    fn try_from_usize(value: usize) -> Result<Self, Self::IndexTooBigError>;
+    fn try_from_usize(value: usize) -> Option<Self>;
     unsafe fn from_usize_unchecked(value: usize) -> Self;
     fn to_usize(self) -> usize;
 
-    fn checked_add_scalar(self, rhs: Self) -> Result<Self, Self::IndexTooBigError>;
+    fn checked_add_scalar(self, rhs: Self) -> Option<Self>;
     unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self;
 }
