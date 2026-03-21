@@ -993,6 +993,19 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .rsplit_mut(pred)
             .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
+
+    #[inline]
+    pub fn rsplit<F>(
+        &self,
+        pred: F,
+    ) -> core::iter::Map<core::slice::RSplit<'_, T, F>, fn(&[T]) -> &TypedSlice<I, T>>
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.raw
+            .rsplit(pred)
+            .map(unsafe_typed_slice_from_slice_unchecked)
+    }
 }
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
