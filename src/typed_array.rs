@@ -93,6 +93,31 @@ impl<I: IndexType, T, const SIZE: usize> TypedArray<I, T, SIZE> {
         let refs = self.raw.each_mut();
         unsafe { TypedArray::from_array_unchecked(refs) }
     }
+
+    #[inline]
+    pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> TypedArray<I, U, SIZE> {
+        let mapped = core::array::from_fn(|i| f(unsafe { core::ptr::read(&self.raw[i]) }));
+        TypedArray {
+            raw: mapped,
+            phantom: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn try_map<U, F: FnMut(T) -> Result<U, E>, E>(
+        self,
+        mut f: F,
+    ) -> Result<TypedArray<I, U, SIZE>, E> {
+        let mut result = core::array::from_fn(|_| None);
+        for (i, elem) in self.raw.into_iter().enumerate() {
+            result[i] = Some(f(elem)?);
+        }
+        let mapped = unsafe { result.map(|x| x.unwrap_unchecked()) };
+        Ok(TypedArray {
+            raw: mapped,
+            phantom: PhantomData,
+        })
+    }
 }
 
 impl<I: IndexType, T: PartialEq, const SIZE: usize> PartialEq for TypedArray<I, T, SIZE> {
@@ -145,33 +170,6 @@ impl<I: IndexType, T: Clone, const SIZE: usize> Clone for TypedArray<I, T, SIZE>
     #[inline]
     fn clone_from(&mut self, source: &Self) {
         self.raw.clone_from(source.as_array())
-    }
-}
-
-impl<I: IndexType, T: Clone, const SIZE: usize> TypedArray<I, T, SIZE> {
-    #[inline]
-    pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> TypedArray<I, U, SIZE> {
-        let mapped = core::array::from_fn(|i| f(unsafe { core::ptr::read(&self.raw[i]) }));
-        TypedArray {
-            raw: mapped,
-            phantom: PhantomData,
-        }
-    }
-
-    #[inline]
-    pub fn try_map<U, F: FnMut(T) -> Result<U, E>, E>(
-        self,
-        mut f: F,
-    ) -> Result<TypedArray<I, U, SIZE>, E> {
-        let mut result = core::array::from_fn(|_| None);
-        for (i, elem) in self.raw.into_iter().enumerate() {
-            result[i] = Some(f(elem)?);
-        }
-        let mapped = unsafe { result.map(|x| x.unwrap_unchecked()) };
-        Ok(TypedArray {
-            raw: mapped,
-            phantom: PhantomData,
-        })
     }
 }
 
