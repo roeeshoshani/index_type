@@ -285,3 +285,17 @@ impl<'a, I: IndexType, T: Copy, const N: usize> TryFrom<&'a mut TypedSlice<I, T>
         Ok(unsafe { TypedArray::from_array_unchecked(slice.as_mut_slice().try_into()?) })
     }
 }
+
+impl<'a, I: IndexType, T, const N: usize> core::ops::Deref for TypedArray<I, T, N> {
+    type Target = TypedSlice<I, T>;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
+    }
+}
+
+impl<'a, I: IndexType, T, const N: usize> core::ops::DerefMut for TypedArray<I, T, N> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut_slice()
+    }
+}
