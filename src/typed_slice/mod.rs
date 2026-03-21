@@ -345,46 +345,75 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub const unsafe fn as_chunks_unchecked<const N: usize>(&self) -> &[[T; N]] {
-        unsafe { self.raw.as_chunks_unchecked() }
+    pub const unsafe fn as_chunks_unchecked<const N: usize>(
+        &self,
+    ) -> &TypedSlice<I, TypedArray<I, T, N>> {
+        unsafe { core::mem::transmute(self.raw.as_chunks_unchecked::<N>()) }
     }
 
     #[inline]
-    pub const fn as_chunks<const N: usize>(&self) -> (&[[T; N]], &TypedSlice<I, T>) {
-        let (chunks, rest) = self.raw.as_chunks();
-        (chunks, unsafe { TypedSlice::from_slice_unchecked(rest) })
+    pub const fn as_chunks<const N: usize>(
+        &self,
+    ) -> (&TypedSlice<I, TypedArray<I, T, N>>, &TypedSlice<I, T>) {
+        let (chunks, rest) = self.raw.as_chunks::<N>();
+        unsafe {
+            (
+                core::mem::transmute(chunks),
+                TypedSlice::from_slice_unchecked(rest),
+            )
+        }
     }
 
     #[inline]
-    pub const fn as_rchunks<const N: usize>(&self) -> (&TypedSlice<I, T>, &[[T; N]]) {
-        let (rest, chunks) = self.raw.as_rchunks();
-        (unsafe { TypedSlice::from_slice_unchecked(rest) }, chunks)
+    pub const fn as_rchunks<const N: usize>(
+        &self,
+    ) -> (&TypedSlice<I, T>, &TypedSlice<I, TypedArray<I, T, N>>) {
+        let (rest, chunks) = self.raw.as_rchunks::<N>();
+        unsafe {
+            (
+                TypedSlice::from_slice_unchecked(rest),
+                core::mem::transmute(chunks),
+            )
+        }
     }
 
     #[inline]
-    pub const unsafe fn as_chunks_unchecked_mut<const N: usize>(&mut self) -> &mut [[T; N]] {
-        unsafe { self.raw.as_chunks_unchecked_mut() }
+    pub const unsafe fn as_chunks_unchecked_mut<const N: usize>(
+        &mut self,
+    ) -> &mut TypedSlice<I, TypedArray<I, T, N>> {
+        unsafe { core::mem::transmute(self.raw.as_chunks_unchecked_mut::<N>()) }
     }
 
     #[inline]
     pub const fn as_chunks_mut<const N: usize>(
         &mut self,
-    ) -> (&mut [[T; N]], &mut TypedSlice<I, T>) {
-        let (chunks, rest) = self.raw.as_chunks_mut();
-        (chunks, unsafe {
-            TypedSlice::from_slice_unchecked_mut(rest)
-        })
+    ) -> (
+        &mut TypedSlice<I, TypedArray<I, T, N>>,
+        &mut TypedSlice<I, T>,
+    ) {
+        let (chunks, rest) = self.raw.as_chunks_mut::<N>();
+        unsafe {
+            (
+                core::mem::transmute(chunks),
+                TypedSlice::from_slice_unchecked_mut(rest),
+            )
+        }
     }
 
     #[inline]
     pub const fn as_rchunks_mut<const N: usize>(
         &mut self,
-    ) -> (&mut TypedSlice<I, T>, &mut [[T; N]]) {
-        let (rest, chunks) = self.raw.as_rchunks_mut();
-        (
-            unsafe { TypedSlice::from_slice_unchecked_mut(rest) },
-            chunks,
-        )
+    ) -> (
+        &mut TypedSlice<I, T>,
+        &mut TypedSlice<I, TypedArray<I, T, N>>,
+    ) {
+        let (rest, chunks) = self.raw.as_rchunks_mut::<N>();
+        unsafe {
+            (
+                TypedSlice::from_slice_unchecked_mut(rest),
+                core::mem::transmute(chunks),
+            )
+        }
     }
 
     #[inline]
