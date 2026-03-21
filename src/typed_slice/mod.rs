@@ -573,11 +573,14 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     }
 
     #[inline]
-    pub fn select_nth_unstable(&mut self, index: I) -> (&mut [T], &mut T, &mut [T])
+    pub fn select_nth_unstable(
+        &mut self,
+        index: I,
+    ) -> (&mut TypedSlice<I, T>, &mut T, &mut TypedSlice<I, T>)
     where
         T: Ord,
     {
-        self.raw.select_nth_unstable(index.to_raw_index())
+        unsafe { typify_select_nth_res(self.raw.select_nth_unstable(index.to_raw_index())) }
     }
 
     #[inline]
@@ -585,12 +588,16 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &mut self,
         index: I,
         compare: F,
-    ) -> (&mut [T], &mut T, &mut [T])
+    ) -> (&mut TypedSlice<I, T>, &mut T, &mut TypedSlice<I, T>)
     where
         F: FnMut(&T, &T) -> core::cmp::Ordering,
     {
-        self.raw
-            .select_nth_unstable_by(index.to_raw_index(), compare)
+        unsafe {
+            typify_select_nth_res(
+                self.raw
+                    .select_nth_unstable_by(index.to_raw_index(), compare),
+            )
+        }
     }
 
     #[inline]
@@ -598,12 +605,14 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &mut self,
         index: I,
         f: F,
-    ) -> (&mut [T], &mut T, &mut [T])
+    ) -> (&mut TypedSlice<I, T>, &mut T, &mut TypedSlice<I, T>)
     where
         F: FnMut(&T) -> K,
         K: Ord,
     {
-        self.raw.select_nth_unstable_by_key(index.to_raw_index(), f)
+        unsafe {
+            typify_select_nth_res(self.raw.select_nth_unstable_by_key(index.to_raw_index(), f))
+        }
     }
 
     #[inline]
@@ -966,6 +975,21 @@ unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> R
     match res {
         Ok(v) => Ok(unsafe { I::from_raw_index_unchecked(v) }),
         Err(v) => Err(unsafe { I::from_raw_index_unchecked(v) }),
+    }
+}
+unsafe fn typify_select_nth_res<'a, I: IndexType, T>(
+    res: (&'a mut [T], &'a mut T, &'a mut [T]),
+) -> (
+    &'a mut TypedSlice<I, T>,
+    &'a mut T,
+    &'a mut TypedSlice<I, T>,
+) {
+    unsafe {
+        (
+            TypedSlice::from_slice_unchecked_mut(res.0),
+            res.1,
+            TypedSlice::from_slice_unchecked_mut(res.2),
+        )
     }
 }
 
