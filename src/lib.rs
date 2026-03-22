@@ -1,5 +1,5 @@
 #![no_std]
-//! A Rust crate providing strongly typed indices for slices, vectors, and arrays, designed for `no_std` environments.
+//! A Rust crate providing strongly typed indices for collections (e.g, slice, vec), designed for `no_std` environments.
 //!
 //! # Overview
 //!
@@ -76,7 +76,9 @@ pub use index_type_macros::{IndexTooBigError, IndexType};
 /// - `to_raw_index` returns a value that is less than or equal to `MAX_RAW_INDEX`.
 /// - `from_raw_index_unchecked` is safe to call with any value less than or equal to `MAX_RAW_INDEX`.
 /// - The type behaves like an integer (e.g., adding one to a value less than `MAX_RAW_INDEX` will not yield zero, and other standard integer properties hold).
-pub unsafe trait IndexType: Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord {
+pub unsafe trait IndexType:
+    Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
+{
     /// The error type returned when an index is too big.
     type IndexTooBigError: IndexTooBigError;
 

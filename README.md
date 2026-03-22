@@ -1,6 +1,6 @@
 # index_type
 
-A Rust crate providing strongly typed indices for slices, vectors, and arrays, designed for `no_std` environments.
+A Rust crate providing strongly typed indices for collections (e.g, slice, vec), designed for `no_std` environments.
 
 ## Overview
 
