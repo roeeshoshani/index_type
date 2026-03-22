@@ -1,5 +1,5 @@
 use quote::quote_spanned;
-use syn::{DeriveInput, parse_macro_input};
+use syn::{DeriveInput, LitStr, parse_macro_input};
 
 fn is_empty_struct(derive_input: &DeriveInput) -> bool {
     match &derive_input.data {
@@ -24,6 +24,11 @@ pub fn derive_index_too_big_error(
         .into();
     }
 
+    let error_msg = match parse_error_attr(&derive_input) {
+        Ok(v) => v,
+        Err(e) => return e.to_compile_error().into(),
+    };
+
     let ident = &derive_input.ident;
 
     quote::quote! {
@@ -33,6 +38,29 @@ pub fn derive_index_too_big_error(
                 Self
             }
         }
+
+        #[automatically_derived]
+        impl ::core::fmt::Display for #ident {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                write!(f, #error_msg)
+            }
+        }
+
+        #[automatically_derived]
+        impl ::core::error::Error for #ident {}
     }
     .into()
+}
+
+fn parse_error_attr(input: &DeriveInput) -> syn::Result<LitStr> {
+    for attr in &input.attrs {
+        if attr.path().is_ident("error") {
+            return attr.parse_args::<LitStr>();
+        }
+    }
+
+    Err(syn::Error::new_spanned(
+        &input.ident,
+        "expected #[error = \"...\"]",
+    ))
 }
