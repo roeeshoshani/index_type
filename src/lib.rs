@@ -56,7 +56,8 @@
 
 pub use crate::error::GenericIndexTooBigError;
 
-extern crate alloc;
+#[doc(hidden)]
+pub extern crate alloc;
 
 mod base_index_types;
 mod error;
@@ -184,4 +185,58 @@ pub unsafe trait IndexScalarType:
 pub trait IndexTooBigError: core::error::Error {
     /// Creates a new instance of the error.
     fn new() -> Self;
+}
+
+/// Creates a [`TypedVec`](crate::typed_vec::TypedVec) containing the arguments.
+///
+/// `typed_vec!` allows `TypedVec` to be defined with the same syntax as the standard library's `vec!` macro.
+#[macro_export]
+macro_rules! typed_vec {
+    ($elem:expr; $n:expr) => {
+        $crate::typed_vec::TypedVec::<_, _>::try_from_vec($crate::alloc::vec![$elem; $n]).unwrap()
+    };
+    ($($x:expr),* $(,)?) => {
+        $crate::typed_vec::TypedVec::<_, _>::try_from_vec($crate::alloc::vec![$($x),*]).unwrap()
+    };
+}
+
+/// Creates a [`TypedArray`](crate::typed_array::TypedArray) containing the arguments.
+#[macro_export]
+macro_rules! typed_array {
+    ($elem:expr; $n:expr) => {
+        $crate::typed_array::TypedArray::<_, _, $n>::try_from_array([$elem; $n]).unwrap()
+    };
+    ($($x:expr),* $(,)?) => {
+        $crate::typed_array::TypedArray::<_, _, { [ $($x),* ].len() }>::try_from_array([$($x),*]).unwrap()
+    };
+}
+
+/// Creates a reference to a [`TypedSlice`](crate::typed_slice::TypedSlice) containing the arguments.
+///
+/// This macro creates a temporary array and returns a reference to it as a `TypedSlice`.
+/// Note that due to how temporary lifetimes work in Rust, the returned reference is only valid
+/// for the duration of the statement it is in, unless it is immediately bound to a `let` variable.
+#[macro_export]
+macro_rules! typed_slice {
+    ($elem:expr; $n:expr) => {
+        $crate::typed_slice::TypedSlice::<_, _>::try_from_slice(&[$elem; $n]).unwrap()
+    };
+    ($($x:expr),* $(,)?) => {
+        $crate::typed_slice::TypedSlice::<_, _>::try_from_slice(&[$($x),*]).unwrap()
+    };
+}
+
+/// Creates a mutable reference to a [`TypedSlice`](crate::typed_slice::TypedSlice) containing the arguments.
+///
+/// This macro creates a temporary array and returns a mutable reference to it as a `TypedSlice`.
+/// Note that due to how temporary lifetimes work in Rust, the returned reference is only valid
+/// for the duration of the statement it is in, unless it is immediately bound to a `let` variable.
+#[macro_export]
+macro_rules! typed_slice_mut {
+    ($elem:expr; $n:expr) => {
+        $crate::typed_slice::TypedSlice::<_, _>::try_from_slice_mut(&mut [$elem; $n]).unwrap()
+    };
+    ($($x:expr),* $(,)?) => {
+        $crate::typed_slice::TypedSlice::<_, _>::try_from_slice_mut(&mut [$($x),*]).unwrap()
+    };
 }
