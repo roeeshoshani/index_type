@@ -5,7 +5,6 @@ pub use crate::error::GenericIndexTooBigError;
 extern crate alloc;
 
 mod base_index_types;
-mod custom_index_types;
 mod error;
 mod index_scalar_types;
 pub mod typed_array;
