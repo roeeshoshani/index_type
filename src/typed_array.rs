@@ -1,3 +1,8 @@
+//! A fixed-size, typed array.
+//!
+//! This module provides [`TypedArray`], which is a wrapper around a raw array `[T; N]` that
+//! uses a custom [`IndexType`](crate::IndexType) for indexing.
+
 use core::{
     array::TryFromSliceError,
     marker::PhantomData,

@@ -8,10 +8,10 @@ This crate allows you to define custom index types for your collections, providi
 
 ## Features
 
-- **Typed Indices**: Define custom types for indices using the `IndexType` derive macro.
+- **Typed Indices**: Define custom types for indices using the [`IndexType`] derive macro.
 - **`no_std` Support**: Designed to work in embedded or other `no_std` environments.
 - **Memory Efficiency**: Use smaller integer types (e.g., `u8`, `u16`) as indices for memory-constrained applications.
-- **Rich Collection Support**: Provides `TypedSlice`, `TypedVec`, and `TypedArray` which are thin wrappers around the standard library's slice, `Vec`, and array types.
+- **Rich Collection Support**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), and [`TypedArray`](crate::typed_array::TypedArray) which are thin wrappers around the standard library's slice, `Vec`, and array types.
 
 ## Usage
 
@@ -31,19 +31,17 @@ use index_type::typed_vec::TypedVec;
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
 
-fn main() {
-    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
-    let idx = vec.push(42).unwrap();
+let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+let idx = vec.push(42).unwrap();
 
-    assert_eq!(vec[idx], 42);
-    // vec[0usize]; // This will not compile as it requires MyIndex
-}
+assert_eq!(vec[idx], 42);
+// vec[0usize]; // This will not compile as it requires MyIndex
 ```
 
 ### Memory-Efficient Indices
 
 ```rust
-#[derive(IndexType)]
+#[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct SmallIndex(u8);
 
 // TypedVec<SmallIndex, T> can only hold up to 255 elements.
