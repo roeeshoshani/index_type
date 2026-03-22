@@ -23,7 +23,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     // Used to emit compile time errors instead of runtime erros when we know at compile time that the array size is too big to fit in
     // the index type `I`.
     const _ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS: () = if N > I::MAX_RAW_INDEX {
-        panic!();
+        panic!("array length is not in bounds of the index type");
     };
 
     #[inline]
