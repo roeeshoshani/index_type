@@ -1,5 +1,6 @@
 use darling::FromDeriveInput;
-use quote::quote_spanned;
+use heck::ToTitleCase;
+use quote::{format_ident, quote_spanned};
 use syn::{DeriveInput, parse_macro_input};
 
 fn is_empty_struct(derive_input: &DeriveInput) -> bool {
@@ -31,7 +32,7 @@ fn as_newtype_struct(derive_input: &DeriveInput) -> Option<&syn::Field> {
 #[derive(FromDeriveInput)]
 #[darling(attributes(index_type))]
 struct IndexTypeArgs {
-    error: syn::Path,
+    error: Option<syn::Path>,
 }
 
 #[proc_macro_derive(IndexType, attributes(index_type))]
@@ -52,11 +53,31 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
         Err(e) => return e.write_errors().into(),
     };
 
+    let (err_ty, err_ty_definition) = match args.error {
+        Some(err_ty) => (err_ty, quote::quote! {}),
+        None => {
+            let vis = &derive_input.vis;
+            let err_ty_ident = format_ident!("{}TooBigError", derive_input.ident);
+            let err_msg = derive_input
+                .ident
+                .to_string()
+                .to_title_case()
+                .to_lowercase();
+            let definition = quote::quote! {
+                #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ::index_type::IndexTooBigError)]
+                #[index_too_big_error(msg = #err_msg)]
+                #vis struct #err_ty_ident;
+            };
+            (err_ty_ident.into(), definition)
+        }
+    };
+
     let ident = &derive_input.ident;
-    let err_ty = &args.error;
     let inner_ty = &field.ty;
 
     quote::quote! {
+        #err_ty_definition
+
         #[automatically_derived]
         unsafe impl ::index_type::IndexType for #ident {
             type IndexTooBigError = #err_ty;
