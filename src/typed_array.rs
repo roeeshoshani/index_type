@@ -53,21 +53,22 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
         self.raw
     }
 
-    /// Tries to create a `TypedArray` from a raw array.
+    /// Tries to create a `TypedArray` from a raw array while checking that N is in bounds for I at runtime.
     #[inline]
     pub fn try_from_array(array: [T; N]) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
         Ok(unsafe { Self::from_array_unchecked(array) })
     }
 
-    /// Tries to create a `TypedArray` reference from a raw array reference.
+    /// Tries to create a `TypedArray` reference from a raw array reference while checking that N is in bounds for I at runtime.
     #[inline]
     pub fn try_from_array_ref(array: &[T; N]) -> Result<&TypedArray<I, T, N>, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
         Ok(unsafe { Self::from_array_ref_unchecked(array) })
     }
 
-    /// Tries to create a mutable `TypedArray` reference from a mutable raw array reference.
+    /// Tries to create a mutable `TypedArray` reference from a mutable raw array reference while checking that N is in bounds for I at
+    /// runtime.
     #[inline]
     pub fn try_from_array_mut(
         array: &mut [T; N],
@@ -83,7 +84,6 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     /// N must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_array_unchecked(array: [T; N]) -> Self {
-        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
         TypedArray {
             raw: array,
             phantom: PhantomData,
@@ -97,7 +97,6 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     /// N must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_array_ref_unchecked(array: &[T; N]) -> &TypedArray<I, T, N> {
-        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
         // SAFETY: TypedArray is repr(transparent) over [T; N].
         unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(array) }
     }
@@ -109,9 +108,30 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     /// N must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_array_mut_unchecked(array: &mut [T; N]) -> &mut TypedArray<I, T, N> {
-        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
         // SAFETY: TypedArray is repr(transparent) over [T; N].
         unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(array) }
+    }
+
+    /// Creates a `TypedArray` from a raw array while checking that N is in bounds for I at compile time.
+    #[inline]
+    pub const fn from_array(array: [T; N]) -> Self {
+        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
+        unsafe { Self::from_array_unchecked(array) }
+    }
+
+    /// Creates a `TypedArray` reference from a raw array reference while checking that N is in bounds for I at compile time.
+    #[inline]
+    pub const fn from_array_ref(array: &[T; N]) -> &TypedArray<I, T, N> {
+        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
+        unsafe { Self::from_array_ref_unchecked(array) }
+    }
+
+    /// Creates a mutable `TypedArray` reference from a mutable raw array reference while checking that N is in bounds for I at
+    /// compile time.
+    #[inline]
+    pub const fn from_array_mut(array: &mut [T; N]) -> &mut TypedArray<I, T, N> {
+        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
+        unsafe { Self::from_array_mut_unchecked(array) }
     }
 
     #[inline]
