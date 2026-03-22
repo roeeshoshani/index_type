@@ -72,10 +72,9 @@ pub use index_type_macros::{IndexTooBigError, IndexType};
 ///
 /// # Safety
 ///
-/// The implementation must ensure that:
-/// - `to_raw_index` returns a value that is less than or equal to `MAX_RAW_INDEX`.
-/// - `from_raw_index_unchecked` is safe to call with any value less than or equal to `MAX_RAW_INDEX`.
-/// - The type behaves like an integer (e.g., adding one to a value less than `MAX_RAW_INDEX` will not yield zero, and other standard integer properties hold).
+/// Do not implement directly, use `#[derive(IndexType)]` instead.
+///
+/// Incorrect implementations may lead to undefined behaviour when using the index type.
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
 {
@@ -142,13 +141,7 @@ mod index_scalar_type_private {
     pub trait Sealed {}
 }
 /// A trait for scalar types that can be used with `IndexType`.
-///
-/// # Safety
-///
-/// The implementation must ensure that:
-/// - `to_usize` returns a value that is consistent with `from_usize_unchecked`.
-/// - The type behaves like an integer.
-pub unsafe trait IndexScalarType:
+pub trait IndexScalarType:
     index_scalar_type_private::Sealed + Sized + Clone + Copy + PartialEq + PartialOrd + Ord
 {
     /// The zero value.
