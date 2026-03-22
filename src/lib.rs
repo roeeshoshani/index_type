@@ -141,7 +141,11 @@ mod index_scalar_type_private {
     pub trait Sealed {}
 }
 /// A trait for scalar types that can be used with `IndexType`.
-pub trait IndexScalarType:
+///
+/// # Safety
+///
+/// Must only be implemented for standard integer types whose size is less than or equal to the size of `usize`.
+pub unsafe trait IndexScalarType:
     index_scalar_type_private::Sealed + Sized + Clone + Copy + PartialEq + PartialOrd + Ord
 {
     /// The zero value.
