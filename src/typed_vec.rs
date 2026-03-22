@@ -1,3 +1,8 @@
+//! A growable, typed vector.
+//!
+//! This module provides [`TypedVec`], which is a wrapper around [`Vec`] that uses a custom
+//! [`IndexType`] for indexing.
+
 use core::{
     borrow::{Borrow, BorrowMut},
     marker::PhantomData,

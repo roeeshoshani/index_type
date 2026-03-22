@@ -35,6 +35,30 @@ struct IndexTypeArgs {
     error: Option<syn::Path>,
 }
 
+/// Derives the `IndexType` trait for a newtype struct around an existing `IndexType` (typically a primitive integer).
+///
+/// # Basic Usage
+///
+/// ```rust
+/// use index_type::IndexType;
+///
+/// #[derive(IndexType)]
+/// struct MyIndex(u32);
+/// ```
+///
+/// By default, this will also generate a `MyIndexTooBigError` struct that implements `IndexTooBigError`.
+///
+/// # Advanced Usage
+///
+/// You can specify a custom error type using the `#[index_type(error = ...)]` attribute:
+///
+/// ```rust
+/// use index_type::{IndexType, GenericIndexTooBigError};
+///
+/// #[derive(IndexType)]
+/// #[index_type(error = GenericIndexTooBigError)]
+/// struct MyIndex(u32);
+/// ```
 #[proc_macro_derive(IndexType, attributes(index_type))]
 pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let derive_input = parse_macro_input!(input_tokens as DeriveInput);
@@ -146,6 +170,19 @@ struct IndexTooBigErrorArgs {
     msg: String,
 }
 
+/// Derives the `IndexTooBigError` trait for an empty struct.
+///
+/// # Usage
+///
+/// ```rust
+/// use index_type::IndexTooBigError;
+///
+/// #[derive(IndexTooBigError)]
+/// #[index_too_big_error(msg = "my custom error message")]
+/// struct MyError;
+/// ```
+///
+/// The `msg` attribute is required and specifies the display message for the error.
 #[proc_macro_derive(IndexTooBigError, attributes(index_too_big_error))]
 pub fn derive_index_too_big_error(
     input_tokens: proc_macro::TokenStream,

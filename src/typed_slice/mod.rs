@@ -1,3 +1,8 @@
+//! A dynamically sized, typed slice.
+//!
+//! This module provides [`TypedSlice`], which is a wrapper around a raw slice `[T]` that
+//! uses a custom [`IndexType`] for indexing.
+
 use core::{
     marker::PhantomData,
     mem::MaybeUninit,
