@@ -120,12 +120,12 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
 }
 
 #[derive(FromDeriveInput)]
-#[darling(attributes(error))]
+#[darling(attributes(index_too_big_error))]
 struct IndexTooBigErrorArgs {
     msg: String,
 }
 
-#[proc_macro_derive(IndexTooBigError, attributes(error))]
+#[proc_macro_derive(IndexTooBigError, attributes(index_too_big_error))]
 pub fn derive_index_too_big_error(
     input_tokens: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
