@@ -72,9 +72,11 @@ pub use index_type_macros::{IndexTooBigError, IndexType};
 ///
 /// # Safety
 ///
-/// Do not implement directly, use `#[derive(IndexType)]` instead.
+/// Do not implement directly, use `#[derive(IndexType)]` instead (see [`IndexType`]).
 ///
 /// Incorrect implementations may lead to undefined behaviour when using the index type.
+///
+/// [`IndexType`]: index_type_macros::IndexType
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
 {
