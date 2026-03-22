@@ -1,6 +1,6 @@
 use darling::FromDeriveInput;
 use quote::quote_spanned;
-use syn::{Attribute, DeriveInput, LitStr, parse_macro_input};
+use syn::{DeriveInput, parse_macro_input};
 
 fn is_empty_struct(derive_input: &DeriveInput) -> bool {
     match &derive_input.data {
@@ -31,7 +31,7 @@ fn as_newtype_struct(derive_input: &DeriveInput) -> Option<&syn::Field> {
 #[derive(FromDeriveInput)]
 #[darling(attributes(index_type))]
 struct IndexTypeArgs {
-    error: syn::Type,
+    error: syn::Path,
 }
 
 #[proc_macro_derive(IndexType, attributes(index_type))]
@@ -57,7 +57,7 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
     let inner_ty = &field.ty;
 
     quote::quote! {
-        #[automatically_generated]
+        #[automatically_derived]
         unsafe impl ::index_type::IndexType for #ident {
             type IndexTooBigError = #err_ty;
 
