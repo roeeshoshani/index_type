@@ -13,10 +13,6 @@ pub mod typed_slice;
 pub mod typed_vec;
 mod utils;
 
-pub trait IndexTooBigError: core::error::Error {
-    fn new() -> Self;
-}
-
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
 {
@@ -57,4 +53,8 @@ pub unsafe trait IndexScalarType:
 
     fn checked_add_scalar(self, rhs: Self) -> Option<Self>;
     unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self;
+}
+
+pub trait IndexTooBigError: core::error::Error {
+    fn new() -> Self;
 }
