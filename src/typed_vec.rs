@@ -11,12 +11,14 @@ use crate::{
     utils::range_bounds_to_raw,
 };
 
+/// A `Vec` wrapper that uses a custom index type.
 #[repr(transparent)]
 pub struct TypedVec<I: IndexType, T> {
     raw: Vec<T>,
     phantom: PhantomData<fn(&I)>,
 }
 impl<I: IndexType, T> TypedVec<I, T> {
+    /// Creates a new, empty `TypedVec`.
     #[inline]
     pub const fn new() -> Self {
         Self {
@@ -25,6 +27,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
+    /// Creates a new `TypedVec` with the specified capacity.
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
@@ -33,6 +36,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
+    /// Tries to create a `TypedVec` from a `Vec`.
+    ///
+    /// Returns an error if the `Vec`'s length exceeds the maximum value representable by `I`.
     #[inline]
     pub fn try_from_vec(vec: Vec<T>) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(vec.len())?;
@@ -43,6 +49,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(res)
     }
 
+    /// Creates a `TypedVec` from a `Vec` without checking if its length is in bounds.
+    ///
+    /// # Safety
+    ///
+    /// The `Vec`'s length must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub unsafe fn from_vec_unchecked(vec: Vec<T>) -> Self {
         Self {
@@ -51,6 +62,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
+    /// Creates a `TypedVec` from raw parts.
+    ///
+    /// # Safety
+    ///
+    /// See `Vec::from_raw_parts`.
     #[inline]
     pub unsafe fn from_raw_parts(
         ptr: *mut T,
@@ -59,36 +75,49 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(length)?;
         Ok(Self {
+            // SAFETY: The caller ensures the pointer is valid and the parts are correct.
             raw: unsafe { Vec::from_raw_parts(ptr, length, capacity) },
             phantom: PhantomData,
         })
     }
 
+    /// Decomposes the `TypedVec` into its raw parts.
     #[inline]
     pub fn into_raw_parts(self) -> (*mut T, usize, usize) {
         self.raw.into_raw_parts()
     }
 
+    /// Converts the `TypedVec` into a `Vec`.
     #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.raw
     }
 
+    /// Returns the length of the `TypedVec` as a scalar.
     #[inline]
     pub fn len(&self) -> I::Scalar {
+        // SAFETY: The length of the vector is guaranteed to be representable by I::Scalar
+        // because we check it on creation and on every operation that increases it.
         unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(self.raw.len()) }
     }
 
+    /// Returns the length of the `TypedVec` as an index.
     #[inline]
     pub fn len_as_index(&self) -> I {
+        // SAFETY: The length of the vector is guaranteed to be representable by I
+        // because we check it on creation and on every operation that increases it.
         unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
+    /// Returns the capacity of the `TypedVec`.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.raw.capacity()
     }
 
+    /// Appends an element to the back of the `TypedVec`.
+    ///
+    /// This is a wrapper around `Vec::push` that checks if the new length is within bounds for `I`.
     #[inline]
     pub fn push(&mut self, value: T) -> Result<I, I::IndexTooBigError> {
         let res = self.len_as_index();
@@ -97,6 +126,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(res)
     }
 
+    /// Appends all elements from another `TypedVec` to the back of this one.
+    ///
+    /// This is a wrapper around `Vec::append` that checks if the combined length is within bounds for `I`.
     #[inline]
     pub fn append(&mut self, other: &mut TypedVec<I, T>) -> Result<(), I::IndexTooBigError> {
         let _new_len = self.len_as_index().checked_add_scalar(other.len())?;
@@ -141,6 +173,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
 
     #[inline]
     pub fn into_boxed_slice(self) -> Box<TypedSlice<I, T>> {
+        // SAFETY: TypedSlice is repr(transparent) over [T].
         unsafe { core::mem::transmute(self.raw.into_boxed_slice()) }
     }
 
@@ -151,11 +184,13 @@ impl<I: IndexType, T> TypedVec<I, T> {
 
     #[inline]
     pub fn as_slice(&self) -> &TypedSlice<I, T> {
+        // SAFETY: The length of the slice is guaranteed to be in bounds for I.
         unsafe { TypedSlice::from_slice_unchecked(self.raw.as_slice()) }
     }
 
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
+        // SAFETY: The length of the slice is guaranteed to be in bounds for I.
         unsafe { TypedSlice::from_slice_unchecked_mut(self.raw.as_mut_slice()) }
     }
 
@@ -164,8 +199,14 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.as_ptr()
     }
 
+    /// Sets the length of the `TypedVec`.
+    ///
+    /// # Safety
+    ///
+    /// See `Vec::set_len`.
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: I) {
+        // SAFETY: The caller must ensure that the new length is valid.
         unsafe { self.raw.set_len(new_len.to_scalar().to_usize()) };
     }
 
@@ -174,9 +215,12 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.swap_remove(index.to_raw_index())
     }
 
+    /// Inserts an element at position `index` within the `TypedVec`.
+    ///
+    /// This is a wrapper around `Vec::insert` that checks if the new length is within bounds for `I`.
     #[inline]
     pub fn insert(&mut self, index: I, element: T) -> Result<(), I::IndexTooBigError> {
-        let _new_potential_len = index.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
+        let _new_len = self.len_as_index().checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
         self.raw.insert(index.to_raw_index(), element);
         Ok(())
     }
@@ -242,6 +286,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     #[inline]
     pub fn split_off(&mut self, at: I) -> Self {
         let new_vec = self.raw.split_off(at.to_raw_index());
+        // SAFETY: The new vector's length must be less than or equal to the original vector's length,
+        // which was already guaranteed to be in bounds for I.
         unsafe { Self::from_vec_unchecked(new_vec) }
     }
 
@@ -275,6 +321,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.splice(range_bounds_to_raw(range), replace_with)
     }
 
+    /// Tries to extend the `TypedVec` with the contents of an iterator.
+    ///
+    /// This is a wrapper around `Vec::extend` that checks if the new length is within bounds for `I`.
     #[inline]
     pub fn try_extend<X: IntoIterator<Item = T>>(
         &mut self,
@@ -347,11 +396,13 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
 }
 
 impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
+    /// Converts a `TypedVec<I, [T; N]>` into a `TypedVec<I, T>`.
     pub fn into_flattened(self) -> Result<TypedVec<I, T>, I::IndexTooBigError> {
         let _new_len = self.len_as_index().checked_mul_scalar(
             <I::Scalar as IndexScalarType>::try_from_usize(N)
                 .ok_or(<I::IndexTooBigError as IndexTooBigError>::new())?,
         )?;
+        // SAFETY: We checked that the new length is in bounds for I.
         Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.into_flattened()) })
     }
 }
@@ -435,6 +486,7 @@ impl<I: IndexType, T> BorrowMut<TypedSlice<I, T>> for TypedVec<I, T> {
 }
 impl<'a, I: IndexType, T: Clone> From<&'a TypedSlice<I, T>> for TypedVec<I, T> {
     fn from(value: &'a TypedSlice<I, T>) -> Self {
+        // SAFETY: The length of the slice is already guaranteed to be in bounds for I.
         unsafe { Self::from_vec_unchecked(Vec::from(value.as_slice())) }
     }
 }

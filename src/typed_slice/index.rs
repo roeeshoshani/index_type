@@ -6,15 +6,23 @@ mod private_typed_slice_index {
     pub trait Sealed {}
 }
 
+/// A trait for types that can be used to index a `TypedSlice`.
 pub unsafe trait TypedSliceIndex<T: ?Sized>: private_typed_slice_index::Sealed {
+    /// The output type of the indexing operation.
     type Output: ?Sized;
 
     fn get(self, slice: &T) -> Option<&Self::Output>;
 
     fn get_mut(self, slice: &mut T) -> Option<&mut Self::Output>;
 
+    /// # Safety
+    ///
+    /// The index must be in bounds.
     unsafe fn get_unchecked(self, slice: *const T) -> *const Self::Output;
 
+    /// # Safety
+    ///
+    /// The index must be in bounds.
     unsafe fn get_unchecked_mut(self, slice: *mut T) -> *mut Self::Output;
 
     fn index(self, slice: &T) -> &Self::Output;
@@ -39,12 +47,14 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for I {
     #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const Self::Output {
         let ptr = slice as *const T;
+        // SAFETY: The caller ensures the index is in bounds.
         unsafe { ptr.add(self.to_raw_index()) }
     }
 
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut Self::Output {
         let ptr = slice as *mut T;
+        // SAFETY: The caller ensures the index is in bounds.
         unsafe { ptr.add(self.to_raw_index()) }
     }
 
@@ -85,6 +95,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const Self::Output {
         let raw_range = self.start.to_raw_index()..self.end.to_raw_index();
         let ptr = slice as *const T;
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe {
             let new_len = raw_range.end.unchecked_sub(raw_range.start);
             core::ptr::slice_from_raw_parts(ptr.add(raw_range.start), new_len) as _
@@ -95,6 +106,7 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut Self::Output {
         let raw_range = self.start.to_raw_index()..self.end.to_raw_index();
         let ptr = slice as *mut T;
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe {
             let new_len = raw_range.end.unchecked_sub(raw_range.start);
             core::ptr::slice_from_raw_parts_mut(ptr.add(raw_range.start), new_len) as _
@@ -104,12 +116,14 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
     #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &Self::Output {
         let raw_range = self.start.to_raw_index()..self.end.to_raw_index();
+        // SAFETY: index() panics if out of bounds. TypedSlice is repr(transparent) over [T].
         unsafe { TypedSlice::from_slice_unchecked(&slice.raw[raw_range]) }
     }
 
     #[inline]
     fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut Self::Output {
         let raw_range = self.start.to_raw_index()..self.end.to_raw_index();
+        // SAFETY: index_mut() panics if out of bounds. TypedSlice is repr(transparent) over [T].
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut slice.raw[raw_range]) }
     }
 }
@@ -130,11 +144,13 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
 
     #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const TypedSlice<I, T> {
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { (I::ZERO..self.end).get_unchecked(slice) }
     }
 
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut TypedSlice<I, T> {
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { (I::ZERO..self.end).get_unchecked_mut(slice) }
     }
 
@@ -166,14 +182,18 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
     #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const TypedSlice<I, T> {
         let raw_slice = slice as *const [T];
+        // SAFETY: TypedSlice is repr(transparent) over [T].
         let len = unsafe { I::from_raw_index_unchecked(raw_slice.len()) };
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { (self.start..len).get_unchecked(slice) }
     }
 
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut TypedSlice<I, T> {
         let raw_slice = slice as *mut [T];
+        // SAFETY: TypedSlice is repr(transparent) over [T].
         let len = unsafe { I::from_raw_index_unchecked(raw_slice.len()) };
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { (self.start..len).get_unchecked_mut(slice) }
     }
 
@@ -263,23 +283,27 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
 
     #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const Self::Output {
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { range_inclusive_to_exclusive_unchecked(self).get_unchecked(slice) }
     }
 
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut Self::Output {
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { range_inclusive_to_exclusive_unchecked(self).get_unchecked_mut(slice) }
     }
 
     #[inline]
     fn index(self, slice: &TypedSlice<I, T>) -> &Self::Output {
         let raw_range = self.start().to_raw_index()..=self.end().to_raw_index();
+        // SAFETY: index() panics if out of bounds. TypedSlice is repr(transparent) over [T].
         unsafe { TypedSlice::from_slice_unchecked(&slice.raw[raw_range]) }
     }
 
     #[inline]
     fn index_mut(self, slice: &mut TypedSlice<I, T>) -> &mut Self::Output {
         let raw_range = self.start().to_raw_index()..=self.end().to_raw_index();
+        // SAFETY: index_mut() panics if out of bounds. TypedSlice is repr(transparent) over [T].
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut slice.raw[raw_range]) }
     }
 }
@@ -300,11 +324,13 @@ unsafe impl<I: IndexType, T> TypedSliceIndex<TypedSlice<I, T>> for core::ops::Ra
 
     #[inline]
     unsafe fn get_unchecked(self, slice: *const TypedSlice<I, T>) -> *const TypedSlice<I, T> {
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { (I::ZERO..=self.end).get_unchecked(slice) }
     }
 
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut TypedSlice<I, T>) -> *mut TypedSlice<I, T> {
+        // SAFETY: The caller ensures the range is in bounds.
         unsafe { (I::ZERO..=self.end).get_unchecked_mut(slice) }
     }
 
