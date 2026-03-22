@@ -173,7 +173,7 @@ fn test_macros() {
     sm2[MyIndex::ZERO] = 10;
     assert_eq!(sm2_data[0], 10);
 
-    // Verify macro existence and basic syntax (even if limited by lifetime in some contexts)
+    // Basic verify of macro existence and return types
     let _v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
     let _a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
     let _s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
