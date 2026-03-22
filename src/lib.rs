@@ -12,6 +12,8 @@ pub mod typed_slice;
 pub mod typed_vec;
 mod utils;
 
+pub use index_type_macros::{IndexTooBigError, IndexType};
+
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
 {
