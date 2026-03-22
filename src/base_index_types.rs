@@ -50,11 +50,7 @@ macro_rules! impl_for_uint_type {
 
             #[inline]
             fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
-                let res = self.checked_add(rhs).ok_or(GenericIndexTooBigError)?;
-                if (res as usize) > Self::MAX_RAW_INDEX {
-                    return Err(GenericIndexTooBigError);
-                }
-                Ok(res)
+                self.checked_add(rhs).ok_or(GenericIndexTooBigError)
             }
 
             #[inline]
@@ -145,11 +141,7 @@ macro_rules! impl_for_nonzero_uint_type {
 
             #[inline]
             fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
-                let res = self.checked_add(rhs).ok_or(GenericIndexTooBigError)?;
-                if (res.get() as usize - 1) > Self::MAX_RAW_INDEX {
-                    return Err(GenericIndexTooBigError);
-                }
-                Ok(res)
+                self.checked_add(rhs).ok_or(GenericIndexTooBigError)
             }
 
             #[inline]

@@ -7,6 +7,8 @@ mod private_typed_slice_index {
 }
 
 /// A trait for types that can be used to index a `TypedSlice`.
+///
+/// This trait is analogous to the [`core::slice::SliceIndex`] trait from the standard library.
 pub unsafe trait TypedSliceIndex<T: ?Sized>: private_typed_slice_index::Sealed {
     /// The output type of the indexing operation.
     type Output: ?Sized;

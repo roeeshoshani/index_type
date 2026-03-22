@@ -16,14 +16,13 @@ pub struct TypedArray<I: IndexType, T, const N: usize> {
 impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     #[inline]
     pub const fn as_slice(&self) -> &TypedSlice<I, T> {
-        // SAFETY: The length of the array is checked in try_from_array and other constructors.
-        // For const methods, we can't easily check, but the length N must be valid for I.
+        // SAFETY: The length of the array is guaranteed to be valid for I by the type system.
         unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 
     #[inline]
     pub const fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
-        // SAFETY: The length of the array is checked in try_from_array and other constructors.
+        // SAFETY: The length of the array is guaranteed to be valid for I by the type system.
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 

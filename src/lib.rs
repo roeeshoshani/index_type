@@ -14,12 +14,14 @@ mod utils;
 
 pub use index_type_macros::{IndexTooBigError, IndexType};
 
-/// A trait for types that can be used as indices for `TypedSlice`, `TypedVec`, and `TypedArray`.
+/// A trait for types that can be used as indices to some collection of items.
 ///
 /// # Safety
 ///
-/// The implementation must ensure that `to_raw_index` returns a value that is less than or equal to `MAX_RAW_INDEX`.
-/// `from_raw_index_unchecked` must be safe to call with any value less than or equal to `MAX_RAW_INDEX`.
+/// The implementation must ensure that:
+/// - `to_raw_index` returns a value that is less than or equal to `MAX_RAW_INDEX`.
+/// - `from_raw_index_unchecked` is safe to call with any value less than or equal to `MAX_RAW_INDEX`.
+/// - The type behaves like an integer (e.g., adding one to a value less than `MAX_RAW_INDEX` will not yield zero, and other standard integer properties hold).
 pub unsafe trait IndexType: Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord {
     /// The error type returned when an index is too big.
     type IndexTooBigError: IndexTooBigError;
@@ -87,7 +89,9 @@ mod index_scalar_type_private {
 ///
 /// # Safety
 ///
-/// The implementation must ensure that `to_usize` returns a value that is consistent with `from_usize_unchecked`.
+/// The implementation must ensure that:
+/// - `to_usize` returns a value that is consistent with `from_usize_unchecked`.
+/// - The type behaves like an integer.
 pub unsafe trait IndexScalarType:
     index_scalar_type_private::Sealed + Sized + Clone + Copy + PartialEq + PartialOrd + Ord
 {

@@ -11,7 +11,6 @@ This crate allows you to define custom index types for your collections, providi
 - **Typed Indices**: Define custom types for indices using the `IndexType` derive macro.
 - **`no_std` Support**: Designed to work in embedded or other `no_std` environments.
 - **Memory Efficiency**: Use smaller integer types (e.g., `u8`, `u16`) as indices for memory-constrained applications.
-- **Safety**: Includes `SAFETY` comments for all `unsafe` operations and performs bounds checking where appropriate.
 - **Rich Collection Support**: Provides `TypedSlice`, `TypedVec`, and `TypedArray` which are thin wrappers around the standard library's slice, `Vec`, and array types.
 
 ## Usage
@@ -54,12 +53,3 @@ struct SmallIndex(u8);
 ## Safety
 
 This crate uses `unsafe` code for performance optimizations (e.g., `transmute` between `repr(transparent)` wrappers and raw slices/vectors). All `unsafe` blocks are documented with `SAFETY` comments explaining why they are safe.
-
-## License
-
-Licensed under either of
-
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.

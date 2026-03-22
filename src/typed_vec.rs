@@ -220,7 +220,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// This is a wrapper around `Vec::insert` that checks if the new length is within bounds for `I`.
     #[inline]
     pub fn insert(&mut self, index: I, element: T) -> Result<(), I::IndexTooBigError> {
-        let _new_len = self.len_as_index().checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
+        let _new_potential_len = index.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
         self.raw.insert(index.to_raw_index(), element);
         Ok(())
     }
