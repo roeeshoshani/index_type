@@ -1,5 +1,6 @@
 use crate::IndexTooBigError;
 
+/// A generic error type used when an index is too big.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct GenericIndexTooBigError;
 

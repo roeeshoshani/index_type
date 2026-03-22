@@ -13,103 +13,160 @@ mod index;
 
 pub use index::TypedSliceIndex;
 
+/// A slice wrapper that uses a custom index type.
 #[repr(transparent)]
 pub struct TypedSlice<I: IndexType, T> {
     phantom: PhantomData<fn(&I)>,
     raw: [T],
 }
 
+/// This function is logically unsafe, but is not marked as such so it can be passed as a callback
+/// to `Iterator::map` directly.
+///
+/// # Safety
+///
+/// The length of the slice must be less than or equal to `I::MAX_RAW_INDEX`.
 #[inline]
 fn unsafe_typed_slice_from_slice_unchecked<I: IndexType, T>(slice: &[T]) -> &TypedSlice<I, T> {
+    // SAFETY: The length of the slice is checked or guaranteed to be in bounds for I before calling this.
     unsafe { TypedSlice::from_slice_unchecked(slice) }
 }
 
+/// This function is logically unsafe, but is not marked as such so it can be passed as a callback
+/// to `Iterator::map` directly.
+///
+/// # Safety
+///
+/// The length of the slice must be less than or equal to `I::MAX_RAW_INDEX`.
 #[inline]
 fn unsafe_typed_slice_from_slice_unchecked_mut<I: IndexType, T>(
     slice: &mut [T],
 ) -> &mut TypedSlice<I, T> {
+    // SAFETY: The length of the slice is checked or guaranteed to be in bounds for I before calling this.
     unsafe { TypedSlice::from_slice_unchecked_mut(slice) }
 }
 
 impl<I: IndexType, T> TypedSlice<I, T> {
+    /// Tries to create a `TypedSlice` from a raw slice.
     #[inline]
     pub fn try_from_slice(slice: &[T]) -> Result<&Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
+        // SAFETY: The length of the slice is checked to be in bounds for I.
         Ok(unsafe { Self::from_slice_unchecked(slice) })
     }
 
+    /// Tries to create a mutable `TypedSlice` from a mutable raw slice.
     #[inline]
     pub fn try_from_slice_mut(slice: &mut [T]) -> Result<&mut Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(slice.len())?;
+        // SAFETY: The length of the slice is checked to be in bounds for I.
         Ok(unsafe { Self::from_slice_unchecked_mut(slice) })
     }
 
+    /// Creates a `TypedSlice` from raw parts.
+    ///
+    /// # Safety
+    ///
+    /// See `core::slice::from_raw_parts`.
     #[inline]
     pub unsafe fn from_raw_parts<'a>(data: *const T, len: I) -> &'a TypedSlice<I, T> {
+        // SAFETY: The caller ensures the pointer and length are valid.
         let slice = unsafe { core::slice::from_raw_parts(data, len.to_raw_index()) };
+        // SAFETY: The length of the slice is guaranteed to be in bounds for I.
         unsafe { Self::from_slice_unchecked(slice) }
     }
 
+    /// Creates a mutable `TypedSlice` from raw parts.
+    ///
+    /// # Safety
+    ///
+    /// See `core::slice::from_raw_parts_mut`.
     #[inline]
     pub unsafe fn from_raw_parts_mut<'a>(data: *mut T, len: I) -> &'a mut TypedSlice<I, T> {
+        // SAFETY: The caller ensures the pointer and length are valid.
         let slice = unsafe { core::slice::from_raw_parts_mut(data, len.to_raw_index()) };
+        // SAFETY: The length of the slice is guaranteed to be in bounds for I.
         unsafe { Self::from_slice_unchecked_mut(slice) }
     }
 
+    /// Creates a `TypedSlice` from a raw slice without checking if its length is in bounds for I.
+    ///
+    /// # Safety
+    ///
+    /// The length of the slice must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_slice_unchecked(slice: &[T]) -> &Self {
+        // SAFETY: TypedSlice is repr(transparent) over [T].
         unsafe { core::mem::transmute(slice) }
     }
 
+    /// Creates a mutable `TypedSlice` from a mutable raw slice without checking if its length is in bounds for I.
+    ///
+    /// # Safety
+    ///
+    /// The length of the slice must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_slice_unchecked_mut(slice: &mut [T]) -> &mut Self {
+        // SAFETY: TypedSlice is repr(transparent) over [T].
         unsafe { core::mem::transmute(slice) }
     }
 
+    /// Returns the `TypedSlice` as a raw slice reference.
     #[inline]
     pub const fn as_slice(&self) -> &[T] {
+        // SAFETY: TypedSlice is repr(transparent) over [T].
         unsafe { core::mem::transmute(self) }
     }
 
+    /// Returns the `TypedSlice` as a mutable raw slice reference.
     #[inline]
     pub const fn as_mut_slice(&mut self) -> &mut [T] {
+        // SAFETY: TypedSlice is repr(transparent) over [T].
         unsafe { core::mem::transmute(self) }
     }
 
+    /// Casts the index type of the `TypedSlice`.
     #[inline]
     pub fn cast_index_type<I2: IndexType>(
         &self,
     ) -> Result<&TypedSlice<I2, T>, I2::IndexTooBigError> {
         if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
             // we know that the length of this slice must be in bounds for the new index type
+            // SAFETY: The current length is valid for I, and I2 can represent all values I can.
             Ok(unsafe { TypedSlice::from_slice_unchecked(self.as_slice()) })
         } else {
             TypedSlice::try_from_slice(self.as_slice())
         }
     }
 
+    /// Casts the index type of the mutable `TypedSlice`.
     #[inline]
     pub fn cast_index_type_mut<I2: IndexType>(
         &mut self,
     ) -> Result<&mut TypedSlice<I2, T>, I2::IndexTooBigError> {
         if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
             // we know that the length of this slice must be in bounds for the new index type
+            // SAFETY: The current length is valid for I, and I2 can represent all values I can.
             Ok(unsafe { TypedSlice::from_slice_unchecked_mut(self.as_mut_slice()) })
         } else {
             TypedSlice::try_from_slice_mut(self.as_mut_slice())
         }
     }
 
+    /// Returns the length of the slice as a `usize`.
     #[inline]
     pub const fn len_usize(&self) -> usize {
         self.raw.len()
     }
 
+    /// Returns the length of the slice as an index.
     #[inline]
     pub fn len(&self) -> I {
+        // SAFETY: The length of the slice is guaranteed to be in bounds for I.
         unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
+    /// Returns `true` if the slice is empty.
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.raw.is_empty()
@@ -128,6 +185,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn split_first(&self) -> Option<(&T, &TypedSlice<I, T>)> {
         match self.raw.split_first() {
+            // SAFETY: The rest of the slice must have a length less than or equal to the original, which was already valid for I.
             Some((first, rest)) => Some((first, unsafe { TypedSlice::from_slice_unchecked(rest) })),
             None => None,
         }
@@ -136,6 +194,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn split_first_mut(&mut self) -> Option<(&mut T, &mut TypedSlice<I, T>)> {
         match self.raw.split_first_mut() {
+            // SAFETY: The rest of the slice must have a length less than or equal to the original, which was already valid for I.
             Some((first, rest)) => {
                 Some((first, unsafe { TypedSlice::from_slice_unchecked_mut(rest) }))
             }
@@ -146,6 +205,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn split_last(&self) -> Option<(&T, &TypedSlice<I, T>)> {
         match self.raw.split_last() {
+            // SAFETY: The rest of the slice must have a length less than or equal to the original, which was already valid for I.
             Some((last, rest)) => Some((last, unsafe { TypedSlice::from_slice_unchecked(rest) })),
             None => None,
         }
@@ -154,6 +214,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn split_last_mut(&mut self) -> Option<(&mut T, &mut TypedSlice<I, T>)> {
         match self.raw.split_last_mut() {
+            // SAFETY: The rest of the slice must have a length less than or equal to the original, which was already valid for I.
             Some((last, rest)) => {
                 Some((last, unsafe { TypedSlice::from_slice_unchecked_mut(rest) }))
             }
@@ -174,6 +235,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn first_chunk<const N: usize>(&self) -> Option<&TypedArray<I, T, N>> {
         match self.raw.first_chunk() {
+            // SAFETY: TypedArray is repr(transparent) over [T; N]. N must be valid for I because N <= len and len is valid for I.
             Some(x) => Some(unsafe { TypedArray::from_array_ref_unchecked(x) }),
             None => None,
         }
@@ -182,6 +244,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn first_chunk_mut<const N: usize>(&mut self) -> Option<&mut TypedArray<I, T, N>> {
         match self.raw.first_chunk_mut() {
+            // SAFETY: TypedArray is repr(transparent) over [T; N]. N must be valid for I because N <= len and len is valid for I.
             Some(x) => Some(unsafe { TypedArray::from_array_mut_unchecked(x) }),
             None => None,
         }
@@ -192,6 +255,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &self,
     ) -> Option<(&TypedArray<I, T, N>, &TypedSlice<I, T>)> {
         match self.raw.split_first_chunk() {
+            // SAFETY: Valid lengths for I.
             Some((chunk, rest)) => unsafe {
                 Some((
                     TypedArray::from_array_ref_unchecked(chunk),
@@ -207,6 +271,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &mut self,
     ) -> Option<(&mut TypedArray<I, T, N>, &mut TypedSlice<I, T>)> {
         match self.raw.split_first_chunk_mut() {
+            // SAFETY: Valid lengths for I.
             Some((chunk, rest)) => unsafe {
                 Some((
                     TypedArray::from_array_mut_unchecked(chunk),
@@ -222,6 +287,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &self,
     ) -> Option<(&TypedSlice<I, T>, &TypedArray<I, T, N>)> {
         match self.raw.split_last_chunk() {
+            // SAFETY: Valid lengths for I.
             Some((rest, chunk)) => unsafe {
                 Some((
                     TypedSlice::from_slice_unchecked(rest),
@@ -237,6 +303,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &mut self,
     ) -> Option<(&mut TypedSlice<I, T>, &mut TypedArray<I, T, N>)> {
         match self.raw.split_last_chunk_mut() {
+            // SAFETY: Valid lengths for I.
             Some((rest, chunk)) => unsafe {
                 Some((
                     TypedSlice::from_slice_unchecked_mut(rest),
@@ -250,6 +317,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn last_chunk<const N: usize>(&self) -> Option<&TypedArray<I, T, N>> {
         match self.raw.last_chunk() {
+            // SAFETY: Valid length for I.
             Some(x) => Some(unsafe { TypedArray::from_array_ref_unchecked(x) }),
             None => None,
         }
@@ -258,6 +326,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn last_chunk_mut<const N: usize>(&mut self) -> Option<&mut TypedArray<I, T, N>> {
         match self.raw.last_chunk_mut() {
+            // SAFETY: Valid length for I.
             Some(x) => Some(unsafe { TypedArray::from_array_mut_unchecked(x) }),
             None => None,
         }
@@ -279,19 +348,27 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         index.get_mut(self)
     }
 
+    /// # Safety
+    ///
+    /// The index must be in bounds.
     #[inline]
     pub unsafe fn get_unchecked<X>(&self, index: X) -> &X::Output
     where
         X: TypedSliceIndex<Self>,
     {
+        // SAFETY: The caller ensures the index is in bounds.
         unsafe { &*index.get_unchecked(self) }
     }
 
+    /// # Safety
+    ///
+    /// The index must be in bounds.
     #[inline]
     pub unsafe fn get_unchecked_mut<X>(&mut self, index: X) -> &mut X::Output
     where
         X: TypedSliceIndex<Self>,
     {
+        // SAFETY: The caller ensures the index is in bounds.
         unsafe { &mut *index.get_unchecked_mut(self) }
     }
 
@@ -318,6 +395,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn as_array<const N: usize>(&self) -> Option<&TypedArray<I, T, N>> {
         match self.raw.as_array() {
+            // SAFETY: Valid length for I.
             Some(x) => Some(unsafe { TypedArray::from_array_ref_unchecked(x) }),
             None => None,
         }
@@ -326,6 +404,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub const fn as_mut_array<const N: usize>(&mut self) -> Option<&mut TypedArray<I, T, N>> {
         match self.raw.as_mut_array() {
+            // SAFETY: Valid length for I.
             Some(x) => Some(unsafe { TypedArray::from_array_mut_unchecked(x) }),
             None => None,
         }
@@ -351,10 +430,14 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         self.raw.iter_mut()
     }
 
+    /// # Safety
+    ///
+    /// See `core::slice::as_chunks_unchecked`.
     #[inline]
     pub const unsafe fn as_chunks_unchecked<const N: usize>(
         &self,
     ) -> &TypedSlice<I, TypedArray<I, T, N>> {
+        // SAFETY: The caller ensures that N divides the length.
         unsafe { typed_slice_from_chunks_unchecked(self.raw.as_chunks_unchecked::<N>()) }
     }
 
@@ -363,6 +446,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &self,
     ) -> (&TypedSlice<I, TypedArray<I, T, N>>, &TypedSlice<I, T>) {
         let (chunks, rest) = self.raw.as_chunks::<N>();
+        // SAFETY: Lengths are valid for I.
         unsafe {
             (
                 typed_slice_from_chunks_unchecked(chunks),
@@ -376,6 +460,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &self,
     ) -> (&TypedSlice<I, T>, &TypedSlice<I, TypedArray<I, T, N>>) {
         let (rest, chunks) = self.raw.as_rchunks::<N>();
+        // SAFETY: Lengths are valid for I.
         unsafe {
             (
                 TypedSlice::from_slice_unchecked(rest),
@@ -384,10 +469,14 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// See `core::slice::as_chunks_unchecked_mut`.
     #[inline]
     pub const unsafe fn as_chunks_unchecked_mut<const N: usize>(
         &mut self,
     ) -> &mut TypedSlice<I, TypedArray<I, T, N>> {
+        // SAFETY: The caller ensures that N divides the length.
         unsafe { typed_slice_from_chunks_unchecked_mut(self.raw.as_chunks_unchecked_mut::<N>()) }
     }
 
@@ -399,6 +488,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &mut TypedSlice<I, T>,
     ) {
         let (chunks, rest) = self.raw.as_chunks_mut::<N>();
+        // SAFETY: Lengths are valid for I.
         unsafe {
             (
                 typed_slice_from_chunks_unchecked_mut(chunks),
@@ -415,6 +505,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         &mut TypedSlice<I, TypedArray<I, T, N>>,
     ) {
         let (rest, chunks) = self.raw.as_rchunks_mut::<N>();
+        // SAFETY: Lengths are valid for I.
         unsafe {
             (
                 TypedSlice::from_slice_unchecked_mut(rest),
@@ -423,18 +514,28 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// `mid` must be in bounds.
     #[inline]
     pub unsafe fn split_at_unchecked(&self, mid: I) -> (&TypedSlice<I, T>, &TypedSlice<I, T>) {
+        // SAFETY: The caller ensures mid is in bounds.
         let (a, b) = unsafe { self.raw.split_at_unchecked(mid.to_raw_index()) };
+        // SAFETY: Lengths are valid for I.
         unsafe { (Self::from_slice_unchecked(a), Self::from_slice_unchecked(b)) }
     }
 
+    /// # Safety
+    ///
+    /// `mid` must be in bounds.
     #[inline]
     pub unsafe fn split_at_mut_unchecked(
         &mut self,
         mid: I,
     ) -> (&mut TypedSlice<I, T>, &mut TypedSlice<I, T>) {
+        // SAFETY: The caller ensures mid is in bounds.
         let (a, b) = unsafe { self.raw.split_at_mut_unchecked(mid.to_raw_index()) };
+        // SAFETY: Lengths are valid for I.
         unsafe {
             (
                 Self::from_slice_unchecked_mut(a),
@@ -447,6 +548,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     pub fn split_at_checked(&self, mid: I) -> Option<(&TypedSlice<I, T>, &TypedSlice<I, T>)> {
         self.raw
             .split_at_checked(mid.to_raw_index())
+            // SAFETY: Lengths are valid for I.
             .map(|(a, b)| unsafe { (Self::from_slice_unchecked(a), Self::from_slice_unchecked(b)) })
     }
 
@@ -457,6 +559,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     ) -> Option<(&mut TypedSlice<I, T>, &mut TypedSlice<I, T>)> {
         self.raw
             .split_at_mut_checked(mid.to_raw_index())
+            // SAFETY: Lengths are valid for I.
             .map(|(a, b)| unsafe {
                 (
                     Self::from_slice_unchecked_mut(a),
@@ -534,6 +637,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Ord,
     {
+        // SAFETY: binary_search returns indices that are in bounds, which are valid for I.
         unsafe { typify_binary_search_res(self.raw.binary_search(x)) }
     }
 
@@ -542,6 +646,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         F: FnMut(&'a T) -> core::cmp::Ordering,
     {
+        // SAFETY: binary_search_by returns indices that are in bounds, which are valid for I.
         unsafe { typify_binary_search_res(self.raw.binary_search_by(f)) }
     }
 
@@ -551,6 +656,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         F: FnMut(&'a T) -> B,
         B: Ord,
     {
+        // SAFETY: binary_search_by_key returns indices that are in bounds, which are valid for I.
         unsafe { typify_binary_search_res(self.raw.binary_search_by_key(b, f)) }
     }
 
@@ -587,6 +693,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Ord,
     {
+        // SAFETY: select_nth_unstable returns slices whose lengths are valid for I.
         unsafe { typify_select_nth_res(self.raw.select_nth_unstable(index.to_raw_index())) }
     }
 
@@ -599,6 +706,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         F: FnMut(&T, &T) -> core::cmp::Ordering,
     {
+        // SAFETY: select_nth_unstable_by returns slices whose lengths are valid for I.
         unsafe {
             typify_select_nth_res(
                 self.raw
@@ -617,6 +725,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         F: FnMut(&T) -> K,
         K: Ord,
     {
+        // SAFETY: select_nth_unstable_by_key returns slices whose lengths are valid for I.
         unsafe {
             typify_select_nth_res(self.raw.select_nth_unstable_by_key(index.to_raw_index(), f))
         }
@@ -688,6 +797,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         P: FnMut(&T) -> bool,
     {
+        // SAFETY: partition_point returns an index that is at most the length of the slice, which is valid for I.
         unsafe { I::from_raw_index_unchecked(self.raw.partition_point(pred)) }
     }
 
@@ -703,6 +813,9 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         unsafe { Ok(self.get_disjoint_unchecked_mut(indices)) }
     }
 
+    /// # Safety
+    ///
+    /// All indices must be in bounds and non-overlapping.
     #[inline]
     pub unsafe fn get_disjoint_unchecked_mut<X, const N: usize>(
         &mut self,
@@ -715,8 +828,10 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         let mut arr: MaybeUninit<[&mut X::Output; N]> = MaybeUninit::uninit();
         let arr_ptr = arr.as_mut_ptr().cast::<&mut X::Output>();
         for (i, idx) in indices.into_iter().enumerate() {
+            // SAFETY: The caller ensures indices are in bounds and non-overlapping.
             unsafe { arr_ptr.add(i).write(&mut *idx.get_unchecked_mut(slice)) }
         }
+        // SAFETY: All elements of the array have been initialized.
         unsafe { arr.assume_init() }
     }
 
@@ -1079,14 +1194,18 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
     pub fn as_flattened(&self) -> Result<&TypedSlice<I, T>, I::IndexTooBigError> {
+        // SAFETY: N is representable by I::Scalar if N <= MAX_RAW_INDEX, which we check.
         let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
+        // SAFETY: flattened_len is checked to be in bounds for I.
         Ok(unsafe { TypedSlice::from_raw_parts(self.as_ptr().cast(), flattened_len) })
     }
 
     pub fn as_flattened_mut(&mut self) -> Result<&mut TypedSlice<I, T>, I::IndexTooBigError> {
+        // SAFETY: N is representable by I::Scalar if N <= MAX_RAW_INDEX, which we check.
         let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
+        // SAFETY: flattened_len is checked to be in bounds for I.
         Ok(unsafe { TypedSlice::from_raw_parts_mut(self.as_mut_ptr().cast(), flattened_len) })
     }
 }
@@ -1151,7 +1270,9 @@ impl<'a, I: IndexType, T> TryFrom<&'a mut [T]> for &'a mut TypedSlice<I, T> {
 #[inline]
 unsafe fn typify_binary_search_res<I: IndexType>(res: Result<usize, usize>) -> Result<I, I> {
     match res {
+        // SAFETY: The caller ensures the usize is in bounds for I.
         Ok(v) => Ok(unsafe { I::from_raw_index_unchecked(v) }),
+        // SAFETY: The caller ensures the usize is in bounds for I.
         Err(v) => Err(unsafe { I::from_raw_index_unchecked(v) }),
     }
 }
@@ -1164,6 +1285,7 @@ unsafe fn typify_select_nth_res<'a, I: IndexType, T>(
     &'a mut T,
     &'a mut TypedSlice<I, T>,
 ) {
+    // SAFETY: The caller ensures the slices are in bounds for I.
     unsafe {
         (
             TypedSlice::from_slice_unchecked_mut(res.0),
@@ -1177,6 +1299,7 @@ unsafe fn typify_select_nth_res<'a, I: IndexType, T>(
 const unsafe fn typed_slice_from_chunks_unchecked<I: IndexType, T, const N: usize>(
     slice: &[[T; N]],
 ) -> &TypedSlice<I, TypedArray<I, T, N>> {
+    // SAFETY: TypedSlice and TypedArray are repr(transparent) over [T] and [T; N].
     unsafe { core::mem::transmute(slice) }
 }
 
@@ -1184,6 +1307,7 @@ const unsafe fn typed_slice_from_chunks_unchecked<I: IndexType, T, const N: usiz
 const unsafe fn typed_slice_from_chunks_unchecked_mut<I: IndexType, T, const N: usize>(
     slice: &mut [[T; N]],
 ) -> &mut TypedSlice<I, TypedArray<I, T, N>> {
+    // SAFETY: TypedSlice and TypedArray are repr(transparent) over [T] and [T; N].
     unsafe { core::mem::transmute(slice) }
 }
 

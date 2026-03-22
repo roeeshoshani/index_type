@@ -60,11 +60,13 @@ macro_rules! impl_for_uint_type {
 
             #[inline]
             unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self {
+                // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.unchecked_add(rhs) }
             }
 
             #[inline]
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
+                // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.unchecked_sub(rhs) }
             }
         }
@@ -108,27 +110,32 @@ macro_rules! impl_for_nonzero_uint_type {
 
             #[inline]
             unsafe fn from_raw_index_unchecked(index: usize) -> Self {
+                // SAFETY: The caller ensures the index is in bounds.
                 unsafe { Self::new_unchecked(index.unchecked_add(1) as _) }
             }
 
             #[inline]
             fn to_raw_index(self) -> usize {
+                // SAFETY: NonZero uint is at least 1.
                 unsafe { self.get().unchecked_sub(1) as usize }
             }
 
             #[inline]
             fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
                 let raw = scalar.checked_add(1).ok_or(GenericIndexTooBigError)?;
+                // SAFETY: scalar + 1 is at least 1.
                 Ok(unsafe { Self::new_unchecked(raw) })
             }
 
             #[inline]
             unsafe fn from_scalar_unchecked(scalar: Self::Scalar) -> Self {
+                // SAFETY: The caller ensures the scalar is in bounds.
                 unsafe { Self::new_unchecked(scalar.unchecked_add(1)) }
             }
 
             #[inline]
             fn to_scalar(self) -> Self::Scalar {
+                // SAFETY: NonZero uint is at least 1.
                 unsafe { self.get().unchecked_sub(1) }
             }
 
@@ -145,11 +152,13 @@ macro_rules! impl_for_nonzero_uint_type {
 
             #[inline]
             unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self {
+                // SAFETY: The caller ensures the result is in bounds.
                 unsafe { Self::new_unchecked(self.get().unchecked_add(rhs)) }
             }
 
             #[inline]
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
+                // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.get().unchecked_sub(rhs.get()) }
             }
         }

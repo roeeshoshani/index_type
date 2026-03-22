@@ -32,6 +32,7 @@ macro_rules! impl_for_uint_type {
 
             #[inline]
             unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self {
+                // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.unchecked_add(rhs) }
             }
         }
