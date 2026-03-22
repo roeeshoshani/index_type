@@ -6,6 +6,7 @@ use core::{
 
 use crate::{IndexType, typed_slice::TypedSlice};
 
+/// An array wrapper that uses a custom index type.
 #[repr(transparent)]
 pub struct TypedArray<I: IndexType, T, const N: usize> {
     raw: [T; N],
@@ -15,11 +16,13 @@ pub struct TypedArray<I: IndexType, T, const N: usize> {
 impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     #[inline]
     pub const fn as_slice(&self) -> &TypedSlice<I, T> {
+        // SAFETY: The length of the array is guaranteed to be valid for I by the type system.
         unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 
     #[inline]
     pub const fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
+        // SAFETY: The length of the array is guaranteed to be valid for I by the type system.
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 
@@ -38,6 +41,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
         self.raw
     }
 
+    /// Tries to create a `TypedArray` from a raw array.
     #[inline]
     pub fn try_from_array(array: [T; N]) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
@@ -47,20 +51,29 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
         })
     }
 
+    /// Tries to create a `TypedArray` reference from a raw array reference.
     #[inline]
     pub fn try_from_array_ref(array: &[T; N]) -> Result<&TypedArray<I, T, N>, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
+        // SAFETY: TypedArray is repr(transparent) over [T; N].
         Ok(unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(array) })
     }
 
+    /// Tries to create a mutable `TypedArray` reference from a mutable raw array reference.
     #[inline]
     pub fn try_from_array_mut(
         array: &mut [T; N],
     ) -> Result<&mut TypedArray<I, T, N>, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(N)?;
+        // SAFETY: TypedArray is repr(transparent) over [T; N].
         Ok(unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(array) })
     }
 
+    /// Creates a `TypedArray` from a raw array without checking if N is in bounds for I.
+    ///
+    /// # Safety
+    ///
+    /// N must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_array_unchecked(array: [T; N]) -> Self {
         TypedArray {
@@ -69,30 +82,45 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
         }
     }
 
+    /// Creates a `TypedArray` reference from a raw array reference without checking if N is in bounds for I.
+    ///
+    /// # Safety
+    ///
+    /// N must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_array_ref_unchecked(array: &[T; N]) -> &TypedArray<I, T, N> {
+        // SAFETY: TypedArray is repr(transparent) over [T; N].
         unsafe { core::mem::transmute::<&[T; N], &TypedArray<I, T, N>>(array) }
     }
 
+    /// Creates a mutable `TypedArray` reference from a mutable raw array reference without checking if N is in bounds for I.
+    ///
+    /// # Safety
+    ///
+    /// N must be less than or equal to `I::MAX_RAW_INDEX`.
     #[inline]
     pub const unsafe fn from_array_mut_unchecked(array: &mut [T; N]) -> &mut TypedArray<I, T, N> {
+        // SAFETY: TypedArray is repr(transparent) over [T; N].
         unsafe { core::mem::transmute::<&mut [T; N], &mut TypedArray<I, T, N>>(array) }
     }
 
     #[inline]
     pub const fn each_ref(&self) -> TypedArray<I, &T, N> {
         let refs = self.raw.each_ref();
+        // SAFETY: The length N is already known to be valid for I.
         unsafe { TypedArray::from_array_unchecked(refs) }
     }
 
     #[inline]
     pub fn each_mut(&mut self) -> TypedArray<I, &mut T, N> {
         let refs = self.raw.each_mut();
+        // SAFETY: The length N is already known to be valid for I.
         unsafe { TypedArray::from_array_unchecked(refs) }
     }
 
     #[inline]
     pub fn map<U, F: FnMut(T) -> U>(self, f: F) -> TypedArray<I, U, N> {
+        // SAFETY: The length N is already known to be valid for I.
         unsafe { TypedArray::from_array_unchecked(self.raw.map(f)) }
     }
 }
@@ -181,6 +209,7 @@ where
 impl<I: IndexType, T, const N: usize> AsRef<TypedSlice<I, T>> for TypedArray<I, T, N> {
     #[inline]
     fn as_ref(&self) -> &TypedSlice<I, T> {
+        // SAFETY: The length N is already known to be valid for I.
         unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 }
@@ -188,6 +217,7 @@ impl<I: IndexType, T, const N: usize> AsRef<TypedSlice<I, T>> for TypedArray<I, 
 impl<I: IndexType, T, const N: usize> AsMut<TypedSlice<I, T>> for TypedArray<I, T, N> {
     #[inline]
     fn as_mut(&mut self) -> &mut TypedSlice<I, T> {
+        // SAFETY: The length N is already known to be valid for I.
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 }
@@ -197,6 +227,7 @@ impl<I: IndexType, T, const N: usize> core::borrow::Borrow<TypedSlice<I, T>>
 {
     #[inline]
     fn borrow(&self) -> &TypedSlice<I, T> {
+        // SAFETY: The length N is already known to be valid for I.
         unsafe { TypedSlice::from_slice_unchecked(&self.raw) }
     }
 }
@@ -206,6 +237,7 @@ impl<I: IndexType, T, const N: usize> core::borrow::BorrowMut<TypedSlice<I, T>>
 {
     #[inline]
     fn borrow_mut(&mut self) -> &mut TypedSlice<I, T> {
+        // SAFETY: The length N is already known to be valid for I.
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
     }
 }
@@ -247,6 +279,7 @@ impl<'a, I: IndexType, T, const N: usize> TryFrom<&'a TypedSlice<I, T>>
 
     #[inline]
     fn try_from(slice: &'a TypedSlice<I, T>) -> Result<&'a TypedArray<I, T, N>, TryFromSliceError> {
+        // SAFETY: The length is checked by try_into() and the original slice already has a valid I.
         Ok(unsafe { TypedArray::from_array_ref_unchecked(slice.as_slice().try_into()?) })
     }
 }
@@ -260,6 +293,7 @@ impl<'a, I: IndexType, T, const N: usize> TryFrom<&'a mut TypedSlice<I, T>>
     fn try_from(
         slice: &'a mut TypedSlice<I, T>,
     ) -> Result<&'a mut TypedArray<I, T, N>, TryFromSliceError> {
+        // SAFETY: The length is checked by try_into() and the original slice already has a valid I.
         Ok(unsafe { TypedArray::from_array_mut_unchecked(slice.as_mut_slice().try_into()?) })
     }
 }
@@ -271,6 +305,7 @@ impl<'a, I: IndexType, T: Copy, const N: usize> TryFrom<&'a TypedSlice<I, T>>
 
     #[inline]
     fn try_from(slice: &'a TypedSlice<I, T>) -> Result<TypedArray<I, T, N>, TryFromSliceError> {
+        // SAFETY: The length is checked by try_into() and the original slice already has a valid I.
         Ok(unsafe { TypedArray::from_array_unchecked(slice.as_slice().try_into()?) })
     }
 }
@@ -282,6 +317,7 @@ impl<'a, I: IndexType, T: Copy, const N: usize> TryFrom<&'a mut TypedSlice<I, T>
 
     #[inline]
     fn try_from(slice: &'a mut TypedSlice<I, T>) -> Result<TypedArray<I, T, N>, TryFromSliceError> {
+        // SAFETY: The length is checked by try_into() and the original slice already has a valid I.
         Ok(unsafe { TypedArray::from_array_unchecked(slice.as_mut_slice().try_into()?) })
     }
 }
