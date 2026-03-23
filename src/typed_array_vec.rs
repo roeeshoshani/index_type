@@ -10,6 +10,11 @@ use core::{
 
 use crate::{IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
 
+#[cold]
+fn panic_insufficient_capacity() -> ! {
+    panic!("insufficient capacity")
+}
+
 /// A fixed-capacity, typed vector.
 pub struct TypedArrayVec<I: IndexType, T, const N: usize> {
     storage: TypedArray<I, MaybeUninit<T>, N>,
@@ -85,7 +90,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     #[inline]
     pub fn push(&mut self, element: T) {
         if let Err(_err) = self.try_push(element) {
-            panic!("insufficient capacity");
+            panic_insufficient_capacity();
         }
     }
 
@@ -117,7 +122,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Clone,
     {
-        self.try_extend_from_slice(other).unwrap();
+        if self.try_extend_from_slice(other).is_err() {
+            panic_insufficient_capacity();
+        }
     }
 
     /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec`.
@@ -165,7 +172,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Copy,
     {
-        self.try_extend_from_slice_copy(other).unwrap();
+        if self.try_extend_from_slice_copy(other).is_err() {
+            panic_insufficient_capacity();
+        }
     }
 
     /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
@@ -251,7 +260,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     #[inline]
     pub fn insert(&mut self, index: I, element: T) {
         if let Err(_err) = self.try_insert(index, element) {
-            panic!("insufficient capacity");
+            panic_insufficient_capacity();
         }
     }
 
