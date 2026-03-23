@@ -8,9 +8,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{
-    CapacityError, IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice,
-};
+use crate::{IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
 
 /// A fixed-capacity, typed vector.
 pub struct TypedArrayVec<I: IndexType, T, const N: usize> {
@@ -131,7 +129,11 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Clone,
     {
-        if self.len().checked_add_scalar(other.len().to_scalar()).is_err() {
+        if self
+            .len()
+            .checked_add_scalar(other.len().to_scalar())
+            .is_err()
+        {
             return Err(CapacityError::new(()));
         }
 
@@ -177,7 +179,11 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
         unsafe {
             let src = other.as_ptr();
-            let dst = self.storage.as_mut_ptr().add(old_len.to_raw_index()).cast::<T>();
+            let dst = self
+                .storage
+                .as_mut_ptr()
+                .add(old_len.to_raw_index())
+                .cast::<T>();
             core::ptr::copy_nonoverlapping(src, dst, other_len.to_raw_index());
             self.len = old_len.unchecked_add_scalar(other_len.to_scalar());
         }
@@ -279,11 +285,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
                 .add(index.to_raw_index())
                 .cast::<T>();
             let result = core::ptr::read(p);
-            core::ptr::copy(
-                p.add(1),
-                p,
-                new_len.unchecked_sub_index(index).to_usize(),
-            );
+            core::ptr::copy(p.add(1), p, new_len.unchecked_sub_index(index).to_usize());
             self.len = new_len;
             result
         }
@@ -692,3 +694,29 @@ impl<I: IndexType, T, const N: usize> From<crate::typed_array::TypedArray<I, T, 
         new
     }
 }
+
+/// An error type used when a collection is at full capacity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct CapacityError<T> {
+    element: T,
+}
+
+impl<T> CapacityError<T> {
+    /// Creates a new `CapacityError` with the element that could not be added.
+    pub const fn new(element: T) -> Self {
+        Self { element }
+    }
+
+    /// Returns the element that could not be added.
+    pub fn element(self) -> T {
+        self.element
+    }
+}
+
+impl<T> core::fmt::Display for CapacityError<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "insufficient capacity")
+    }
+}
+
+impl<T: core::fmt::Debug> core::error::Error for CapacityError<T> {}

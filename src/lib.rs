@@ -41,7 +41,7 @@
 //! // This is useful for saving memory in large data structures containing many indices.
 //! ```
 
-pub use crate::error::{CapacityError, GenericIndexTooBigError};
+pub use crate::error::GenericIndexTooBigError;
 
 #[doc(hidden)]
 pub extern crate alloc;
