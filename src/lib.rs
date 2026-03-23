@@ -52,6 +52,7 @@ mod index_scalar_types;
 #[doc(hidden)]
 pub mod macros;
 pub mod typed_array;
+pub mod typed_array_vec;
 pub mod typed_slice;
 pub mod typed_vec;
 mod utils;
