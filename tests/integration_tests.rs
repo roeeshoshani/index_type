@@ -128,3 +128,46 @@ fn test_nonzero_capacity_limit() {
     // checked_add_scalar(254, 1) returns Err because 255 > 254.
     assert!(vec.push(254).is_err());
 }
+
+#[test]
+fn test_macros() {
+    use index_type::{typed_vec, typed_array, typed_slice, typed_slice_mut};
+
+    // Test typed_vec!
+    let v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
+    assert_eq!(v.len_usize(), 3);
+    assert_eq!(v[MyIndex::ZERO], 1);
+
+    let v2: TypedVec<MyIndex, i32> = typed_vec![0; 5];
+    assert_eq!(v2.len_usize(), 5);
+    assert_eq!(v2[MyIndex::ZERO], 0);
+
+    // Test typed_array!
+    let a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
+    assert_eq!(a.len_usize(), 3);
+    assert_eq!(a[MyIndex::ZERO], 1);
+
+    let a2: TypedArray<MyIndex, i32, 5> = typed_array![0; 5];
+    assert_eq!(a2.len_usize(), 5);
+    assert_eq!(a2[MyIndex::ZERO], 0);
+
+    // Test typed_slice!
+    let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
+    assert_eq!(s.len_usize(), 3);
+    assert_eq!(s[MyIndex::ZERO], 1);
+
+    // Test typed_slice_mut!
+    fn check_typed_slice_mut(s: &mut TypedSlice<MyIndex, i32>) {
+        assert_eq!(s.len_usize(), 3);
+        assert_eq!(s[MyIndex::ZERO], 1);
+        s[MyIndex::ZERO] = 10;
+        assert_eq!(s[MyIndex::ZERO], 10);
+    }
+    check_typed_slice_mut(typed_slice_mut![1, 2, 3]);
+
+    // Basic verify of macro existence and return types
+    let _v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
+    let _a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
+    let _s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
+    let _s: &mut TypedSlice<MyIndex, i32> = typed_slice_mut![1, 2, 3];
+}

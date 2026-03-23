@@ -56,11 +56,14 @@
 
 pub use crate::error::GenericIndexTooBigError;
 
-extern crate alloc;
+#[doc(hidden)]
+pub extern crate alloc;
 
 mod base_index_types;
 mod error;
 mod index_scalar_types;
+#[doc(hidden)]
+pub mod macros;
 pub mod typed_array;
 pub mod typed_slice;
 pub mod typed_vec;
