@@ -32,6 +32,10 @@
 //!
 //! ## Memory-Efficient Indices
 //!
+//! Using smaller integer types for indices can significantly reduce memory usage, especially when storing many indices in a collection.
+//!
+//! For example, if you have a `Vec<MyIndex>` where `MyIndex` is a newtype over `u32`, each index takes 4 bytes. If you know your collection will never have more than 256 elements, you can use `u8` instead, reducing the size of each index to 1 byte.
+//!
 //! ```rust
 //! # use index_type::IndexType;
 //! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -39,6 +43,22 @@
 //!
 //! // TypedVec<SmallIndex, T> can only hold up to 255 elements.
 //! // This is useful for saving memory in large data structures containing many indices.
+//! let mut indices: Vec<SmallIndex> = Vec::new(); // Each element is only 1 byte
+//! ```
+//!
+//! ## NonZero Indices and Niche Optimization
+//!
+//! This crate also supports `NonZero` integer types (e.g., `NonZeroU32`) as the underlying type for indices. This allows the Rust compiler to perform "niche optimization," where `Option<MyIndex>` takes up the same amount of space as `MyIndex` itself.
+//!
+//! ```rust
+//! # use index_type::IndexType;
+//! # use core::num::NonZeroU32;
+//! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct SafeIndex(NonZeroU32);
+//!
+//! # fn main() {
+//! assert_eq!(core::mem::size_of::<SafeIndex>(), core::mem::size_of::<Option<SafeIndex>>());
+//! # }
 //! ```
 
 pub use crate::error::GenericIndexTooBigError;
