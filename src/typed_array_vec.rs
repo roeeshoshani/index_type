@@ -107,6 +107,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Appends elements from a `TypedSlice` to the `TypedArrayVec`.
     ///
+    /// If `T: Copy`, consider using the [`extend_from_slice_copy`](Self::extend_from_slice_copy) for better performance.
+    ///
     /// # Panics
     ///
     /// Panics if the `TypedArrayVec` does not have enough capacity.
@@ -120,6 +122,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec`.
     ///
+    /// If `T: Copy`, consider using the [`try_extend_from_slice_copy`](Self::try_extend_from_slice_copy) for better performance.
+    ///
     /// Returns an error if the `TypedArrayVec` does not have enough capacity.
     #[inline]
     pub fn try_extend_from_slice(
@@ -129,11 +133,12 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Clone,
     {
-        if self
+        let new_len = self
             .len()
             .checked_add_scalar(other.len().to_scalar())
-            .is_err()
-        {
+            .map_err(|_| CapacityError::new(()))?;
+
+        if new_len > self.capacity() {
             return Err(CapacityError::new(()));
         }
 
@@ -149,6 +154,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Appends elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
     ///
+    /// This is more performant that the non-copying variant of this function ([`extend_from_slice`](Self::extend_from_slice)),
+    /// but it has stricter bounds - it requires `T: Copy`.
+    ///
     /// # Panics
     ///
     /// Panics if the `TypedArrayVec` does not have enough capacity.
@@ -162,6 +170,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
     ///
+    /// This is more performant that the non-copying variant of this function ([`try_extend_from_slice`](Self::try_extend_from_slice)),
+    /// but it has stricter bounds - it requires `T: Copy`.
+    ///
     /// Returns an error if the `TypedArrayVec` does not have enough capacity.
     #[inline]
     pub fn try_extend_from_slice_copy(
@@ -171,9 +182,13 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Copy,
     {
-        let other_len = other.len();
         let old_len = self.len;
-        if old_len.checked_add_scalar(other_len.to_scalar()).is_err() {
+
+        let new_len = old_len
+            .checked_add_scalar(other.len().to_scalar())
+            .map_err(|_| CapacityError::new(()))?;
+
+        if new_len > self.capacity() {
             return Err(CapacityError::new(()));
         }
 
@@ -184,8 +199,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
                 .as_mut_ptr()
                 .add(old_len.to_raw_index())
                 .cast::<T>();
-            core::ptr::copy_nonoverlapping(src, dst, other_len.to_raw_index());
-            self.len = old_len.unchecked_add_scalar(other_len.to_scalar());
+            core::ptr::copy_nonoverlapping(src, dst, other.len().to_raw_index());
+            self.len = new_len;
         }
         Ok(())
     }
