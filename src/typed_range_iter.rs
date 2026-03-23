@@ -14,6 +14,7 @@ pub trait TypedRangeIterExt<I: IndexType> {
 
     fn iter(self) -> Self::Iter;
 }
+
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
     type Iter = TypedRangeIter<I>;
 
@@ -141,3 +142,59 @@ impl<I: IndexType> ExactSizeIterator for TypedRangeIter<I> {
 }
 
 impl<I: IndexType> FusedIterator for TypedRangeIter<I> {}
+
+impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
+    type Iter = TypedRangeFromIter<I>;
+
+    #[inline]
+    fn iter(self) -> Self::Iter {
+        TypedRangeFromIter(self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TypedRangeFromIter<I: IndexType>(pub core::ops::RangeFrom<I>);
+
+impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
+    type Item = I;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let res = self.0.start;
+        self.0.start = res.checked_add_scalar(I::Scalar::ONE).unwrap();
+        Some(res)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (usize::MAX, None)
+    }
+
+    #[inline]
+    fn nth(&mut self, n: usize) -> Option<I> {
+        let res = self
+            .0
+            .start
+            .checked_add_scalar(I::Scalar::try_from_usize(n).unwrap())
+            .unwrap();
+
+        self.0.start = res.checked_add_scalar(I::Scalar::ONE).unwrap();
+
+        Some(res)
+    }
+
+    #[inline]
+    fn min(mut self) -> Option<I>
+    where
+        I: Ord,
+    {
+        self.next()
+    }
+
+    #[inline]
+    fn is_sorted(self) -> bool {
+        true
+    }
+}
+
+impl<I: IndexType> FusedIterator for TypedRangeFromIter<I> {}
