@@ -292,19 +292,21 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     #[inline]
     pub fn remove(&mut self, index: I) -> T {
         let old_len = self.len;
+
         assert!(index < old_len, "index out of bounds");
 
-        let new_len = unsafe { old_len.unchecked_sub_scalar(I::Scalar::ONE) };
         // SAFETY: We checked bounds.
         unsafe {
-            let p = self
-                .storage
-                .as_mut_ptr()
-                .add(index.to_raw_index())
-                .cast::<T>();
-            let result = core::ptr::read(p);
+            let new_len = old_len.unchecked_sub_scalar(I::Scalar::ONE);
+
+            let entry = self.storage.get_unchecked_mut(index);
+            let result = entry.assume_init_read();
+
+            let p = entry.as_mut_ptr();
             core::ptr::copy(p.add(1), p, new_len.unchecked_sub_index(index).to_usize());
+
             self.len = new_len;
+
             result
         }
     }
@@ -317,13 +319,17 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     #[inline]
     pub fn swap_remove(&mut self, index: I) -> T {
         let old_len = self.len;
+
         assert!(index < old_len, "index out of bounds");
 
-        let last_idx = unsafe { old_len.unchecked_sub_scalar(I::Scalar::ONE) };
-        self.len = last_idx;
         // SAFETY: We checked bounds.
         unsafe {
-            let last = core::ptr::read(self.storage.get_unchecked(last_idx)).assume_init();
+            let last_idx = old_len.unchecked_sub_scalar(I::Scalar::ONE);
+
+            self.len = last_idx;
+
+            let last = self.storage.get_unchecked(last_idx).assume_init_read();
+
             if index < last_idx {
                 core::mem::replace(
                     &mut *self.storage.get_unchecked_mut(index).as_mut_ptr(),
