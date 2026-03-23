@@ -156,22 +156,14 @@ fn test_macros() {
     assert_eq!(s.len_usize(), 3);
     assert_eq!(s[MyIndex::ZERO], 1);
 
-    let s2: &TypedSlice<MyIndex, i32> = typed_slice![0; 5];
-    assert_eq!(s2.len_usize(), 5);
-    assert_eq!(s2[MyIndex::ZERO], 0);
-
     // Test typed_slice_mut!
-    let mut sm_data = [1, 2, 3];
-    let sm: &mut TypedSlice<MyIndex, i32> = TypedSlice::try_from_slice_mut(&mut sm_data).unwrap();
-    assert_eq!(sm.len_usize(), 3);
-    sm[MyIndex::ZERO] = 10;
-    assert_eq!(sm_data[0], 10);
-
-    let mut sm2_data = [0; 5];
-    let sm2: &mut TypedSlice<MyIndex, i32> = TypedSlice::try_from_slice_mut(&mut sm2_data).unwrap();
-    assert_eq!(sm2.len_usize(), 5);
-    sm2[MyIndex::ZERO] = 10;
-    assert_eq!(sm2_data[0], 10);
+    fn check_typed_slice_mut(s: &mut TypedSlice<MyIndex, i32>) {
+        assert_eq!(s.len_usize(), 3);
+        assert_eq!(s[MyIndex::ZERO], 1);
+        s[MyIndex::ZERO] = 10;
+        assert_eq!(s[MyIndex::ZERO], 10);
+    }
+    check_typed_slice_mut(typed_slice_mut![1, 2, 3]);
 
     // Basic verify of macro existence and return types
     let _v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];

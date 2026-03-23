@@ -54,62 +54,18 @@
 //!
 //! This crate uses `unsafe` code for performance optimizations (e.g., `transmute` between `repr(transparent)` wrappers and raw slices/vectors). All `unsafe` blocks are documented with `SAFETY` comments explaining why they are safe.
 
-pub use crate::error::GenericIndexTooBigError;
+use core::marker::PhantomData;
 
-#[doc(hidden)]
-pub use core::marker::PhantomData;
+pub use crate::error::GenericIndexTooBigError;
 
 #[doc(hidden)]
 pub extern crate alloc;
 
-/// Helper struct for compile-time length checks in macros.
-#[doc(hidden)]
-pub struct AssertInBounds<I, const N: usize>(PhantomData<I>);
-impl<I: IndexType, const N: usize> AssertInBounds<I, N> {
-    pub const OK: () = {
-        if N > I::MAX_RAW_INDEX {
-            panic!("length exceeds maximum index type capacity");
-        }
-    };
-}
-
-#[doc(hidden)]
-#[inline(always)]
-pub fn __assert_array_in_bounds<I: IndexType, T, const N: usize>(
-    _: &crate::typed_array::TypedArray<I, T, N>,
-) {
-    let _ = AssertInBounds::<I, N>::OK;
-}
-
-#[doc(hidden)]
-#[inline(always)]
-pub fn __assert_slice_in_bounds<I: IndexType, T>(_: &crate::typed_slice::TypedSlice<I, T>, n: usize) {
-    // This is a helper to bind I. The actual check is done via AssertInBounds in the macro
-    // if the length is a constant. If not, it's a runtime check.
-    if n > I::MAX_RAW_INDEX {
-        panic!("length exceeds maximum index type capacity");
-    }
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __ignore {
-    ($($any:tt)*) => {
-        ()
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __count {
-    ($($x:expr),*) => {
-        <[()]>::len(&[ $( $crate::__ignore!($x) ),* ])
-    };
-}
-
 mod base_index_types;
 mod error;
 mod index_scalar_types;
+#[doc(hidden)]
+pub mod macros;
 pub mod typed_array;
 pub mod typed_slice;
 pub mod typed_vec;
@@ -232,133 +188,4 @@ pub unsafe trait IndexScalarType:
 pub trait IndexTooBigError: core::error::Error {
     /// Creates a new instance of the error.
     fn new() -> Self;
-}
-
-/// Creates a [`TypedVec`](crate::typed_vec::TypedVec) containing the arguments.
-///
-/// `typed_vec!` allows `TypedVec` to be defined with the same syntax as the standard library's `vec!` macro.
-///
-/// # Usage Example
-///
-/// ```rust
-/// use index_type::{IndexType, typed_vec};
-/// use index_type::typed_vec::TypedVec;
-///
-/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-/// struct MyIndex(u32);
-///
-/// let v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
-/// assert_eq!(v.len_usize(), 3);
-/// ```
-#[macro_export]
-macro_rules! typed_vec {
-    ($elem:expr; $n:expr) => {{
-        let n = $n;
-        $crate::typed_vec::TypedVec::<_, _>::try_from_vec($crate::alloc::vec![$elem; n]).unwrap()
-    }};
-    ($($x:expr),* $(,)?) => {
-        $crate::typed_vec::TypedVec::<_, _>::try_from_vec($crate::alloc::vec![$($x),*]).unwrap()
-    };
-}
-
-/// Creates a [`TypedArray`](crate::typed_array::TypedArray) containing the arguments.
-///
-/// # Usage Example
-///
-/// ```rust
-/// use index_type::{IndexType, typed_array};
-/// use index_type::typed_array::TypedArray;
-///
-/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-/// struct MyIndex(u32);
-///
-/// let a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
-/// assert_eq!(a.len_usize(), 3);
-/// ```
-#[macro_export]
-macro_rules! typed_array {
-    ($elem:expr; $n:expr) => {{
-        // SAFETY: The length is checked by __assert_array_in_bounds.
-        let res = unsafe { $crate::typed_array::TypedArray::<_, _, $n>::from_array_unchecked([$elem; $n]) };
-        $crate::__assert_array_in_bounds(&res);
-        res
-    }};
-    ($($x:expr),* $(,)?) => {{
-        const __LEN: usize = $crate::__count!($($x),*);
-        // SAFETY: The length is checked by __assert_array_in_bounds.
-        let res = unsafe { $crate::typed_array::TypedArray::<_, _, __LEN>::from_array_unchecked([$($x),*]) };
-        $crate::__assert_array_in_bounds(&res);
-        res
-    }};
-}
-
-/// Creates a reference to a [`TypedSlice`](crate::typed_slice::TypedSlice) containing the arguments.
-///
-/// This macro creates a temporary array and returns a reference to it as a `TypedSlice`.
-/// Note that due to how temporary lifetimes work in Rust, the returned reference is only valid
-/// for the duration of the statement it is in, unless it is immediately bound to a `let` variable.
-///
-/// # Usage Example
-///
-/// ```rust
-/// use index_type::{IndexType, typed_slice};
-/// use index_type::typed_slice::TypedSlice;
-///
-/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-/// struct MyIndex(u32);
-///
-/// let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
-/// assert_eq!(s.len_usize(), 3);
-/// ```
-#[macro_export]
-macro_rules! typed_slice {
-    ($elem:expr; $n:expr) => {{
-        // SAFETY: The length is checked by __assert_slice_in_bounds.
-        let res = unsafe { $crate::typed_slice::TypedSlice::<_, _>::from_slice_unchecked(&[$elem; $n]) };
-        $crate::__assert_slice_in_bounds(res, $n);
-        res
-    }};
-    ($($x:expr),* $(,)?) => {{
-        const __LEN: usize = $crate::__count!($($x),*);
-        // SAFETY: The length is checked by __assert_slice_in_bounds.
-        let res = unsafe { $crate::typed_slice::TypedSlice::<_, _>::from_slice_unchecked(&[$($x),*]) };
-        $crate::__assert_slice_in_bounds(res, __LEN);
-        res
-    }};
-}
-
-/// Creates a mutable reference to a [`TypedSlice`](crate::typed_slice::TypedSlice) containing the arguments.
-///
-/// This macro creates a temporary array and returns a mutable reference to it as a `TypedSlice`.
-/// Note that due to how temporary lifetimes work in Rust, the returned reference is only valid
-/// for the duration of the statement it is in, unless it is immediately bound to a `let` variable.
-///
-/// # Usage Example
-///
-/// ```rust
-/// use index_type::{IndexType, typed_slice_mut};
-/// use index_type::typed_slice::TypedSlice;
-///
-/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-/// struct MyIndex(u32);
-///
-/// let mut sm_data = [1, 2, 3];
-/// let sm: &mut TypedSlice<MyIndex, i32> = TypedSlice::try_from_slice_mut(&mut sm_data).unwrap();
-/// assert_eq!(sm.len_usize(), 3);
-/// ```
-#[macro_export]
-macro_rules! typed_slice_mut {
-    ($elem:expr; $n:expr) => {{
-        // SAFETY: The length is checked by __assert_slice_in_bounds.
-        let res = unsafe { $crate::typed_slice::TypedSlice::<_, _>::from_slice_unchecked_mut(&mut [$elem; $n]) };
-        $crate::__assert_slice_in_bounds(res, $n);
-        res
-    }};
-    ($($x:expr),* $(,)?) => {{
-        const __LEN: usize = $crate::__count!($($x),*);
-        // SAFETY: The length is checked by __assert_slice_in_bounds.
-        let res = unsafe { $crate::typed_slice::TypedSlice::<_, _>::from_slice_unchecked_mut(&mut [$($x),*]) };
-        $crate::__assert_slice_in_bounds(res, __LEN);
-        res
-    }};
 }
