@@ -274,7 +274,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     #[inline]
     pub fn try_insert(&mut self, index: I, element: T) -> Result<(), CapacityError<T>> {
         let old_len = self.len;
+
         assert!(index <= old_len, "index out of bounds");
+
         if self.is_full() {
             return Err(CapacityError::new(element));
         }
