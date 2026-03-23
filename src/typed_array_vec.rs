@@ -223,20 +223,23 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     /// Shortens the `TypedArrayVec`, keeping the first `len` elements and dropping the rest.
     #[inline]
     pub fn truncate(&mut self, len: I) {
-        if len < self.len {
-            let old_len = core::mem::replace(&mut self.len, len);
-            // SAFETY: storage is initialized up to old_len.
-            unsafe {
-                let tail_len = old_len.unchecked_sub_index(len);
-                let tail = core::slice::from_raw_parts_mut(
-                    self.storage
-                        .as_mut_ptr()
-                        .add(len.to_raw_index())
-                        .cast::<T>(),
-                    tail_len.to_usize(),
-                );
-                core::ptr::drop_in_place(tail);
-            }
+        if len >= self.len {
+            return;
+        }
+
+        let old_len = core::mem::replace(&mut self.len, len);
+
+        // SAFETY: storage is initialized up to old_len.
+        unsafe {
+            let tail_len = old_len.unchecked_sub_index(len);
+            let tail = core::slice::from_raw_parts_mut(
+                self.storage
+                    .as_mut_ptr()
+                    .add(len.to_raw_index())
+                    .cast::<T>(),
+                tail_len.to_usize(),
+            );
+            core::ptr::drop_in_place(tail);
         }
     }
 
