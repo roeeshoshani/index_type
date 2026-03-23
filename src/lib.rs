@@ -54,8 +54,6 @@
 //!
 //! This crate uses `unsafe` code for performance optimizations (e.g., `transmute` between `repr(transparent)` wrappers and raw slices/vectors). All `unsafe` blocks are documented with `SAFETY` comments explaining why they are safe.
 
-use core::marker::PhantomData;
-
 pub use crate::error::GenericIndexTooBigError;
 
 #[doc(hidden)]
