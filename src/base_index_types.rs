@@ -69,6 +69,11 @@ macro_rules! impl_for_uint_type {
                 // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.unchecked_sub(rhs) }
             }
+
+            #[inline]
+            fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
+                self.checked_sub(rhs)
+            }
         }
     };
 }
@@ -160,6 +165,12 @@ macro_rules! impl_for_nonzero_uint_type {
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
                 // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.get().unchecked_sub(rhs.get()) }
+            }
+
+            #[inline]
+            fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
+                let val = self.get().checked_sub(rhs)?;
+                Self::new(val)
             }
         }
     };

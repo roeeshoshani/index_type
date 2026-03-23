@@ -41,7 +41,7 @@
 //! // This is useful for saving memory in large data structures containing many indices.
 //! ```
 
-pub use crate::error::GenericIndexTooBigError;
+pub use crate::error::{CapacityError, GenericIndexTooBigError};
 
 #[doc(hidden)]
 pub extern crate alloc;
@@ -128,6 +128,9 @@ pub unsafe trait IndexType:
     ///
     /// The result must be non-negative and representable by the scalar type.
     unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar;
+
+    /// Checked subtraction with a scalar.
+    fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self>;
 }
 
 mod index_scalar_type_private {

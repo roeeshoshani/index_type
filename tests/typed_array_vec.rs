@@ -1,4 +1,4 @@
-use index_type::{IndexType, IndexScalarType};
+use index_type::IndexType;
 use index_type::typed_array_vec::TypedArrayVec;
 use index_type::typed_array::TypedArray;
 
@@ -8,8 +8,8 @@ struct MyIndex(u32);
 #[test]
 fn test_new() {
     let vec: TypedArrayVec<MyIndex, i32, 16> = TypedArrayVec::new();
-    assert_eq!(vec.len().to_usize(), 0);
-    assert_eq!(vec.capacity().to_usize(), 16);
+    assert_eq!(vec.len().to_raw_index(), 0);
+    assert_eq!(vec.capacity().to_raw_index(), 16);
     assert!(vec.is_empty());
     assert!(!vec.is_full());
 }
@@ -17,9 +17,9 @@ fn test_new() {
 #[test]
 fn test_push_pop() {
     let mut vec: TypedArrayVec<MyIndex, i32, 2> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(2);
-    assert_eq!(vec.len().to_usize(), 2);
+    vec.push(1).unwrap();
+    vec.push(2).unwrap();
+    assert_eq!(vec.len().to_raw_index(), 2);
     assert!(vec.is_full());
 
     assert_eq!(vec.pop(), Some(2));
@@ -29,19 +29,19 @@ fn test_push_pop() {
 }
 
 #[test]
-#[should_panic]
-fn test_push_panic() {
+fn test_push_error() {
     let mut vec: TypedArrayVec<MyIndex, i32, 1> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(2);
+    vec.push(1).unwrap();
+    let err = vec.push(2).unwrap_err();
+    assert_eq!(err.into_inner(), 2);
 }
 
 #[test]
 fn test_insert_remove() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(3);
-    vec.insert(MyIndex(1), 2);
+    vec.push(1).unwrap();
+    vec.push(3).unwrap();
+    vec.insert(MyIndex(1), 2).unwrap();
     assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3]);
 
     assert_eq!(vec.remove(MyIndex(1)), 2);
@@ -51,9 +51,9 @@ fn test_insert_remove() {
 #[test]
 fn test_swap_remove() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(2);
-    vec.push(3);
+    vec.push(1).unwrap();
+    vec.push(2).unwrap();
+    vec.push(3).unwrap();
     assert_eq!(vec.swap_remove(MyIndex(0)), 1);
     assert_eq!(vec.as_slice().as_slice(), &[3, 2]);
 }
@@ -61,11 +61,11 @@ fn test_swap_remove() {
 #[test]
 fn test_truncate_clear() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(2);
-    vec.push(3);
-    vec.truncate(index_type::IndexScalarType::try_from_usize(1).unwrap());
-    assert_eq!(vec.len().to_usize(), 1);
+    vec.push(1).unwrap();
+    vec.push(2).unwrap();
+    vec.push(3).unwrap();
+    vec.truncate(MyIndex(1));
+    assert_eq!(vec.len().to_raw_index(), 1);
     assert_eq!(vec[MyIndex(0)], 1);
 
     vec.clear();
@@ -75,8 +75,8 @@ fn test_truncate_clear() {
 #[test]
 fn test_into_iter() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(2);
+    vec.push(1).unwrap();
+    vec.push(2).unwrap();
     let collected: Vec<i32> = vec.into_iter().collect();
     assert_eq!(collected, vec![1, 2]);
 }
@@ -91,18 +91,18 @@ fn test_from_array() {
 #[test]
 fn test_drop() {
     use core::cell::Cell;
-    struct DropCounter<'a>(&'a Cell<usize>);
-    impl Drop for DropCounter<'_> {
-        fn drop(&mut self) {
-            self.0.set(self.0.get() + 1);
-        }
-    }
-
     let counter = Cell::new(0);
     {
+        #[derive(Debug)]
+        struct DropCounter<'a>(&'a Cell<usize>);
+        impl Drop for DropCounter<'_> {
+            fn drop(&mut self) {
+                self.0.set(self.0.get() + 1);
+            }
+        }
         let mut vec: TypedArrayVec<MyIndex, DropCounter, 4> = TypedArrayVec::new();
-        vec.push(DropCounter(&counter));
-        vec.push(DropCounter(&counter));
+        vec.push(DropCounter(&counter)).unwrap();
+        vec.push(DropCounter(&counter)).unwrap();
         vec.pop();
         assert_eq!(counter.get(), 1);
     }
@@ -112,10 +112,10 @@ fn test_drop() {
 #[test]
 fn test_retain() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(2);
-    vec.push(3);
-    vec.push(4);
+    vec.push(1).unwrap();
+    vec.push(2).unwrap();
+    vec.push(3).unwrap();
+    vec.push(4).unwrap();
     vec.retain(|&x| x % 2 == 0);
     assert_eq!(vec.as_slice().as_slice(), &[2, 4]);
 }
@@ -123,10 +123,10 @@ fn test_retain() {
 #[test]
 fn test_drain() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
-    vec.push(2);
-    vec.push(3);
-    vec.push(4);
+    vec.push(1).unwrap();
+    vec.push(2).unwrap();
+    vec.push(3).unwrap();
+    vec.push(4).unwrap();
     {
         let mut drain = vec.drain(MyIndex(1)..MyIndex(3));
         assert_eq!(drain.next(), Some(2));
@@ -139,7 +139,7 @@ fn test_drain() {
 #[test]
 fn test_extend_from_slice() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
+    vec.push(1).unwrap();
     let other = index_type::typed_array![2, 3];
     vec.extend_from_slice(&other);
     assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3]);

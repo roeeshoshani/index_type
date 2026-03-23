@@ -159,6 +159,10 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
                 unsafe { <#inner_ty as ::index_type::IndexType>::unchecked_sub_index(self.0, rhs.0) }
             }
+
+            fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
+                <#inner_ty as ::index_type::IndexType>::checked_sub_scalar(self.0, rhs).map(Self)
+            }
         }
     }
     .into()
