@@ -169,4 +169,5 @@ fn test_macros() {
     let _v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
     let _a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
     let _s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
+    let _s: &mut TypedSlice<MyIndex, i32> = typed_slice_mut![1, 2, 3];
 }
