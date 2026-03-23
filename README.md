@@ -52,5 +52,5 @@ This crate also supports `NonZero` integer types (e.g., `NonZeroU32`) as the und
 #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct SafeIndex(NonZeroU32);
 
-assert_eq!(core::mem::size_of::<SafeIndex>(), core::mem::size_of::<Option<SafeIndex>>());
+assert_eq!(size_of::<SafeIndex>(), size_of::<Option<SafeIndex>>());
 ```

@@ -57,7 +57,7 @@
 //! struct SafeIndex(NonZeroU32);
 //!
 //! # fn main() {
-//! assert_eq!(core::mem::size_of::<SafeIndex>(), core::mem::size_of::<Option<SafeIndex>>());
+//! assert_eq!(size_of::<SafeIndex>(), size_of::<Option<SafeIndex>>());
 //! # }
 //! ```
 
