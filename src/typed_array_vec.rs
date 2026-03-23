@@ -76,9 +76,21 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Appends an element to the back of the `TypedArrayVec`.
     ///
+    /// # Panics
+    ///
+    /// Panics if the `TypedArrayVec` is full.
+    #[inline]
+    pub fn push(&mut self, element: T) {
+        if let Err(_err) = self.try_push(element) {
+            panic!("insufficient capacity");
+        }
+    }
+
+    /// Tries to append an element to the back of the `TypedArrayVec`.
+    ///
     /// Returns an error if the `TypedArrayVec` is full.
     #[inline]
-    pub fn push(&mut self, element: T) -> Result<(), CapacityError<T>> {
+    pub fn try_push(&mut self, element: T) -> Result<(), CapacityError<T>> {
         if self.is_full() {
             return Err(CapacityError::new(element));
         }
@@ -124,13 +136,25 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Inserts an element at position `index` within the `TypedArrayVec`, shifting all elements after it to the right.
     ///
+    /// # Panics
+    ///
+    /// Panics if the `TypedArrayVec` is full or if `index > len`.
+    #[inline]
+    pub fn insert(&mut self, index: I, element: T) {
+        if let Err(_err) = self.try_insert(index, element) {
+            panic!("insufficient capacity");
+        }
+    }
+
+    /// Tries to insert an element at position `index` within the `TypedArrayVec`, shifting all elements after it to the right.
+    ///
     /// Returns an error if the `TypedArrayVec` is full.
     ///
     /// # Panics
     ///
     /// Panics if `index > len`.
     #[inline]
-    pub fn insert(&mut self, index: I, element: T) -> Result<(), CapacityError<T>> {
+    pub fn try_insert(&mut self, index: I, element: T) -> Result<(), CapacityError<T>> {
         let old_len = self.len;
         assert!(index <= old_len, "index out of bounds");
         if self.is_full() {
@@ -545,7 +569,7 @@ impl<'a, I: IndexType, T, const N: usize> IntoIterator for &'a mut TypedArrayVec
 impl<I: IndexType, T, const N: usize> Extend<T> for TypedArrayVec<I, T, N> {
     fn extend<X: IntoIterator<Item = T>>(&mut self, iter: X) {
         for item in iter {
-            let _ = self.push(item);
+            self.push(item);
         }
     }
 }
