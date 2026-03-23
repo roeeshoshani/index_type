@@ -13,15 +13,6 @@ This crate allows you to define custom index types for your collections, providi
 - **Memory Efficiency**: Use smaller integer types (e.g., `u8`, `u16`) as indices for memory-constrained applications.
 - **Rich Collection Support**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), and [`TypedArray`](crate::typed_array::TypedArray) which are thin wrappers around the standard library's slice, `Vec`, and array types.
 
-## Usage
-
-Add `index_type` to your `Cargo.toml`:
-
-```toml
-[dependencies]
-index_type = "0.1.0"
-```
-
 ### Basic Example
 
 ```rust
@@ -47,7 +38,3 @@ struct SmallIndex(u8);
 // TypedVec<SmallIndex, T> can only hold up to 255 elements.
 // This is useful for saving memory in large data structures containing many indices.
 ```
-
-## Safety
-
-This crate uses `unsafe` code for performance optimizations (e.g., `transmute` between `repr(transparent)` wrappers and raw slices/vectors). All `unsafe` blocks are documented with `SAFETY` comments explaining why they are safe.
