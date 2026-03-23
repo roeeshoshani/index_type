@@ -141,7 +141,12 @@ macro_rules! typed_slice {
 ///
 /// This macro creates a temporary array and returns a mutable reference to it as a `TypedSlice`.
 /// Note that due to how temporary lifetimes work in Rust, the returned reference is only valid
-/// for the duration of the statement it is in, unless it is immediately bound to a `let` variable.
+/// for the duration of the statement it is in.
+///
+/// Binding the result of this macro to a variable will produce a value that can't be use to due
+/// the slice's temporary lifetime.
+/// 
+/// But, the result can be used for example as a function argument.
 ///
 /// # Usage Example
 ///
