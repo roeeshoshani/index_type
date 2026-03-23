@@ -203,11 +203,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
         unsafe {
             let src = other.as_ptr();
-            let dst = self
-                .storage
-                .as_mut_ptr()
-                .add(old_len.to_raw_index())
-                .cast::<T>();
+            let dst = self.storage.get_unchecked_mut(old_len).as_mut_ptr();
             core::ptr::copy_nonoverlapping(src, dst, other.len().to_raw_index());
             self.len = new_len;
         }
@@ -242,10 +238,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         unsafe {
             let tail_len = old_len.unchecked_sub_index(len);
             let tail = core::slice::from_raw_parts_mut(
-                self.storage
-                    .as_mut_ptr()
-                    .add(len.to_raw_index())
-                    .cast::<T>(),
+                self.storage.get_unchecked_mut(len).as_mut_ptr(),
                 tail_len.to_usize(),
             );
             core::ptr::drop_in_place(tail);
@@ -283,11 +276,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
         // SAFETY: We checked bounds and capacity.
         unsafe {
-            let p = self
-                .storage
-                .as_mut_ptr()
-                .add(index.to_raw_index())
-                .cast::<T>();
+            let p = self.storage.get_unchecked_mut(index).as_mut_ptr();
             core::ptr::copy(p, p.add(1), old_len.unchecked_sub_index(index).to_usize());
             core::ptr::write(p, element);
             self.len = self.len.unchecked_add_scalar(I::Scalar::ONE);
