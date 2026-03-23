@@ -210,7 +210,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     pub fn pop(&mut self) -> Option<T> {
         let new_len = self.len.checked_sub_scalar(I::Scalar::ONE)?;
         self.len = new_len;
-        // SAFETY: The vector was not empty, so the element at new_len is initialized.
+        // SAFETY: The subtraction succeeded, so the element at new_len is initialized.
         unsafe { Some(self.storage.get_unchecked(new_len).assume_init_read()) }
     }
 
