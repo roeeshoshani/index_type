@@ -33,7 +33,7 @@ fn test_push_error() {
     let mut vec: TypedArrayVec<MyIndex, i32, 1> = TypedArrayVec::new();
     vec.try_push(1).unwrap();
     let err = vec.try_push(2).unwrap_err();
-    assert_eq!(err.into_inner(), 2);
+    assert_eq!(err.element(), 2);
 }
 
 #[test]
@@ -143,4 +143,21 @@ fn test_extend_from_slice() {
     let other = index_type::typed_array![2, 3];
     vec.extend_from_slice(&other);
     assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3]);
+}
+
+#[test]
+fn test_extend_from_slice_copy() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
+    vec.push(1);
+    let other = index_type::typed_array![2, 3];
+    vec.extend_from_slice_copy(&other);
+    assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3]);
+}
+
+#[test]
+fn test_remaining_capacity() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
+    assert_eq!(vec.remaining_capacity().to_raw_index(), 4);
+    vec.push(1);
+    assert_eq!(vec.remaining_capacity().to_raw_index(), 3);
 }

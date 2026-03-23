@@ -31,7 +31,7 @@ impl<T> CapacityError<T> {
     }
 
     /// Returns the element that could not be added.
-    pub fn into_inner(self) -> T {
+    pub fn element(self) -> T {
         self.element
     }
 }

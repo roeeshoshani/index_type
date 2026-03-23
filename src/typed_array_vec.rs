@@ -49,8 +49,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     /// Returns the remaining capacity of the `TypedArrayVec` as an index.
     #[inline]
     pub fn remaining_capacity(&self) -> I {
-        // SAFETY: len <= capacity, so the difference is non-negative and fits in I.
-        unsafe { I::from_raw_index_unchecked(N.unchecked_sub(self.len.to_raw_index())) }
+        let diff = unsafe { self.capacity().unchecked_sub_index(self.len()) };
+        unsafe { I::from_scalar_unchecked(diff) }
     }
 
     /// Returns true if the `TypedArrayVec` is empty.
@@ -131,9 +131,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Clone,
     {
-        let other_len = other.len().to_raw_index();
-        let old_len = self.len.to_raw_index();
-        if unsafe { old_len.unchecked_add(other_len) } > N {
+        if self.len().checked_add_scalar(other.len().to_scalar()).is_err() {
             return Err(CapacityError::new(()));
         }
 
@@ -147,13 +145,52 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         Ok(())
     }
 
+    /// Appends elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `TypedArrayVec` does not have enough capacity.
+    #[inline]
+    pub fn extend_from_slice_copy(&mut self, other: &TypedSlice<I, T>)
+    where
+        T: Copy,
+    {
+        self.try_extend_from_slice_copy(other).unwrap();
+    }
+
+    /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
+    ///
+    /// Returns an error if the `TypedArrayVec` does not have enough capacity.
+    #[inline]
+    pub fn try_extend_from_slice_copy(
+        &mut self,
+        other: &TypedSlice<I, T>,
+    ) -> Result<(), CapacityError<()>>
+    where
+        T: Copy,
+    {
+        let other_len = other.len();
+        let old_len = self.len;
+        if old_len.checked_add_scalar(other_len.to_scalar()).is_err() {
+            return Err(CapacityError::new(()));
+        }
+
+        unsafe {
+            let src = other.as_ptr();
+            let dst = self.storage.as_mut_ptr().add(old_len.to_raw_index()).cast::<T>();
+            core::ptr::copy_nonoverlapping(src, dst, other_len.to_raw_index());
+            self.len = old_len.unchecked_add_scalar(other_len.to_scalar());
+        }
+        Ok(())
+    }
+
     /// Removes the last element from the `TypedArrayVec` and returns it, or `None` if it is empty.
     #[inline]
     pub fn pop(&mut self) -> Option<T> {
         let new_len = self.len.checked_sub_scalar(I::Scalar::ONE)?;
         self.len = new_len;
         // SAFETY: The vector was not empty, so the element at new_len is initialized.
-        unsafe { Some(self.storage.get_unchecked(new_len).as_ptr().read()) }
+        unsafe { Some(self.storage.get_unchecked(new_len).assume_init_read()) }
     }
 
     /// Clears the `TypedArrayVec`, removing all elements.
@@ -166,8 +203,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     #[inline]
     pub fn truncate(&mut self, len: I) {
         if len < self.len {
-            let old_len = self.len;
-            self.len = len;
+            let old_len = core::mem::replace(&mut self.len, len);
             // SAFETY: storage is initialized up to old_len.
             unsafe {
                 let tail_len = old_len.unchecked_sub_index(len);
@@ -234,6 +270,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         let old_len = self.len;
         assert!(index < old_len, "index out of bounds");
 
+        let new_len = unsafe { old_len.unchecked_sub_scalar(I::Scalar::ONE) };
         // SAFETY: We checked bounds.
         unsafe {
             let p = self
@@ -245,9 +282,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
             core::ptr::copy(
                 p.add(1),
                 p,
-                old_len.unchecked_sub_index(index).to_usize() - 1,
+                new_len.unchecked_sub_index(index).to_usize(),
             );
-            self.len = self.len.checked_sub_scalar(I::Scalar::ONE).unwrap();
+            self.len = new_len;
             result
         }
     }
@@ -266,7 +303,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         self.len = last_idx;
         // SAFETY: We checked bounds.
         unsafe {
-            let last = self.storage.get_unchecked(last_idx).as_ptr().read();
+            let last = core::ptr::read(self.storage.get_unchecked(last_idx)).assume_init();
             if index < last_idx {
                 core::mem::replace(
                     &mut *self.storage.get_unchecked_mut(index).as_mut_ptr(),
@@ -374,8 +411,7 @@ impl<I: IndexType, T, const N: usize> Iterator for Drain<'_, I, T, N> {
                 self.inner
                     .storage
                     .get_unchecked(I::from_raw_index_unchecked(self.index))
-                    .as_ptr()
-                    .read()
+                    .assume_init_read()
             };
             self.index += 1;
             Some(res)
@@ -398,8 +434,7 @@ impl<I: IndexType, T, const N: usize> DoubleEndedIterator for Drain<'_, I, T, N>
                 self.inner
                     .storage
                     .get_unchecked(I::from_raw_index_unchecked(self.end))
-                    .as_ptr()
-                    .read()
+                    .assume_init_read()
             };
             Some(res)
         } else {
@@ -539,8 +574,11 @@ impl<I: IndexType, T, const N: usize> IntoIterator for TypedArrayVec<I, T, N> {
         let len = self.len;
         // Set length to zero so that the original TypedArrayVec doesn't drop its elements.
         self.len = I::ZERO;
+        // SAFETY: We are moving the storage out of self.
+        let storage = unsafe { core::ptr::read(&self.storage) };
+        core::mem::forget(self);
         IntoIter {
-            inner: self,
+            storage,
             index: I::ZERO,
             len,
         }
@@ -548,7 +586,7 @@ impl<I: IndexType, T, const N: usize> IntoIterator for TypedArrayVec<I, T, N> {
 }
 
 pub struct IntoIter<I: IndexType, T, const N: usize> {
-    inner: TypedArrayVec<I, T, N>,
+    storage: TypedArray<I, MaybeUninit<T>, N>,
     index: I,
     len: I,
 }
@@ -558,7 +596,7 @@ impl<I: IndexType, T, const N: usize> Iterator for IntoIter<I, T, N> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index < self.len {
-            let res = unsafe { self.inner.storage.get_unchecked(self.index).as_ptr().read() };
+            let res = unsafe { self.storage.get_unchecked(self.index).assume_init_read() };
             self.index = unsafe { self.index.unchecked_add_scalar(I::Scalar::ONE) };
             Some(res)
         } else {
@@ -576,7 +614,7 @@ impl<I: IndexType, T, const N: usize> DoubleEndedIterator for IntoIter<I, T, N> 
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.index < self.len {
             self.len = self.len.checked_sub_scalar(I::Scalar::ONE).unwrap();
-            let res = unsafe { self.inner.storage.get_unchecked(self.len).as_ptr().read() };
+            let res = unsafe { self.storage.get_unchecked(self.len).assume_init_read() };
             Some(res)
         } else {
             None
@@ -591,8 +629,7 @@ impl<I: IndexType, T, const N: usize> Drop for IntoIter<I, T, N> {
     fn drop(&mut self) {
         // Drop remaining elements manually.
         let remaining_ptr = unsafe {
-            self.inner
-                .storage
+            self.storage
                 .as_mut_ptr()
                 .add(self.index.to_raw_index())
                 .cast::<T>()
@@ -650,7 +687,7 @@ impl<I: IndexType, T, const N: usize> From<crate::typed_array::TypedArray<I, T, 
     fn from(array: crate::typed_array::TypedArray<I, T, N>) -> Self {
         let mut new = Self::new();
         for item in array {
-            let _ = new.push(item);
+            new.push(item);
         }
         new
     }
