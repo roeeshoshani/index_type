@@ -112,6 +112,9 @@ pub unsafe trait IndexType:
     /// Checked addition with a scalar.
     fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError>;
 
+    /// Checked subtraction with a scalar.
+    fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self>;
+
     /// Checked multiplication with a scalar.
     fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError>;
 
@@ -122,15 +125,19 @@ pub unsafe trait IndexType:
     /// The result must be representable by this index type.
     unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self;
 
+    /// Unchecked subtraction with a scalar.
+    ///
+    /// # Safety
+    ///
+    /// The result must be representable by this index type.
+    unsafe fn unchecked_sub_scalar(self, rhs: Self::Scalar) -> Self;
+
     /// Unchecked subtraction of an index, returning a scalar.
     ///
     /// # Safety
     ///
     /// The result must be non-negative and representable by the scalar type.
     unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar;
-
-    /// Checked subtraction with a scalar.
-    fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self>;
 }
 
 mod index_scalar_type_private {
@@ -165,12 +172,22 @@ pub unsafe trait IndexScalarType:
     /// Checked addition.
     fn checked_add_scalar(self, rhs: Self) -> Option<Self>;
 
+    /// Checked subtraction.
+    fn checked_sub_scalar(self, rhs: Self) -> Option<Self>;
+
     /// Unchecked addition.
     ///
     /// # Safety
     ///
     /// The result must be representable by this scalar type.
     unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self;
+
+    /// Unchecked subtraction.
+    ///
+    /// # Safety
+    ///
+    /// The result must be representable by this scalar type.
+    unsafe fn unchecked_sub_scalar(self, rhs: Self) -> Self;
 }
 
 /// A trait for errors indicating that an index is too big.

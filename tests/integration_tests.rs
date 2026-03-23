@@ -1,8 +1,8 @@
+use core::num::NonZeroUsize;
 use index_type::IndexType;
-use index_type::typed_vec::TypedVec;
 use index_type::typed_array::TypedArray;
 use index_type::typed_slice::TypedSlice;
-use core::num::NonZeroUsize;
+use index_type::typed_vec::TypedVec;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -65,7 +65,9 @@ fn test_typed_slice_basic() {
     assert_eq!(slice.len_usize(), 5);
     assert_eq!(slice[MyIndex::ZERO], 10);
 
-    let sub_slice = &slice[unsafe { MyIndex::from_raw_index_unchecked(1) }..unsafe { MyIndex::from_raw_index_unchecked(4) }];
+    let sub_slice = &slice[unsafe { MyIndex::from_raw_index_unchecked(1) }..unsafe {
+        MyIndex::from_raw_index_unchecked(4)
+    }];
     assert_eq!(sub_slice.len_usize(), 3);
     assert_eq!(sub_slice[MyIndex::ZERO], 20);
 }
@@ -89,8 +91,14 @@ fn test_binary_search() {
     vec.push(30).unwrap();
     vec.push(40).unwrap();
 
-    assert_eq!(vec.binary_search(&20), Ok(unsafe { MyIndex::from_raw_index_unchecked(1) }));
-    assert_eq!(vec.binary_search(&25), Err(unsafe { MyIndex::from_raw_index_unchecked(2) }));
+    assert_eq!(
+        vec.binary_search(&20),
+        Ok(unsafe { MyIndex::from_raw_index_unchecked(1) })
+    );
+    assert_eq!(
+        vec.binary_search(&25),
+        Err(unsafe { MyIndex::from_raw_index_unchecked(2) })
+    );
 }
 
 #[test]
@@ -100,7 +108,11 @@ fn test_get_disjoint_mut() {
     vec.push(20).unwrap();
     vec.push(30).unwrap();
 
-    let [a, b] = vec.get_disjoint_mut([MyIndex::ZERO, unsafe { MyIndex::from_raw_index_unchecked(2) }]).unwrap();
+    let [a, b] = vec
+        .get_disjoint_mut([MyIndex::ZERO, unsafe {
+            MyIndex::from_raw_index_unchecked(2)
+        }])
+        .unwrap();
     *a += 1;
     *b += 1;
 
@@ -108,7 +120,10 @@ fn test_get_disjoint_mut() {
     assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 31);
 
     // Overlapping indices should fail
-    assert!(vec.get_disjoint_mut([MyIndex::ZERO, MyIndex::ZERO]).is_err());
+    assert!(
+        vec.get_disjoint_mut([MyIndex::ZERO, MyIndex::ZERO])
+            .is_err()
+    );
 }
 
 #[test]
@@ -131,7 +146,7 @@ fn test_nonzero_capacity_limit() {
 
 #[test]
 fn test_macros() {
-    use index_type::{typed_vec, typed_array, typed_slice, typed_slice_mut};
+    use index_type::{typed_array, typed_slice, typed_slice_mut, typed_vec};
 
     // Test typed_vec!
     let v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];

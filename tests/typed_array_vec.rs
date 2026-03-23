@@ -1,6 +1,6 @@
 use index_type::IndexType;
-use index_type::typed_array_vec::TypedArrayVec;
 use index_type::typed_array::TypedArray;
+use index_type::typed_array_vec::TypedArrayVec;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
