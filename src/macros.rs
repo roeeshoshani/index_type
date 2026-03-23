@@ -158,11 +158,11 @@ macro_rules! typed_slice {
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);
 ///
-/// fn foo(slice: &mut TypedSlice<MyIndex, i32>) {
+/// fn print_mut_slice(slice: &mut TypedSlice<MyIndex, i32>) {
 ///     println!("{:?}", slice);
 /// }
 ///
-/// foo(typed_slice_mut![1, 2, 3]);
+/// print_mut_slice(typed_slice_mut![1, 2, 3]);
 /// ```
 #[macro_export]
 macro_rules! typed_slice_mut {
