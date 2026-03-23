@@ -1,3 +1,5 @@
+use core::iter::FusedIterator;
+
 use crate::{IndexScalarType, IndexType};
 
 /// A trait which allows iterating over ranges which use custom index types.
@@ -24,6 +26,16 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedRangeIter<I: IndexType>(pub core::ops::Range<I>);
 
+impl<I: IndexType> TypedRangeIter<I> {
+    pub fn len(&self) -> usize {
+        if self.0.start < self.0.end {
+            unsafe { self.0.end.unchecked_sub_index(self.0.start) }.to_usize()
+        } else {
+            0
+        }
+    }
+}
+
 impl<I: IndexType> Iterator for TypedRangeIter<I> {
     type Item = I;
 
@@ -39,21 +51,13 @@ impl<I: IndexType> Iterator for TypedRangeIter<I> {
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.0.start < self.0.end {
-            let steps = unsafe { self.0.end.unchecked_sub_index(self.0.start) }.to_usize();
-            (steps, Some(steps))
-        } else {
-            (0, Some(0))
-        }
+        let len = self.len();
+        (len, Some(len))
     }
 
     #[inline]
     fn count(self) -> usize {
-        if self.0.start < self.0.end {
-            unsafe { self.0.end.unchecked_sub_index(self.0.start) }.to_usize()
-        } else {
-            0
-        }
+        self.len()
     }
 
     #[inline]
@@ -129,3 +133,11 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeIter<I> {
         Some(res)
     }
 }
+
+impl<I: IndexType> ExactSizeIterator for TypedRangeIter<I> {
+    fn len(&self) -> usize {
+        self.len()
+    }
+}
+
+impl<I: IndexType> FusedIterator for TypedRangeIter<I> {}
