@@ -9,10 +9,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{
-    IndexScalarType, IndexType, typed_array::TypedArray, typed_range_iter::TypedRangeIterExt,
-    typed_slice::TypedSlice,
-};
+use crate::{IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
 
 #[cold]
 fn panic_insufficient_capacity() -> ! {

@@ -1,7 +1,20 @@
+use std::{cell::Cell, rc::Rc};
+
 use index_type::{IndexType, typed_array::TypedArray, typed_array_vec::TypedArrayVec};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
+
+#[derive(Debug, Clone)]
+struct DropCounter<T> {
+    value: T,
+    drop_counter: Rc<Cell<usize>>,
+}
+impl<T> Drop for DropCounter<T> {
+    fn drop(&mut self) {
+        self.drop_counter.update(|x| x + 1);
+    }
+}
 
 #[test]
 fn test_new() {
@@ -156,6 +169,44 @@ fn test_drain_back_iteration() {
         assert_eq!(drain.next_back(), None);
     }
     assert_eq!(vec.as_slice().as_slice(), &[1, 7, 8]);
+}
+
+#[test]
+fn test_drain_panic() {
+    let drop_counter = Rc::new(Cell::new(0));
+    let mut vec: TypedArrayVec<MyIndex, DropCounter<i32>, 8> = TypedArrayVec::new();
+    vec.push(DropCounter {
+        value: 1,
+        drop_counter: Rc::clone(&drop_counter),
+    });
+    vec.push(DropCounter {
+        value: 2,
+        drop_counter: Rc::clone(&drop_counter),
+    });
+    vec.push(DropCounter {
+        value: 3,
+        drop_counter: Rc::clone(&drop_counter),
+    });
+    vec.push(DropCounter {
+        value: 4,
+        drop_counter: Rc::clone(&drop_counter),
+    });
+    vec.push(DropCounter {
+        value: 5,
+        drop_counter: Rc::clone(&drop_counter),
+    });
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let mut drain = vec.drain(MyIndex(1)..MyIndex(4));
+        assert_eq!(drain.next().unwrap().value, 2);
+        assert_eq!(drain.next_back().unwrap().value, 4);
+        panic!("panic while holding drain");
+    }));
+    assert_eq!(drop_counter.get(), 3);
+    assert_eq!(vec.len().to_raw_index(), 2);
+    assert_eq!(vec[MyIndex(0)].value, 1);
+    assert_eq!(vec[MyIndex(1)].value, 5);
+    drop(vec);
+    assert_eq!(drop_counter.get(), 5);
 }
 
 #[test]
