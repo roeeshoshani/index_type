@@ -360,32 +360,109 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         F: FnMut(&T) -> bool,
     {
-        let old_len = self.len;
-        let mut new_len = I::ZERO;
-        for i in (I::ZERO..old_len).iter() {
-            // TODO: what if `f` panics?
-            // TODO: what if the drop impl of the type panics?
+        // NOTE: the implementation was copied from the stdlib implementation of `Vec::retain_mut`.
 
-            // SAFETY: Elements are initialized up to old_len.
-            let keep = unsafe { f(self.storage.get_unchecked(i).assume_init_ref()) };
-            if keep {
-                if i != new_len {
-                    // SAFETY: Move element to new_len.
-                    unsafe {
-                        let src = self.storage.get_unchecked(i).as_ptr();
-                        let dst = self.storage.get_unchecked_mut(new_len).as_mut_ptr();
-                        core::ptr::copy_nonoverlapping(src, dst, 1);
-                    }
-                }
-                new_len = unsafe { new_len.unchecked_add_scalar(I::Scalar::ONE) };
-            } else {
-                // SAFETY: Drop element that is not kept.
+        let old_len = self.len();
+
+        if old_len == I::ZERO {
+            // Empty case: explicit return allows better optimization, vs letting compiler infer it
+            return;
+        }
+
+        // Vec: [Kept, Kept, Hole, Hole, Hole, Hole, Unchecked, Unchecked]
+        //      |            ^- write                ^- read             |
+        //      |<-              original_len                          ->|
+        // Kept: Elements which predicate returns true on.
+        // Hole: Moved or dropped element slot.
+        // Unchecked: Unchecked valid elements.
+        //
+        // This drop guard will be invoked when predicate or `drop` of element panicked.
+        // It shifts unchecked elements to cover holes and `set_len` to the correct length.
+        // In cases when predicate and `drop` never panick, it will be optimized out.
+        struct PanicGuard<'a, I: IndexType, T, const N: usize> {
+            v: &'a mut TypedArrayVec<I, T, N>,
+            read: I,
+            write: I,
+            original_len: I,
+        }
+
+        impl<'a, I: IndexType, T, const N: usize> Drop for PanicGuard<'a, I, T, N> {
+            #[cold]
+            fn drop(&mut self) {
+                let remaining = unsafe { self.original_len.unchecked_sub_index(self.read) };
+
+                // SAFETY: Trailing unchecked items must be valid since we never touch them.
                 unsafe {
-                    self.storage.get_unchecked_mut(i).assume_init_drop();
+                    core::ptr::copy(
+                        self.v.as_ptr().add(self.read.to_raw_index()),
+                        self.v.as_mut_ptr().add(self.write.to_raw_index()),
+                        remaining.to_usize(),
+                    );
+                }
+                // SAFETY: After filling holes, all items are in contiguous memory.
+                unsafe {
+                    self.v.set_len(self.write.unchecked_add_scalar(remaining));
                 }
             }
         }
-        self.len = new_len;
+
+        let mut read = I::ZERO;
+        loop {
+            // SAFETY: read < original_len
+            let cur = unsafe { self.get_unchecked_mut(read) };
+            if !f(cur) {
+                break;
+            }
+            read = unsafe { read.unchecked_add_scalar(I::Scalar::ONE) };
+            if read == old_len {
+                // All elements are kept, return early.
+                return;
+            }
+        }
+
+        // Critical section starts here and at least one element is going to be removed.
+        // Advance `g.read` early to avoid double drop if `drop_in_place` panicked.
+        let mut g = PanicGuard {
+            v: self,
+            read: unsafe { read.unchecked_add_scalar(I::Scalar::ONE) },
+            write: read,
+            original_len: old_len,
+        };
+        unsafe { core::ptr::drop_in_place(&mut *g.v.as_mut_ptr().add(read.to_raw_index())) };
+
+        while g.read < g.original_len {
+            let cur = unsafe { &mut *g.v.as_mut_ptr().add(g.read.to_raw_index()) };
+            if !f(cur) {
+                // Advance `read` early to avoid double drop if `drop_in_place` panicked.
+                g.read = unsafe { g.read.unchecked_add_scalar(I::Scalar::ONE) };
+                unsafe { core::ptr::drop_in_place(cur) };
+            } else {
+                // We use copy for move, and never touch the source element again.
+                unsafe {
+                    let hole = g.v.as_mut_ptr().add(g.write.to_raw_index());
+                    core::ptr::copy_nonoverlapping(cur, hole, 1);
+                }
+                g.write = unsafe { g.write.unchecked_add_scalar(I::Scalar::ONE) };
+                g.read = unsafe { g.read.unchecked_add_scalar(I::Scalar::ONE) };
+            }
+        }
+
+        // We are leaving the critical section and no panic happened,
+        // Commit the length change and forget the guard.
+        unsafe { g.v.set_len(g.write) };
+        core::mem::forget(g);
+    }
+
+    /// Set the vector’s length without dropping or moving out elements
+    ///
+    /// This method is `unsafe` because it changes the notion of the
+    /// number of “valid” elements in the vector. Use with care.
+    ///
+    /// This method uses *debug assertions* to check that `length` is
+    /// not greater than the capacity.
+    pub unsafe fn set_len(&mut self, length: I) {
+        debug_assert!(length <= self.capacity());
+        self.len = length;
     }
 
     /// Returns a draining iterator that removes the specified range in the vector and yields the removed items.
