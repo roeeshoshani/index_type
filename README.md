@@ -251,9 +251,12 @@ assert!(vec.try_push(255).is_err());
 
 ### no_std Compatibility
 
-This crate is `no_std` compatible. Enable the `alloc` feature for heap-allocated collections (`TypedVec`):
+This crate is `no_std` compatible. The `alloc` feature (enabled by default) enables
+heap-allocated collections ([`TypedVec`](crate::typed_vec::TypedVec) and related macros).
+
+For pure `no_std` environments without heap allocation, disable the `alloc` feature:
 
 ```toml
 [dependencies]
-index_type = { version = "0.1", features = ["alloc"] }
+index_type = { version = "0.1", default-features = false }
 ```

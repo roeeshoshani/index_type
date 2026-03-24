@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::{typed_slice::TypedSlice, typed_vec::TypedVec, IndexType};
+use crate::{typed_slice::TypedSlice, IndexType};
 
 #[doc(hidden)]
 pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {
@@ -15,8 +15,11 @@ pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {
     let _ = AssertLenInBounds::<I, N>::OK;
 }
 
+#[cfg(feature = "alloc")]
 #[doc(hidden)]
-pub const fn __const_assert_vec_in_bounds<I: IndexType, T, const N: usize>(_: &TypedVec<I, T>) {
+pub const fn __const_assert_vec_in_bounds<I: IndexType, T, const N: usize>(
+    _: &crate::typed_vec::TypedVec<I, T>,
+) {
     __const_assert_len_in_bounds::<I, N>();
 }
 
@@ -50,6 +53,7 @@ macro_rules! __count {
     };
 }
 
+#[cfg(feature = "alloc")]
 /// Creates a [`TypedVec`](crate::typed_vec::TypedVec) containing the arguments.
 ///
 /// `typed_vec!` allows `TypedVec` to be defined with the same syntax as the standard library's `vec!` macro.

@@ -27,10 +27,10 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{
-    typed_array::TypedArray, typed_vec::TypedVec, utils::range_bounds_to_raw, IndexScalarType,
-    IndexTooBigError, IndexType,
-};
+use crate::{IndexScalarType, IndexType, typed_array::TypedArray, utils::range_bounds_to_raw};
+
+#[cfg(feature = "alloc")]
+use crate::{IndexTooBigError, typed_vec::TypedVec};
 
 mod index;
 
@@ -1110,6 +1110,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
 
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn repeat(&self, n: usize) -> Result<TypedVec<I, T>, I::IndexTooBigError>
     where
@@ -1156,6 +1157,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         self.raw.sort();
     }
 
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn sort_by<F>(&mut self, compare: F)
     where
@@ -1164,6 +1166,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         self.raw.sort_by(compare);
     }
 
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn sort_by_key<K, F>(&mut self, f: F)
     where
@@ -1173,6 +1176,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         self.raw.sort_by_key(f);
     }
 
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn sort_by_cached_key<K, F>(&mut self, f: F)
     where
@@ -1206,6 +1210,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         raw.split_off_last_mut()
     }
 
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn to_vec(&self) -> TypedVec<I, T>
     where

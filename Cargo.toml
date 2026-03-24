@@ -6,5 +6,9 @@ edition = "2024"
 [workspace]
 members = ["index_type_macros"]
 
+[features]
+default = ["alloc"]
+alloc = []
+
 [dependencies]
 index_type_macros = { path = "index_type_macros" }
