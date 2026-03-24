@@ -768,7 +768,7 @@ impl<'a, I: IndexType, T, const N: usize> IntoIterator for &'a TypedArrayVec<I, 
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.as_slice().as_slice().iter()
+        self.as_slice().iter()
     }
 }
 
@@ -778,7 +778,7 @@ impl<'a, I: IndexType, T, const N: usize> IntoIterator for &'a mut TypedArrayVec
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.as_mut_slice().as_mut_slice().iter_mut()
+        self.as_mut_slice().iter_mut()
     }
 }
 
