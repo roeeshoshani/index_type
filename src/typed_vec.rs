@@ -36,8 +36,8 @@ use core::{
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
-    IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice,
-    utils::range_bounds_to_raw,
+    typed_slice::TypedSlice, utils::range_bounds_to_raw, IndexScalarType, IndexTooBigError,
+    IndexType,
 };
 
 /// A growable vector with typed indexing.
@@ -858,7 +858,7 @@ impl<I: IndexType, T: Clone> IntoIterator for TypedVec<I, T> {
         self.raw.into_iter()
     }
 }
-impl<'a, I: IndexType, T: Clone> IntoIterator for &'a TypedVec<I, T> {
+impl<'a, I: IndexType, T> IntoIterator for &'a TypedVec<I, T> {
     type Item = &'a T;
 
     type IntoIter = core::slice::Iter<'a, T>;
@@ -867,7 +867,7 @@ impl<'a, I: IndexType, T: Clone> IntoIterator for &'a TypedVec<I, T> {
         (&self.raw).into_iter()
     }
 }
-impl<'a, I: IndexType, T: Clone> IntoIterator for &'a mut TypedVec<I, T> {
+impl<'a, I: IndexType, T> IntoIterator for &'a mut TypedVec<I, T> {
     type Item = &'a mut T;
 
     type IntoIter = core::slice::IterMut<'a, T>;
