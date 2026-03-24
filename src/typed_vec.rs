@@ -36,8 +36,8 @@ use core::{
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
-    IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice,
-    utils::range_bounds_to_raw,
+    typed_slice::TypedSlice, utils::range_bounds_to_raw, IndexScalarType, IndexTooBigError,
+    IndexType,
 };
 
 /// A growable vector with typed indexing.
@@ -165,7 +165,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// let std_vec = vec![1, 2, 3];
     /// let typed: TypedVec<Idx, i32> = TypedVec::from_vec(std_vec);
-    /// assert_eq!(typed.len_as_index().to_raw_index(), 3);
+    /// assert_eq!(typed.len().to_raw_index(), 3);
     /// ```
     #[inline]
     pub fn from_vec(vec: Vec<T>) -> Self {

@@ -36,7 +36,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
+use crate::{typed_array::TypedArray, typed_slice::TypedSlice, IndexScalarType, IndexType};
 
 #[cold]
 fn panic_insufficient_capacity() -> ! {
@@ -131,25 +131,26 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     ///
     /// Panics if the `TypedArrayVec` is full.
     #[inline]
-    pub fn push(&mut self, element: T) {
+    pub fn push(&mut self, element: T) -> I {
         self.try_push(element)
             .unwrap_or_else(|_| panic_insufficient_capacity())
     }
 
     /// Tries to append an element to the back of the `TypedArrayVec`.
     ///
-    /// Returns an error if the `TypedArrayVec` is full.
+    /// Returns the index of the inserted element, or an error if the `TypedArrayVec` is full.
     #[inline]
-    pub fn try_push(&mut self, element: T) -> Result<(), CapacityError<T>> {
+    pub fn try_push(&mut self, element: T) -> Result<I, CapacityError<T>> {
         if self.is_full() {
             return Err(CapacityError::new(element));
         }
+        let idx = self.len;
         // SAFETY: The capacity is not exceeded.
         unsafe {
             self.storage.get_unchecked_mut(self.len).write(element);
             self.len = self.len.unchecked_add_scalar(I::Scalar::ONE);
         }
-        Ok(())
+        Ok(idx)
     }
 
     /// Appends elements from a `TypedSlice` to the `TypedArrayVec`.
