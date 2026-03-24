@@ -1,7 +1,31 @@
-//! A growable, typed vector.
+//! A growable vector with typed indexing.
 //!
-//! This module provides [`TypedVec`], which is a wrapper around [`Vec`] that uses a custom
-//! [`IndexType`] for indexing.
+//! This module provides [`TypedVec`], a wrapper around [`Vec`] that uses a custom
+//! [`IndexType`] for all indexing operations. This provides compile-time guarantees that
+//! indices cannot be accidentally used with the wrong collection.
+//!
+//! # Example
+//!
+//! ```
+//! use index_type::IndexType;
+//! use index_type::typed_vec::TypedVec;
+//!
+//! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct NodeId(u32);
+//!
+//! let mut nodes: TypedVec<NodeId, String> = TypedVec::new();
+//! let id0 = nodes.push("Alice".to_string());
+//! let id1 = nodes.push("Bob".to_string());
+//!
+//! assert_eq!(nodes[id0], "Alice");
+//! assert_eq!(nodes[id1], "Bob");
+//! ```
+//!
+//! # Capacity and Growth
+//!
+//! `TypedVec` has the same growth behavior as `Vec`. Operations that would cause the length
+//! to exceed `I::MAX_RAW_INDEX` return an error or panic, depending on whether you use
+//! the fallible or infallible variant.
 
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -16,14 +40,55 @@ use crate::{
     IndexType,
 };
 
-/// A `Vec` wrapper that uses a custom index type.
+/// A growable vector with typed indexing.
+///
+/// `TypedVec<I, T>` is a wrapper around `Vec<T>` that uses the custom index type `I`
+/// for all indexing operations. This provides compile-time guarantees that indices
+/// cannot be accidentally used with the wrong collection.
+///
+/// # Type Parameters
+///
+/// - `I`: The index type that implements [`IndexType`]
+/// - `T`: The element type stored in the vector
+///
+/// # Example
+///
+/// ```
+/// use index_type::IndexType;
+/// use index_type::typed_vec::TypedVec;
+///
+/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// struct RowId(u32);
+///
+/// let mut rows: TypedVec<RowId, String> = TypedVec::new();
+/// let id0 = rows.push("Row 0".to_string());
+/// let id1 = rows.push("Row 1".to_string());
+///
+/// assert_eq!(rows[id0], "Row 0");
+/// ```
 #[repr(transparent)]
 pub struct TypedVec<I: IndexType, T> {
     raw: Vec<T>,
     phantom: PhantomData<fn(&I)>,
 }
+
 impl<I: IndexType, T> TypedVec<I, T> {
     /// Creates a new, empty `TypedVec`.
+    ///
+    /// The vector will not allocate until elements are pushed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let vec: TypedVec<Idx, i32> = TypedVec::new();
+    /// assert!(vec.is_empty());
+    /// ```
     #[inline]
     pub const fn new() -> Self {
         Self {
@@ -33,6 +98,21 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     /// Creates a new `TypedVec` with the specified capacity.
+    ///
+    /// The vector will be able to hold at least `capacity` elements without reallocating.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let vec: TypedVec<Idx, i32> = TypedVec::with_capacity(10);
+    /// assert!(vec.capacity() >= 10);
+    /// ```
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
@@ -41,9 +121,23 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
-    /// Tries to create a `TypedVec` from a `Vec`.
+    /// Attempts to create a `TypedVec` from a `Vec`.
     ///
-    /// Returns an error if the `Vec`'s length exceeds the maximum value representable by `I`.
+    /// Returns an error if the `Vec`'s length exceeds `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u8);
+    ///
+    /// let std_vec: Vec<i32> = vec![1, 2, 3];
+    /// let typed: Result<TypedVec<Idx, i32>, _> = TypedVec::try_from_vec(std_vec);
+    /// assert!(typed.is_ok());
+    /// ```
     #[inline]
     pub fn try_from_vec(vec: Vec<T>) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(vec.len())?;
@@ -56,7 +150,23 @@ impl<I: IndexType, T> TypedVec<I, T> {
 
     /// Creates a `TypedVec` from a `Vec`.
     ///
-    /// Panics if the `Vec`'s length exceeds the maximum value representable by `I`.
+    /// # Panics
+    ///
+    /// Panics if the `Vec`'s length exceeds `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let std_vec = vec![1, 2, 3];
+    /// let typed: TypedVec<Idx, i32> = TypedVec::from_vec(std_vec);
+    /// assert_eq!(typed.len_as_index().to_raw_index(), 3);
+    /// ```
     #[inline]
     pub fn from_vec(vec: Vec<T>) -> Self {
         match Self::try_from_vec(vec) {
@@ -65,11 +175,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
-    /// Creates a `TypedVec` from a `Vec` without checking if its length is in bounds.
+    /// Creates a `TypedVec` from a `Vec` without checking bounds.
     ///
     /// # Safety
     ///
-    /// The `Vec`'s length must be less than or equal to `I::MAX_RAW_INDEX`.
+    /// The `Vec`'s length must not exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub unsafe fn from_vec_unchecked(vec: Vec<T>) -> Self {
         Self {
@@ -78,11 +188,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
-    /// Creates a `TypedVec` from raw parts.
+    /// Attempts to create a `TypedVec` from raw parts.
     ///
     /// # Safety
     ///
-    /// See `Vec::from_raw_parts`.
+    /// Same as [`Vec::from_raw_parts`], plus the length must not exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub unsafe fn try_from_raw_parts(
         ptr: *mut T,
@@ -91,7 +201,6 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(length)?;
         Ok(Self {
-            // SAFETY: The caller ensures the pointer is valid and the parts are correct.
             raw: unsafe { Vec::from_raw_parts(ptr, length, capacity) },
             phantom: PhantomData,
         })
@@ -99,14 +208,15 @@ impl<I: IndexType, T> TypedVec<I, T> {
 
     /// Creates a `TypedVec` from raw parts.
     ///
-    /// Panics if the length exceeds the maximum value representable by `I`.
+    /// # Panics
+    ///
+    /// Panics if the length exceeds `I::MAX_RAW_INDEX`.
     ///
     /// # Safety
     ///
-    /// See `Vec::from_raw_parts`.
+    /// Same as [`Vec::from_raw_parts`], plus the length must not exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub unsafe fn from_raw_parts(ptr: *mut T, length: usize, capacity: usize) -> Self {
-        // SAFETY: The caller ensures the pointer and parts are valid, and the length is checked for validity.
         unsafe {
             match Self::try_from_raw_parts(ptr, length, capacity) {
                 Ok(v) => v,
@@ -116,6 +226,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 
     /// Decomposes the `TypedVec` into its raw parts.
+    ///
+    /// Returns the pointer, length, and capacity of the underlying `Vec`.
     #[inline]
     pub fn into_raw_parts(self) -> (*mut T, usize, usize) {
         self.raw.into_raw_parts()
@@ -127,31 +239,48 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw
     }
 
-    /// Returns the length of the `TypedVec` as a scalar.
+    /// Returns the length of the vector as a scalar.
+    ///
+    /// The scalar type is `I::Scalar`.
     #[inline]
     pub fn len(&self) -> I::Scalar {
-        // SAFETY: The length of the vector is guaranteed to be representable by I::Scalar
-        // because we check it on creation and on every operation that increases it.
         unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(self.raw.len()) }
     }
 
-    /// Returns the length of the `TypedVec` as an index.
+    /// Returns the length of the vector as an index.
+    ///
+    /// The index type is `I`.
     #[inline]
     pub fn len_as_index(&self) -> I {
-        // SAFETY: The length of the vector is guaranteed to be representable by I
-        // because we check it on creation and on every operation that increases it.
         unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
-    /// Returns the capacity of the `TypedVec`.
+    /// Returns the total capacity of the vector (in elements).
+    ///
+    /// Note: This returns the raw `usize` capacity, not the typed capacity.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.raw.capacity()
     }
 
-    /// Tries to append an element to the back of the `TypedVec`.
+    /// Attempts to append an element to the back of the vector.
     ///
-    /// Returns an error if the new length exceeds the maximum value representable by `I`.
+    /// Returns the index of the appended element, or an error if the length
+    /// would exceed `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let mut vec: TypedVec<Idx, i32> = TypedVec::new();
+    /// let idx = vec.try_push(42).unwrap();
+    /// assert_eq!(vec[idx], 42);
+    /// ```
     #[inline]
     pub fn try_push(&mut self, value: T) -> Result<I, I::IndexTooBigError> {
         let res = self.len_as_index();
@@ -160,11 +289,13 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(res)
     }
 
-    /// Appends an element to the back of the `TypedVec`.
+    /// Appends an element to the back of the vector.
+    ///
+    /// Returns the index of the appended element.
     ///
     /// # Panics
     ///
-    /// Panics if the new length exceeds the maximum value representable by `I`.
+    /// Panics if the length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn push(&mut self, value: T) -> I {
         match self.try_push(value) {
@@ -173,9 +304,10 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
-    /// Tries to append all elements from another `TypedVec` to the back of this one.
+    /// Attempts to append all elements from another `TypedVec` to this one.
     ///
-    /// Returns an error if the combined length exceeds the maximum value representable by `I`.
+    /// Returns an error if the combined length would exceed `I::MAX_RAW_INDEX`.
+    /// The source vector is emptied after the operation.
     #[inline]
     pub fn try_append(&mut self, other: &mut TypedVec<I, T>) -> Result<(), I::IndexTooBigError> {
         let _new_len = self.len_as_index().checked_add_scalar(other.len())?;
@@ -183,11 +315,13 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(())
     }
 
-    /// Appends all elements from another `TypedVec` to the back of this one.
+    /// Appends all elements from another `TypedVec` to this one.
+    ///
+    /// The source vector is emptied after the operation.
     ///
     /// # Panics
     ///
-    /// Panics if the combined length exceeds the maximum value representable by `I`.
+    /// Panics if the combined length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn append(&mut self, other: &mut TypedVec<I, T>) {
         match self.try_append(other) {
@@ -196,88 +330,120 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
+    /// Returns a raw pointer to the vector's buffer.
     #[inline]
     pub const fn as_mut_ptr(&mut self) -> *mut T {
         self.raw.as_mut_ptr()
     }
 
+    /// Reserves capacity for at least `additional` more elements.
+    ///
+    /// See [`Vec::reserve`] for details.
     #[inline]
     pub fn reserve(&mut self, additional: usize) {
         self.raw.reserve(additional);
     }
 
+    /// Reserves the exact capacity for `additional` more elements.
+    ///
+    /// See [`Vec::reserve_exact`] for details.
     #[inline]
     pub fn reserve_exact(&mut self, additional: usize) {
         self.raw.reserve_exact(additional)
     }
 
+    /// Attempts to reserve capacity for at least `additional` more elements.
+    ///
+    /// See [`Vec::try_reserve`] for details.
     #[inline]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
         self.raw.try_reserve(additional)
     }
 
+    /// Attempts to reserve the exact capacity for `additional` more elements.
+    ///
+    /// See [`Vec::try_reserve_exact`] for details.
     #[inline]
     pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError> {
         self.raw.try_reserve_exact(additional)
     }
 
+    /// Reduces the capacity to fit the current length.
+    ///
+    /// See [`Vec::shrink_to_fit`] for details.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
         self.raw.shrink_to_fit();
     }
 
+    /// Shrinks the capacity to at least the specified minimum.
+    ///
+    /// See [`Vec::shrink_to`] for details.
     #[inline]
     pub fn shrink_to(&mut self, min_capacity: usize) {
         self.raw.shrink_to(min_capacity);
     }
 
+    /// Converts the vector into a boxed slice.
+    ///
+    /// The resulting slice has the same lifetime as the original vector.
     #[inline]
     pub fn into_boxed_slice(self) -> Box<TypedSlice<I, T>> {
         // SAFETY: TypedSlice is repr(transparent) over [T].
         unsafe { core::mem::transmute(self.raw.into_boxed_slice()) }
     }
 
+    /// Shortens the vector to the specified length.
+    ///
+    /// If `len` is greater than the current length, this has no effect.
     #[inline]
     pub fn truncate(&mut self, len: I::Scalar) {
         self.raw.truncate(len.to_usize());
     }
 
+    /// Returns the vector as a typed slice reference.
     #[inline]
     pub fn as_slice(&self) -> &TypedSlice<I, T> {
-        // SAFETY: The length of the slice is guaranteed to be in bounds for I.
         unsafe { TypedSlice::from_slice_unchecked(self.raw.as_slice()) }
     }
 
+    /// Returns a mutable typed slice reference.
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
-        // SAFETY: The length of the slice is guaranteed to be in bounds for I.
         unsafe { TypedSlice::from_slice_unchecked_mut(self.raw.as_mut_slice()) }
     }
 
+    /// Returns a raw pointer to the vector's buffer.
     #[inline]
     pub const fn as_ptr(&self) -> *const T {
         self.raw.as_ptr()
     }
 
-    /// Sets the length of the `TypedVec`.
+    /// Sets the length of the vector.
     ///
     /// # Safety
     ///
-    /// See `Vec::set_len`.
+    /// Same as [`Vec::set_len`], plus the new length must not exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: I) {
-        // SAFETY: The caller must ensure that the new length is valid.
         unsafe { self.raw.set_len(new_len.to_scalar().to_usize()) };
     }
 
+    /// Removes and returns the element at `index`, swapping the last element into that position.
+    ///
+    /// This operation is O(1).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is out of bounds.
     #[inline]
     pub fn swap_remove(&mut self, index: I) -> T {
         self.raw.swap_remove(index.to_raw_index())
     }
 
-    /// Tries to insert an element at position `index` within the `TypedVec`.
+    /// Attempts to insert an element at `index`, shifting all elements after it to the right.
     ///
-    /// Returns an error if the new length exceeds the maximum value representable by `I`.
+    /// Returns an error if the new length would exceed `I::MAX_RAW_INDEX`.
     ///
     /// # Panics
     ///
@@ -289,11 +455,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(())
     }
 
-    /// Inserts an element at position `index` within the `TypedVec`.
+    /// Inserts an element at `index`, shifting all elements after it to the right.
     ///
     /// # Panics
     ///
-    /// Panics if the new length exceeds the maximum value representable by `I` or if `index > len`.
+    /// Panics if `index > len` or if the new length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn insert(&mut self, index: I, element: T) {
         match self.try_insert(index, element) {
@@ -302,11 +468,21 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
+    /// Removes and returns the element at `index`, shifting all elements after it to the left.
+    ///
+    /// This operation is O(n).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is out of bounds.
     #[inline]
     pub fn remove(&mut self, index: I) -> T {
         self.raw.remove(index.to_raw_index())
     }
 
+    /// Retains only elements that satisfy the predicate.
+    ///
+    /// See [`Vec::retain`] for details.
     #[inline]
     pub fn retain<F>(&mut self, f: F)
     where
@@ -315,6 +491,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.retain(f)
     }
 
+    /// Retains only elements that satisfy the predicate, passing a mutable reference.
+    ///
+    /// See [`Vec::retain_mut`] for details.
     #[inline]
     pub fn retain_mut<F>(&mut self, f: F)
     where
@@ -323,6 +502,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.retain_mut(f)
     }
 
+    /// Removes consecutive duplicate elements, using `key` to determine equality.
+    ///
+    /// See [`Vec::dedup_by_key`] for details.
     #[inline]
     pub fn dedup_by_key<F, K>(&mut self, key: F)
     where
@@ -332,6 +514,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.dedup_by_key(key);
     }
 
+    /// Removes consecutive duplicate elements, using `same_bucket` to determine equality.
+    ///
+    /// See [`Vec::dedup_by`] for details.
     #[inline]
     pub fn dedup_by<F>(&mut self, same_bucket: F)
     where
@@ -340,34 +525,44 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.dedup_by(same_bucket);
     }
 
+    /// Removes and returns the last element, or `None` if the vector is empty.
     #[inline]
     pub fn pop(&mut self) -> Option<T> {
         self.raw.pop()
     }
 
+    /// Removes and returns the last element if `predicate` returns `true`.
+    ///
+    /// See [`Vec::pop_if`] for details.
     #[inline]
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         self.raw.pop_if(predicate)
     }
 
+    /// Removes all elements from the vector.
     #[inline]
     pub fn clear(&mut self) {
         self.raw.clear();
     }
 
+    /// Returns `true` if the vector contains no elements.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.raw.is_empty()
     }
 
+    /// Splits the vector into two at the given index.
+    ///
+    /// Returns everything after the split point.
     #[inline]
     pub fn split_off(&mut self, at: I) -> Self {
         let new_vec = self.raw.split_off(at.to_raw_index());
-        // SAFETY: The new vector's length must be less than or equal to the original vector's length,
-        // which was already guaranteed to be in bounds for I.
         unsafe { Self::from_vec_unchecked(new_vec) }
     }
 
+    /// Grows the vector in place, filling new positions with the result of `f`.
+    ///
+    /// See [`Vec::resize_with`] for details.
     #[inline]
     pub fn resize_with<F>(&mut self, new_len: I, f: F)
     where
@@ -376,11 +571,17 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.resize_with(new_len.to_scalar().to_usize(), f);
     }
 
+    /// Leaks the vector and returns a mutable reference to its contents.
+    ///
+    /// See [`Vec::leak`] for details.
     #[inline]
     pub fn leak<'a>(self) -> &'a mut [T] {
         self.raw.leak()
     }
 
+    /// Creates a draining iterator that removes the specified range.
+    ///
+    /// See [`Vec::drain`] for details.
     #[inline]
     pub fn drain<R>(&mut self, range: R) -> alloc::vec::Drain<'_, T>
     where
@@ -389,6 +590,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.drain(range_bounds_to_raw(range))
     }
 
+    /// Creates a splicing iterator that removes the specified range and replaces it.
+    ///
+    /// See [`Vec::splice`] for details.
     #[inline]
     pub fn splice<R, X>(&mut self, range: R, replace_with: X) -> alloc::vec::Splice<'_, X::IntoIter>
     where
@@ -398,9 +602,10 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw.splice(range_bounds_to_raw(range), replace_with)
     }
 
-    /// Tries to extend the `TypedVec` with the contents of an iterator.
+    /// Attempts to extend the vector with the contents of an iterator.
     ///
-    /// Returns an error if the new length exceeds the maximum value representable by `I`.
+    /// Returns an error if the new length would exceed `I::MAX_RAW_INDEX`.
+    /// On error, the vector is unchanged.
     #[inline]
     pub fn try_extend<X: IntoIterator<Item = T>>(
         &mut self,
@@ -417,9 +622,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 
-    /// Extends the `TypedVec` with the contents of an iterator.
+    /// Extends the vector with the contents of an iterator.
     ///
-    /// Panics if the new length exceeds the maximum value representable by `I`.
+    /// # Panics
+    ///
+    /// Panics if the new length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn extend<X: IntoIterator<Item = T>>(&mut self, iter: X) {
         match self.try_extend(iter) {
@@ -428,7 +635,11 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
     }
 }
+
 impl<I: IndexType, T: Copy> TypedVec<I, T> {
+    /// Attempts to extend the vector by copying elements from a slice.
+    ///
+    /// See [`Vec::extend_from_slice`] for details.
     #[inline]
     pub fn try_extend_copy<'a, X: IntoIterator<Item = &'a T>>(
         &mut self,
@@ -448,6 +659,11 @@ impl<I: IndexType, T: Copy> TypedVec<I, T> {
         }
     }
 
+    /// Extends the vector by copying elements from a slice.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the new length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn extend_copy<'a, X: IntoIterator<Item = &'a T>>(&mut self, iter: X)
     where
@@ -459,18 +675,29 @@ impl<I: IndexType, T: Copy> TypedVec<I, T> {
         }
     }
 }
+
 impl<I: IndexType, T: PartialEq> TypedVec<I, T> {
+    /// Removes consecutive duplicate elements.
+    ///
+    /// See [`Vec::dedup`] for details.
     #[inline]
     pub fn dedup(&mut self) {
         self.raw.dedup();
     }
 }
+
 impl<I: IndexType, T: Clone> TypedVec<I, T> {
+    /// Extends the vector by cloning elements from a typed slice.
+    ///
+    /// See [`Vec::extend_from_slice`] for details.
     #[inline]
     pub fn extend_from_slice(&mut self, other: &TypedSlice<I, T>) {
         self.raw.extend_from_slice(other.as_slice())
     }
 
+    /// Copies elements from the specified range to the end of the vector.
+    ///
+    /// See [`Vec::extend_from_within`] for details.
     #[inline]
     pub fn extend_from_within<R>(&mut self, src: R)
     where
@@ -479,6 +706,9 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         self.raw.extend_from_within(range_bounds_to_raw(src));
     }
 
+    /// Creates an iterator that filters and transforms elements, removing them in place.
+    ///
+    /// See [`Vec::extract_if`] for details.
     #[inline]
     pub fn extract_if<F, R>(&mut self, range: R, filter: F) -> alloc::vec::ExtractIf<'_, T, F>
     where
@@ -488,6 +718,9 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         self.raw.extract_if(range_bounds_to_raw(range), filter)
     }
 
+    /// Resizes the vector to the specified length, filling new positions with `value`.
+    ///
+    /// See [`Vec::resize`] for details.
     #[inline]
     pub fn resize(&mut self, new_len: I, value: T) {
         self.raw.resize(new_len.to_raw_index(), value);
@@ -495,23 +728,36 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
 }
 
 impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
-    /// Tries to convert a `TypedVec<I, [T; N]>` into a `TypedVec<I, T>`.
+    /// Attempts to flatten the vector of arrays into a vector of elements.
     ///
-    /// Returns an error if the flattened length exceeds the maximum value representable by `I`.
+    /// Returns an error if the flattened length would exceed `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u16);
+    ///
+    /// let vec: TypedVec<Idx, [u8; 2]> = TypedVec::from_vec(vec![[1, 2], [3, 4]]);
+    /// let flat: TypedVec<Idx, u8> = vec.try_into_flattened().unwrap();
+    /// assert_eq!(flat.len_usize(), 4);
+    /// ```
     pub fn try_into_flattened(self) -> Result<TypedVec<I, T>, I::IndexTooBigError> {
         let _new_len = self.len_as_index().checked_mul_scalar(
             <I::Scalar as IndexScalarType>::try_from_usize(N)
                 .ok_or(<I::IndexTooBigError as IndexTooBigError>::new())?,
         )?;
-        // SAFETY: We checked that the new length is in bounds for I.
         Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.into_flattened()) })
     }
 
-    /// Converts a `TypedVec<I, [T; N]>` into a `TypedVec<I, T>`.
+    /// Flattens the vector of arrays into a vector of elements.
     ///
     /// # Panics
     ///
-    /// Panics if the flattened length exceeds the maximum value representable by `I`.
+    /// Panics if the flattened length would exceed `I::MAX_RAW_INDEX`.
     pub fn into_flattened(self) -> TypedVec<I, T> {
         match self.try_into_flattened() {
             Ok(v) => v,

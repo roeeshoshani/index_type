@@ -1,7 +1,25 @@
-//! A dynamically sized, typed slice.
+//! A dynamically sized slice with typed indexing.
 //!
-//! This module provides [`TypedSlice`], which is a wrapper around a raw slice `[T]` that
-//! uses a custom [`IndexType`] for indexing.
+//! This module provides [`TypedSlice`], a wrapper around `[T]` that uses a custom
+//! [`IndexType`] for all indexing operations. `TypedSlice` is the core typed collection
+//! that `TypedVec`, `TypedArrayVec`, and `TypedArray` are built upon.
+//!
+//! # Example
+//!
+//! ```
+//! use index_type::IndexType;
+//! use index_type::typed_vec::TypedVec;
+//! use index_type::typed_slice::TypedSlice;
+//!
+//! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct ColIdx(u16);
+//!
+//! let vec: TypedVec<ColIdx, f64> = TypedVec::from_vec(vec![1.0, 2.0, 3.0]);
+//! let slice: &TypedSlice<ColIdx, f64> = vec.as_slice();
+//!
+//! // Safe indexing with custom type
+//! assert_eq!(slice[ColIdx::ZERO], 1.0);
+//! ```
 
 use core::{
     marker::PhantomData,

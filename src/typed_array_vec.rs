@@ -1,7 +1,34 @@
-//! A fixed-capacity, typed vector.
+//! A fixed-capacity vector with typed indexing.
 //!
-//! This module provides [`TypedArrayVec`], which is a wrapper around a vector with a fixed capacity
-//! that uses a custom [`IndexType`] for indexing and to store its length.
+//! This module provides [`TypedArrayVec`], a vector with a fixed maximum capacity that uses a
+//! custom [`IndexType`] for both indexing and storing the length. This is ideal for embedded
+//! systems or scenarios where you need predictable memory usage.
+//!
+//! # No Heap Allocation After Creation
+//!
+//! Unlike `TypedVec`, `TypedArrayVec` has a fixed capacity determined at compile time. Once created,
+//! it will never allocate additional memory. Operations that would exceed capacity return errors
+//! or panic.
+//!
+//! # Compile-Time Capacity Check
+//!
+//! The capacity `N` is checked at compile time to ensure it fits within the index type `I`'s
+//! representable range.
+//!
+//! # Example
+//!
+//! ```
+//! use index_type::IndexType;
+//! use index_type::typed_array_vec::TypedArrayVec;
+//!
+//! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct BufferIdx(u8);
+//!
+//! let mut buffer: TypedArrayVec<BufferIdx, u8, 16> = TypedArrayVec::new();
+//! buffer.push(42);
+//! assert_eq!(buffer.len().to_raw_index(), 1);
+//! assert!(!buffer.is_full());
+//! ```
 
 use core::{
     iter::FusedIterator,

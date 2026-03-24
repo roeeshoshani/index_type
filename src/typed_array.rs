@@ -1,7 +1,30 @@
-//! A fixed-size, typed array.
+//! A fixed-size array with typed indexing.
 //!
-//! This module provides [`TypedArray`], which is a wrapper around a raw array `[T; N]` that
-//! uses a custom [`IndexType`] for indexing.
+//! This module provides [`TypedArray`], a wrapper around `[T; N]` that uses a custom
+//! [`IndexType`] for all indexing operations. Unlike `TypedSlice`, `TypedArray` has a
+//! fixed size known at compile time.
+//!
+//! # Compile-Time Bounds Checking
+//!
+//! `TypedArray` performs compile-time checks to ensure that the array length `N`
+//! fits within the bounds of the index type `I`. If `N > I::MAX_RAW_INDEX`, the
+//! code will not compile.
+//!
+//! # Example
+//!
+//! ```
+//! use index_type::IndexType;
+//! use index_type::typed_array::TypedArray;
+//!
+//! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct PixelIdx(u8);
+//!
+//! let mut pixels: TypedArray<PixelIdx, [u8; 3], 4> = TypedArray::default();
+//! pixels[PixelIdx::ZERO] = [255, 0, 0];  // Red pixel
+//! pixels[PixelIdx(1)] = [0, 255, 0];     // Green pixel
+//!
+//! assert_eq!(pixels[PixelIdx::ZERO], [255, 0, 0]);
+//! ```
 
 use core::{
     array::TryFromSliceError,

@@ -1,17 +1,54 @@
+//! Extension traits and iterators for iterating over ranges with custom index types.
+//!
+//! The standard library's range types (`Range`, `RangeFrom`, `RangeInclusive`) cannot be directly
+//! iterated over with custom index types because they require the `Step` trait, which is
+//! currently unstable. This module provides extension traits that convert range types into
+//! iterator types that work with any `IndexType`.
+//!
+//! # Example
+//!
+//! ```
+//! use index_type::IndexType;
+//! use index_type::typed_range_iter::TypedRangeIterExt;
+//!
+//! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct MyIdx(u32);
+//!
+//! // Iterate over a range using your custom index type
+//! for idx in (MyIdx(5)..MyIdx(10)).iter() {
+//!     println!("{:?}", idx);
+//! }
+//! ```
+
 use core::iter::FusedIterator;
 
 use crate::{IndexScalarType, IndexType};
 
-/// A trait which allows iterating over ranges which use custom index types.
+/// An extension trait that provides `iter()` method on range types.
 ///
-/// The existing range types (e.g, [`Range`](core::ops::Range)) only support iteration when the underlying type implements the
-/// [`Step`](core::iter::Step) trait, which is currently unstable so we can't implement it for our own types.
+/// This allows iterating over ranges using custom index types.
 ///
-/// So, this type provides an extension trait which allows converting each range type to an iterable version of it which supports iteration
-/// on every index type implementing the [`IndexType`] trait.
+/// # Example
+///
+/// ```
+/// use index_type::IndexType;
+/// use index_type::typed_range_iter::TypedRangeIterExt;
+///
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// struct Idx(u32);
+///
+/// let start = Idx(0);
+/// let end = Idx(5);
+///
+/// for i in (start..end).iter() {
+///     println!("{:?}", i);
+/// }
+/// ```
 pub trait TypedRangeIterExt<I: IndexType> {
+    /// The iterator type produced by calling `iter()`.
     type Iter: Iterator<Item = I>;
 
+    /// Converts the range into an iterator.
     fn iter(self) -> Self::Iter;
 }
 
@@ -24,10 +61,16 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
     }
 }
 
+/// An iterator over a range of indices.
+///
+/// Created by calling `.iter()` on a `Range<I>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedRangeIter<I: IndexType>(pub core::ops::Range<I>);
 
 impl<I: IndexType> TypedRangeIter<I> {
+    /// Returns the number of elements in the range.
+    ///
+    /// Returns 0 if `start >= end`.
     #[inline]
     pub fn len(&self) -> usize {
         if self.0.start < self.0.end {
@@ -74,7 +117,6 @@ impl<I: IndexType> Iterator for TypedRangeIter<I> {
             return None;
         }
 
-        // SAFETY: We know that res is less than end, so adding one must not overflow
         self.0.start = unsafe { res.unchecked_add_scalar(I::Scalar::ONE) };
 
         Some(res)
@@ -154,6 +196,9 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
     }
 }
 
+/// An iterator starting from an index and unbounded at the end.
+///
+/// Created by calling `.iter()` on a `RangeFrom<I>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedRangeFromIter<I: IndexType>(pub core::ops::RangeFrom<I>);
 
@@ -210,13 +255,18 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeInclusive<I> {
     }
 }
 
+/// An iterator over a range of indices, inclusive of both ends.
+///
+/// Created by calling `.iter()` on a `RangeInclusive<I>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedRangeInclusiveIter<I: IndexType> {
     start: I,
     end: I,
     exhausted: bool,
 }
+
 impl<I: IndexType> TypedRangeInclusiveIter<I> {
+    /// Creates a new inclusive range iterator.
     #[inline]
     pub fn new(range: core::ops::RangeInclusive<I>) -> Self {
         Self {
@@ -225,19 +275,22 @@ impl<I: IndexType> TypedRangeInclusiveIter<I> {
             exhausted: false,
         }
     }
-}
 
-impl<I: IndexType> TypedRangeInclusiveIter<I> {
+    /// Returns the starting index of the range.
     #[inline]
     pub fn start(&self) -> I {
         self.start
     }
 
+    /// Returns the ending index of the range.
     #[inline]
     pub fn end(&self) -> I {
         self.end
     }
 
+    /// Returns the number of elements in the range.
+    ///
+    /// Returns 0 if the iterator is exhausted.
     #[inline]
     pub fn len(&self) -> usize {
         if self.exhausted {
@@ -266,7 +319,6 @@ impl<I: IndexType> Iterator for TypedRangeInclusiveIter<I> {
             self.exhausted = true;
             Some(self.start)
         } else {
-            // start < end
             let res = self.start;
             self.start = unsafe { res.unchecked_add_scalar(I::Scalar::ONE) };
             Some(res)
@@ -301,11 +353,7 @@ impl<I: IndexType> Iterator for TypedRangeInclusiveIter<I> {
             self.exhausted = true;
             Some(res)
         } else {
-            // res < end
-
-            // SAFETY: We know that res is less than end, so adding one must not overflow
             self.start = unsafe { res.unchecked_add_scalar(I::Scalar::ONE) };
-
             Some(res)
         }
     }
@@ -348,7 +396,6 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusiveIter<I> {
             self.exhausted = true;
             Some(self.end)
         } else {
-            // end > start
             let res = self.end;
             self.end = unsafe { res.unchecked_sub_scalar(I::Scalar::ONE) };
             Some(res)
@@ -369,11 +416,7 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusiveIter<I> {
             self.exhausted = true;
             Some(res)
         } else {
-            // res > start
-
-            // SAFETY: We know that res is greater than start, so subtracting one must not overflow
             self.end = unsafe { res.unchecked_sub_scalar(I::Scalar::ONE) };
-
             Some(res)
         }
     }
