@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::{IndexType, typed_slice::TypedSlice, typed_vec::TypedVec};
+use crate::{typed_slice::TypedSlice, typed_vec::TypedVec, IndexType};
 
 #[doc(hidden)]
 pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {
@@ -145,7 +145,7 @@ macro_rules! typed_slice {
 ///
 /// Binding the result of this macro to a variable will produce a value that can't be use to due
 /// the slice's temporary lifetime.
-/// 
+///
 /// But, the result of this macro can properly be used in other situations, for example it can be
 /// passed as a function argument.
 ///

@@ -1,8 +1,8 @@
 #[cfg(target_pointer_width = "64")]
 use core::num::NonZeroU64;
-use core::num::{NonZeroU8, NonZeroU16, NonZeroU32, NonZeroUsize};
+use core::num::{NonZeroU16, NonZeroU32, NonZeroU8, NonZeroUsize};
 
-use crate::{IndexType, error::GenericIndexTooBigError};
+use crate::{error::GenericIndexTooBigError, IndexType};
 
 macro_rules! impl_for_uint_type {
     {$t: ty} => {
@@ -65,9 +65,20 @@ macro_rules! impl_for_uint_type {
             }
 
             #[inline]
+            unsafe fn unchecked_sub_scalar(self, rhs: Self::Scalar) -> Self {
+                // SAFETY: The caller ensures the result is in bounds.
+                unsafe { self.unchecked_sub(rhs) }
+            }
+
+            #[inline]
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
                 // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.unchecked_sub(rhs) }
+            }
+
+            #[inline]
+            fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
+                self.checked_sub(rhs)
             }
         }
     };
@@ -157,9 +168,21 @@ macro_rules! impl_for_nonzero_uint_type {
             }
 
             #[inline]
+            unsafe fn unchecked_sub_scalar(self, rhs: Self::Scalar) -> Self {
+                // SAFETY: The caller ensures the result is in bounds.
+                unsafe { Self::new_unchecked(self.get().unchecked_sub(rhs)) }
+            }
+
+            #[inline]
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
                 // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.get().unchecked_sub(rhs.get()) }
+            }
+
+            #[inline]
+            fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
+                let val = self.get().checked_sub(rhs)?;
+                Self::new(val)
             }
         }
     };

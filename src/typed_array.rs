@@ -9,7 +9,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexType, typed_slice::TypedSlice};
+use crate::{typed_slice::TypedSlice, IndexType};
 
 /// An array wrapper that uses a custom index type.
 #[repr(transparent)]

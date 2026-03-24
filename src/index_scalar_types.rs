@@ -31,9 +31,20 @@ macro_rules! impl_for_uint_type {
             }
 
             #[inline]
+            fn checked_sub_scalar(self, rhs: Self) -> Option<Self> {
+                self.checked_sub(rhs)
+            }
+
+            #[inline]
             unsafe fn unchecked_add_scalar(self, rhs: Self) -> Self {
                 // SAFETY: The caller ensures the result is in bounds.
                 unsafe { self.unchecked_add(rhs) }
+            }
+
+            #[inline]
+            unsafe fn unchecked_sub_scalar(self, rhs: Self) -> Self {
+                // SAFETY: The caller ensures the result is in bounds.
+                unsafe { self.unchecked_sub(rhs) }
             }
         }
     };

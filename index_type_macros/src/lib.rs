@@ -146,6 +146,10 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
                     .map_err(|_| <#err_ty as ::index_type::IndexTooBigError>::new())
             }
 
+            fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
+                <#inner_ty as ::index_type::IndexType>::checked_sub_scalar(self.0, rhs).map(Self)
+            }
+
             fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
                 <#inner_ty as ::index_type::IndexType>::checked_mul_scalar(self.0, rhs)
                     .map(Self)
@@ -154,6 +158,10 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
 
             unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self {
                 Self(unsafe { <#inner_ty as ::index_type::IndexType>::unchecked_add_scalar(self.0, rhs) })
+            }
+
+            unsafe fn unchecked_sub_scalar(self, rhs: Self::Scalar) -> Self {
+                Self(unsafe { <#inner_ty as ::index_type::IndexType>::unchecked_sub_scalar(self.0, rhs) })
             }
 
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
