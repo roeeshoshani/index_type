@@ -269,10 +269,13 @@ impl<I: IndexType> TypedRangeInclusiveIter<I> {
     /// Creates a new inclusive range iterator.
     #[inline]
     pub fn new(range: core::ops::RangeInclusive<I>) -> Self {
+        let start = *range.start();
+        let end = *range.end();
+        let exhausted = start > end;
         Self {
-            start: *range.start(),
-            end: *range.end(),
-            exhausted: false,
+            start,
+            end,
+            exhausted,
         }
     }
 

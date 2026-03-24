@@ -868,7 +868,7 @@ impl<I: IndexType, T: Clone> IntoIterator for TypedVec<I, T> {
         self.raw.into_iter()
     }
 }
-impl<'a, I: IndexType, T: Clone> IntoIterator for &'a TypedVec<I, T> {
+impl<'a, I: IndexType, T> IntoIterator for &'a TypedVec<I, T> {
     type Item = &'a T;
 
     type IntoIter = core::slice::Iter<'a, T>;
@@ -877,7 +877,7 @@ impl<'a, I: IndexType, T: Clone> IntoIterator for &'a TypedVec<I, T> {
         (&self.raw).into_iter()
     }
 }
-impl<'a, I: IndexType, T: Clone> IntoIterator for &'a mut TypedVec<I, T> {
+impl<'a, I: IndexType, T> IntoIterator for &'a mut TypedVec<I, T> {
     type Item = &'a mut T;
 
     type IntoIter = core::slice::IterMut<'a, T>;
@@ -888,7 +888,7 @@ impl<'a, I: IndexType, T: Clone> IntoIterator for &'a mut TypedVec<I, T> {
 }
 impl<I: IndexType, T> Extend<T> for TypedVec<I, T> {
     fn extend<X: IntoIterator<Item = T>>(&mut self, iter: X) {
-        self.raw.extend(iter);
+        self.extend(iter);
     }
 }
 
