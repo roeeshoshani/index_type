@@ -132,6 +132,28 @@ fn test_retain() {
 }
 
 #[test]
+fn test_retain_panic() {
+    let drop_counter = Rc::new(Cell::new(0));
+    let mut vec: TypedArrayVec<MyIndex, DropCounter<i32>, 8> = TypedArrayVec::new();
+    for i in 1..=5 {
+        vec.push(DropCounter {
+            value: i,
+            drop_counter: Rc::clone(&drop_counter),
+        });
+    }
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        vec.retain(|e| {
+            if e.value == 3 {
+                panic!("panic during retain");
+            }
+            e.value % 2 == 0
+        });
+    }));
+    drop(vec);
+    assert_eq!(drop_counter.get(), 5);
+}
+
+#[test]
 fn test_drain() {
     let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
     vec.push(1);
