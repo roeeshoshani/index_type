@@ -364,7 +364,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         let mut new_len = I::ZERO;
         for i in (I::ZERO..old_len).iter() {
             // SAFETY: Elements are initialized up to old_len.
-            let keep = unsafe { f(&*self.storage.get_unchecked(i).as_ptr()) };
+            let keep = unsafe { f(self.storage.get_unchecked(i).assume_init_ref()) };
             if keep {
                 if i != new_len {
                     // SAFETY: Move element to new_len.
@@ -378,7 +378,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
             } else {
                 // SAFETY: Drop element that is not kept.
                 unsafe {
-                    core::ptr::drop_in_place(self.storage.get_unchecked_mut(i).as_mut_ptr());
+                    self.storage.get_unchecked_mut(i).assume_init_drop();
                 }
             }
         }
