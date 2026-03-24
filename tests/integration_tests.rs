@@ -1,12 +1,10 @@
 use core::num::NonZeroUsize;
-use index_type::IndexType;
-use index_type::typed_array::TypedArray;
-use index_type::typed_slice::TypedSlice;
-use index_type::typed_vec::TypedVec;
+use index_type::{
+    typed_array::TypedArray, typed_slice::TypedSlice, typed_vec::TypedVec, IndexType,
+};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
-
 
 #[test]
 fn test_nonzero_index() {
@@ -14,7 +12,7 @@ fn test_nonzero_index() {
     struct NonZeroIndex(NonZeroUsize);
 
     let mut vec: TypedVec<NonZeroIndex, i32> = TypedVec::new();
-    let idx0 = vec.push(100).unwrap();
+    let idx0 = vec.push(100);
     assert_eq!(vec[idx0], 100);
     assert_eq!(idx0.to_raw_index(), 0);
 }
@@ -22,10 +20,10 @@ fn test_nonzero_index() {
 #[test]
 fn test_binary_search() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
-    vec.push(10).unwrap();
-    vec.push(20).unwrap();
-    vec.push(30).unwrap();
-    vec.push(40).unwrap();
+    vec.push(10);
+    vec.push(20);
+    vec.push(30);
+    vec.push(40);
 
     assert_eq!(
         vec.binary_search(&20),
@@ -40,9 +38,9 @@ fn test_binary_search() {
 #[test]
 fn test_get_disjoint_mut() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
-    vec.push(10).unwrap();
-    vec.push(20).unwrap();
-    vec.push(30).unwrap();
+    vec.push(10);
+    vec.push(20);
+    vec.push(30);
 
     let [a, b] = vec
         .get_disjoint_mut([MyIndex::ZERO, unsafe {
@@ -56,10 +54,9 @@ fn test_get_disjoint_mut() {
     assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 31);
 
     // Overlapping indices should fail
-    assert!(
-        vec.get_disjoint_mut([MyIndex::ZERO, MyIndex::ZERO])
-            .is_err()
-    );
+    assert!(vec
+        .get_disjoint_mut([MyIndex::ZERO, MyIndex::ZERO])
+        .is_err());
 }
 
 #[test]
@@ -72,12 +69,12 @@ fn test_nonzero_capacity_limit() {
     // NonZeroU8 MAX is 255. ZERO is 1. MAX_RAW_INDEX is 254.
     // Raw indices are 0..=254.
     for i in 0..254 {
-        vec.push(i as i32).unwrap();
+        vec.push(i as i32);
     }
     assert_eq!(vec.len_usize(), 254);
     // When len is 254, push returns raw index 254 and len becomes 255.
     // checked_add_scalar(254, 1) returns Err because 255 > 254.
-    assert!(vec.push(254).is_err());
+    assert!(vec.try_push(254).is_err());
 }
 
 #[test]

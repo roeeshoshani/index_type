@@ -10,8 +10,8 @@ use core::{
 };
 
 use crate::{
-    IndexScalarType, IndexTooBigError, IndexType, typed_array::TypedArray, typed_vec::TypedVec,
-    utils::range_bounds_to_raw,
+    typed_array::TypedArray, typed_vec::TypedVec, utils::range_bounds_to_raw, IndexScalarType,
+    IndexTooBigError, IndexType,
 };
 
 mod index;

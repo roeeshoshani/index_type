@@ -23,7 +23,7 @@
 //!
 //! # fn main() {
 //! let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
-//! let idx = vec.push(42).unwrap();
+//! let idx = vec.push(42);
 //!
 //! assert_eq!(vec[idx], 42);
 //! // vec[0usize]; // This will not compile as it requires MyIndex

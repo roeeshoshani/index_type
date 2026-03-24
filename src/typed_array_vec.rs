@@ -9,7 +9,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
+use crate::{typed_array::TypedArray, typed_slice::TypedSlice, IndexScalarType, IndexType};
 
 #[cold]
 fn panic_insufficient_capacity() -> ! {
@@ -90,9 +90,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     /// Panics if the `TypedArrayVec` is full.
     #[inline]
     pub fn push(&mut self, element: T) {
-        if let Err(_err) = self.try_push(element) {
-            panic_insufficient_capacity();
-        }
+        self.try_push(element)
+            .unwrap_or_else(|_| panic_insufficient_capacity())
     }
 
     /// Tries to append an element to the back of the `TypedArrayVec`.
@@ -123,9 +122,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Clone,
     {
-        if self.try_extend_from_slice(other).is_err() {
-            panic_insufficient_capacity();
-        }
+        self.try_extend_from_slice(other)
+            .unwrap_or_else(|_| panic_insufficient_capacity())
     }
 
     /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec`.
@@ -173,9 +171,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         T: Copy,
     {
-        if self.try_extend_from_slice_copy(other).is_err() {
-            panic_insufficient_capacity();
-        }
+        self.try_extend_from_slice_copy(other)
+            .unwrap_or_else(|_| panic_insufficient_capacity())
     }
 
     /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
@@ -253,9 +250,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     /// Panics if the `TypedArrayVec` is full or if `index > len`.
     #[inline]
     pub fn insert(&mut self, index: I, element: T) {
-        if let Err(_err) = self.try_insert(index, element) {
-            panic_insufficient_capacity();
-        }
+        self.try_insert(index, element)
+            .unwrap_or_else(|_| panic_insufficient_capacity())
     }
 
     /// Tries to insert an element at position `index` within the `TypedArrayVec`, shifting all elements after it to the right.
