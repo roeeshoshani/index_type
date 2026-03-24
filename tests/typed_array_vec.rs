@@ -1,6 +1,4 @@
-use index_type::IndexType;
-use index_type::typed_array::TypedArray;
-use index_type::typed_array_vec::TypedArrayVec;
+use index_type::{IndexType, typed_array::TypedArray, typed_array_vec::TypedArrayVec};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -134,6 +132,30 @@ fn test_drain() {
         assert_eq!(drain.next(), None);
     }
     assert_eq!(vec.as_slice().as_slice(), &[1, 4]);
+}
+
+#[test]
+fn test_drain_back_iteration() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 8> = TypedArrayVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+    vec.push(4);
+    vec.push(5);
+    vec.push(6);
+    vec.push(7);
+    vec.push(8);
+    {
+        let mut drain = vec.drain(MyIndex(1)..MyIndex(6));
+        assert_eq!(drain.next(), Some(2));
+        assert_eq!(drain.next_back(), Some(6));
+        assert_eq!(drain.next(), Some(3));
+        assert_eq!(drain.next_back(), Some(5));
+        assert_eq!(drain.next_back(), Some(4));
+        assert_eq!(drain.next(), None);
+        assert_eq!(drain.next_back(), None);
+    }
+    assert_eq!(vec.as_slice().as_slice(), &[1, 7, 8]);
 }
 
 #[test]

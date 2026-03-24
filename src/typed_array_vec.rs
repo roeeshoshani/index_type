@@ -4,6 +4,7 @@
 //! that uses a custom [`IndexType`] for indexing and to store its length.
 
 use core::{
+    iter::FusedIterator,
     mem::MaybeUninit,
     ops::{Index, IndexMut},
 };
@@ -355,7 +356,6 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     }
 
     /// Retains only the elements specified by the predicate.
-    #[inline]
     pub fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&T) -> bool,
@@ -460,89 +460,92 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     ///
     /// This method uses *debug assertions* to check that `length` is
     /// not greater than the capacity.
+    #[inline]
     pub unsafe fn set_len(&mut self, length: I) {
         debug_assert!(length <= self.capacity());
         self.len = length;
     }
 
     /// Returns a draining iterator that removes the specified range in the vector and yields the removed items.
-    #[inline]
     pub fn drain<R>(&mut self, range: R) -> Drain<'_, I, T, N>
     where
         R: core::ops::RangeBounds<I>,
     {
         // TODO: thoroughly check this code and all code below it
         let old_len = self.len;
-        let (start_raw, end_raw) = crate::utils::range_bounds_to_raw(range);
-        let start = match start_raw {
-            core::ops::Bound::Included(i) => i,
-            core::ops::Bound::Excluded(i) => i + 1,
-            core::ops::Bound::Unbounded => 0,
-        };
-        let end = match end_raw {
-            core::ops::Bound::Included(i) => i + 1,
-            core::ops::Bound::Excluded(i) => i,
-            core::ops::Bound::Unbounded => old_len.to_raw_index(),
-        };
-        assert!(
-            start <= end && end <= old_len.to_raw_index(),
-            "drain range out of bounds"
-        );
 
-        // SAFETY: We set the length to start, elements from start to end will be moved out by Drain.
+        let start = match range.start_bound() {
+            core::ops::Bound::Included(i) => *i,
+            core::ops::Bound::Excluded(i) => i.checked_add_scalar(I::Scalar::ONE).unwrap_or(*i),
+            core::ops::Bound::Unbounded => I::ZERO,
+        };
+
+        let end = match range.end_bound() {
+            core::ops::Bound::Included(i) => i.checked_sub_scalar(I::Scalar::ONE).unwrap_or(*i),
+            core::ops::Bound::Excluded(i) => *i,
+            core::ops::Bound::Unbounded => old_len,
+        };
+
+        assert!(start <= end && end <= old_len, "drain range out of bounds");
+
+        // We set the length to start, elements from start to end will be moved out by Drain.
         // Elements from end to old_len will be moved back after Drain is dropped.
-        unsafe {
-            self.len = I::from_raw_index_unchecked(start);
-        }
+        self.len = start;
 
         Drain {
             inner: self,
-            index: start,
-            end,
-            old_len: old_len.to_raw_index(),
+            cur_start: start,
+            cur_end: end,
+            tail_start: end,
+            old_len,
         }
     }
 }
 
+#[derive(Debug)]
 pub struct Drain<'a, I: IndexType, T, const N: usize> {
     inner: &'a mut TypedArrayVec<I, T, N>,
-    index: usize,
-    end: usize,
-    old_len: usize,
+    cur_start: I,
+    cur_end: I,
+    tail_start: I,
+    old_len: I,
 }
 
 impl<I: IndexType, T, const N: usize> Iterator for Drain<'_, I, T, N> {
     type Item = T;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.end {
+        if self.cur_start < self.cur_end {
             let res = unsafe {
                 self.inner
                     .storage
-                    .get_unchecked(I::from_raw_index_unchecked(self.index))
+                    .get_unchecked(self.cur_start)
                     .assume_init_read()
             };
-            self.index += 1;
+            self.cur_start = unsafe { self.cur_start.unchecked_add_scalar(I::Scalar::ONE) };
             Some(res)
         } else {
             None
         }
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining = self.end - self.index;
+        let remaining = unsafe { self.cur_end.unchecked_sub_index(self.cur_start) }.to_usize();
         (remaining, Some(remaining))
     }
 }
 
 impl<I: IndexType, T, const N: usize> DoubleEndedIterator for Drain<'_, I, T, N> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.index < self.end {
-            self.end -= 1;
+        if self.cur_start < self.cur_end {
+            self.cur_end = unsafe { self.cur_end.unchecked_sub_scalar(I::Scalar::ONE) };
             let res = unsafe {
                 self.inner
                     .storage
-                    .get_unchecked(I::from_raw_index_unchecked(self.end))
+                    .get_unchecked(self.cur_end)
                     .assume_init_read()
             };
             Some(res)
@@ -553,7 +556,7 @@ impl<I: IndexType, T, const N: usize> DoubleEndedIterator for Drain<'_, I, T, N>
 }
 
 impl<I: IndexType, T, const N: usize> ExactSizeIterator for Drain<'_, I, T, N> {}
-impl<I: IndexType, T, const N: usize> core::iter::FusedIterator for Drain<'_, I, T, N> {}
+impl<I: IndexType, T, const N: usize> FusedIterator for Drain<'_, I, T, N> {}
 
 impl<I: IndexType, T, const N: usize> Drop for Drain<'_, I, T, N> {
     fn drop(&mut self) {
@@ -561,18 +564,26 @@ impl<I: IndexType, T, const N: usize> Drop for Drain<'_, I, T, N> {
         while self.next().is_some() {}
 
         // Move the tail back.
-        let tail_len = self.old_len - self.end;
-        let head_len = self.inner.len.to_raw_index();
-        if tail_len > 0 {
+        let tail_len = unsafe { self.old_len.unchecked_sub_index(self.tail_start) };
+        if tail_len > I::Scalar::ZERO {
             unsafe {
-                let src = self.inner.storage.as_ptr().add(self.end);
-                let dst = self.inner.storage.as_mut_ptr().add(head_len);
-                core::ptr::copy(src, dst, tail_len);
+                let src = self
+                    .inner
+                    .storage
+                    .as_ptr()
+                    .add(self.tail_start.to_raw_index());
+                let dst = self
+                    .inner
+                    .storage
+                    .as_mut_ptr()
+                    .add(self.inner.len.to_raw_index());
+                core::ptr::copy(src, dst, tail_len.to_usize());
             }
         }
+
         // Update the length.
         unsafe {
-            self.inner.len = I::from_raw_index_unchecked(head_len + tail_len);
+            self.inner.len = self.inner.len.unchecked_add_scalar(tail_len);
         }
     }
 }
