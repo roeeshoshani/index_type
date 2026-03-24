@@ -363,6 +363,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         let old_len = self.len;
         let mut new_len = I::ZERO;
         for i in (I::ZERO..old_len).iter() {
+            // TODO: what if `f` panics?
+            // TODO: what if the drop impl of the type panics?
+
             // SAFETY: Elements are initialized up to old_len.
             let keep = unsafe { f(self.storage.get_unchecked(i).assume_init_ref()) };
             if keep {
@@ -391,6 +394,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         R: core::ops::RangeBounds<I>,
     {
+        // TODO: thoroughly check this code and all code below it
         let old_len = self.len;
         let (start_raw, end_raw) = crate::utils::range_bounds_to_raw(range);
         let start = match start_raw {
