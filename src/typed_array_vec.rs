@@ -8,7 +8,10 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
+use crate::{
+    IndexScalarType, IndexType, typed_array::TypedArray, typed_range_iter::TypedRangeIterExt,
+    typed_slice::TypedSlice,
+};
 
 #[cold]
 fn panic_insufficient_capacity() -> ! {
@@ -359,15 +362,14 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     {
         let old_len = self.len;
         let mut new_len = I::ZERO;
-        for i in 0..old_len.to_raw_index() {
+        for i in (I::ZERO..old_len).iter() {
             // SAFETY: Elements are initialized up to old_len.
-            let idx = unsafe { I::from_raw_index_unchecked(i) };
-            let keep = unsafe { f(&*self.storage.get_unchecked(idx).as_ptr()) };
+            let keep = unsafe { f(&*self.storage.get_unchecked(i).as_ptr()) };
             if keep {
-                if idx != new_len {
+                if i != new_len {
                     // SAFETY: Move element to new_len.
                     unsafe {
-                        let src = self.storage.get_unchecked(idx).as_ptr();
+                        let src = self.storage.get_unchecked(i).as_ptr();
                         let dst = self.storage.get_unchecked_mut(new_len).as_mut_ptr();
                         core::ptr::copy_nonoverlapping(src, dst, 1);
                     }
@@ -376,7 +378,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
             } else {
                 // SAFETY: Drop element that is not kept.
                 unsafe {
-                    core::ptr::drop_in_place(self.storage.get_unchecked_mut(idx).as_mut_ptr());
+                    core::ptr::drop_in_place(self.storage.get_unchecked_mut(i).as_mut_ptr());
                 }
             }
         }
