@@ -239,19 +239,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
         self.raw
     }
 
-    /// Returns the length of the vector as a scalar.
-    ///
-    /// The scalar type is `I::Scalar`.
-    #[inline]
-    pub fn len(&self) -> I::Scalar {
-        unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(self.raw.len()) }
-    }
-
     /// Returns the length of the vector as an index.
-    ///
-    /// The index type is `I`.
     #[inline]
-    pub fn len_as_index(&self) -> I {
+    pub fn len(&self) -> I {
         unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
@@ -283,8 +273,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// ```
     #[inline]
     pub fn try_push(&mut self, value: T) -> Result<I, I::IndexTooBigError> {
-        let res = self.len_as_index();
-        let _new_len = res.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
+        let res = self.len();
+        let _new_len = res.checked_add_scalar(I::Scalar::ONE)?;
         self.raw.push(value);
         Ok(res)
     }
@@ -310,7 +300,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// The source vector is emptied after the operation.
     #[inline]
     pub fn try_append(&mut self, other: &mut TypedVec<I, T>) -> Result<(), I::IndexTooBigError> {
-        let _new_len = self.len_as_index().checked_add_scalar(other.len())?;
+        let _new_len = self.len().checked_add_scalar(other.len().to_scalar())?;
         self.raw.append(&mut other.raw);
         Ok(())
     }
@@ -460,7 +450,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// Panics if `index > len`.
     #[inline]
     pub fn try_insert(&mut self, index: I, element: T) -> Result<(), I::IndexTooBigError> {
-        let _new_potential_len = index.checked_add_scalar(<I::Scalar as IndexScalarType>::ONE)?;
+        let _new_potential_len = self.len().checked_add_scalar(I::Scalar::ONE)?;
         self.raw.insert(index.to_raw_index(), element);
         Ok(())
     }
@@ -756,10 +746,9 @@ impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
     /// assert_eq!(flat.len_usize(), 4);
     /// ```
     pub fn try_into_flattened(self) -> Result<TypedVec<I, T>, I::IndexTooBigError> {
-        let _new_len = self.len_as_index().checked_mul_scalar(
-            <I::Scalar as IndexScalarType>::try_from_usize(N)
-                .ok_or(<I::IndexTooBigError as IndexTooBigError>::new())?,
-        )?;
+        let _new_len = self
+            .len()
+            .checked_mul_scalar(I::Scalar::try_from_usize(N).ok_or(I::IndexTooBigError::new())?)?;
         Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.into_flattened()) })
     }
 

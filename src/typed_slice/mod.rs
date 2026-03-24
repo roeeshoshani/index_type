@@ -1116,10 +1116,9 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     where
         T: Copy,
     {
-        let _final_len = self.len().checked_mul_scalar(
-            <I::Scalar as IndexScalarType>::try_from_usize(n)
-                .ok_or(<I::IndexTooBigError as IndexTooBigError>::new())?,
-        )?;
+        let _final_len = self
+            .len()
+            .checked_mul_scalar(I::Scalar::try_from_usize(n).ok_or(I::IndexTooBigError::new())?)?;
         Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.repeat(n)) })
     }
 
@@ -1223,7 +1222,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
     pub fn as_flattened(&self) -> Result<&TypedSlice<I, T>, I::IndexTooBigError> {
         // SAFETY: N is representable by I::Scalar if N <= MAX_RAW_INDEX, which we check.
-        let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
+        let n = unsafe { I::Scalar::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
         // SAFETY: flattened_len is checked to be in bounds for I.
         Ok(unsafe { TypedSlice::from_raw_parts(self.as_ptr().cast(), flattened_len) })
@@ -1231,7 +1230,7 @@ impl<I: IndexType, T, const N: usize> TypedSlice<I, TypedArray<I, T, N>> {
 
     pub fn as_flattened_mut(&mut self) -> Result<&mut TypedSlice<I, T>, I::IndexTooBigError> {
         // SAFETY: N is representable by I::Scalar if N <= MAX_RAW_INDEX, which we check.
-        let n = unsafe { <I::Scalar as IndexScalarType>::from_usize_unchecked(N) };
+        let n = unsafe { I::Scalar::from_usize_unchecked(N) };
         let flattened_len = self.len().checked_mul_scalar(n)?;
         // SAFETY: flattened_len is checked to be in bounds for I.
         Ok(unsafe { TypedSlice::from_raw_parts_mut(self.as_mut_ptr().cast(), flattened_len) })

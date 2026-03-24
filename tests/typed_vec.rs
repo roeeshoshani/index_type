@@ -449,19 +449,15 @@ fn test_resize_with() {
 }
 
 #[test]
-fn test_len_as_index() {
+fn test_len() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
-    assert_eq!(vec.len_as_index(), MyIndex::ZERO);
+    assert_eq!(vec.len(), MyIndex::ZERO);
 
     vec.push(1);
-    assert_eq!(vec.len_as_index(), unsafe {
-        MyIndex::from_raw_index_unchecked(1)
-    });
+    assert_eq!(vec.len(), unsafe { MyIndex::from_raw_index_unchecked(1) });
 
     vec.push(2);
-    assert_eq!(vec.len_as_index(), unsafe {
-        MyIndex::from_raw_index_unchecked(2)
-    });
+    assert_eq!(vec.len(), unsafe { MyIndex::from_raw_index_unchecked(2) });
 }
 
 #[test]

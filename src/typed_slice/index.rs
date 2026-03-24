@@ -1,6 +1,6 @@
 use core::{hint::unreachable_unchecked, ops::RangeBounds};
 
-use crate::{typed_slice::TypedSlice, IndexScalarType, IndexType};
+use crate::{IndexScalarType, IndexType, typed_slice::TypedSlice};
 
 mod private_typed_slice_index {
     pub trait Sealed {}
@@ -252,9 +252,7 @@ unsafe fn range_inclusive_to_exclusive_unchecked<I: IndexType>(
     // see `RangeInclusive::into_slice_range`. the `end_bound` function can be used as a "side channel" to get the value of the
     // `exhausted` field which is not exposed directly in any public API.
     let exclusive_end_index = match r.end_bound() {
-        core::ops::Bound::Included(&i) => unsafe {
-            i.unchecked_add_scalar(<I::Scalar as IndexScalarType>::ONE)
-        },
+        core::ops::Bound::Included(&i) => unsafe { i.unchecked_add_scalar(I::Scalar::ONE) },
         core::ops::Bound::Excluded(&i) => i,
         core::ops::Bound::Unbounded => unsafe { unreachable_unchecked() },
     };
