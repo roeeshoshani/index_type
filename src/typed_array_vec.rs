@@ -802,11 +802,15 @@ impl<I: IndexType, T, const N: usize> From<crate::typed_array::TypedArray<I, T, 
     for TypedArrayVec<I, T, N>
 {
     fn from(array: crate::typed_array::TypedArray<I, T, N>) -> Self {
-        let mut new = Self::new();
-        for item in array {
-            new.push(item);
+        // Can't use `transmute` here since the types depend on generic, so we use `transmute_copy` and forget the original.
+        let storage: TypedArray<I, MaybeUninit<T>, N> =
+            unsafe { core::mem::transmute_copy(&array) };
+        core::mem::forget(array);
+
+        Self {
+            storage: storage,
+            len: unsafe { I::from_raw_index_unchecked(N) },
         }
-        new
     }
 }
 
