@@ -36,8 +36,8 @@ use core::{
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
-    typed_slice::TypedSlice, utils::range_bounds_to_raw, IndexScalarType, IndexTooBigError,
-    IndexType,
+    IndexScalarType, IndexTooBigError, IndexType, typed_slice::TypedSlice,
+    utils::range_bounds_to_raw,
 };
 
 /// A growable vector with typed indexing.
@@ -411,6 +411,16 @@ impl<I: IndexType, T> TypedVec<I, T> {
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
         unsafe { TypedSlice::from_slice_unchecked_mut(self.raw.as_mut_slice()) }
+    }
+
+    /// Casts the index type of the `TypedVec`.
+    #[inline]
+    pub fn cast_index_type<I2: IndexType>(self) -> Result<TypedVec<I2, T>, I2::IndexTooBigError> {
+        if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
+            Ok(unsafe { TypedVec::from_vec_unchecked(self.raw) })
+        } else {
+            TypedVec::try_from_vec(self.raw)
+        }
     }
 
     /// Returns a raw pointer to the vector's buffer.

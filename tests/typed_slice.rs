@@ -1,6 +1,6 @@
 use index_type::{
-    typed_slice::{GetDisjointMutError, TypedSlice},
     IndexType,
+    typed_slice::{GetDisjointMutError, TypedSlice},
 };
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -96,7 +96,7 @@ fn test_cast_index_type_mut_downcast_fails() {
 
 #[test]
 fn test_repeat() {
-    let mut data = [1, 2];
+    let data = [1, 2];
     let slice: &TypedSlice<MyIndex, i32> = TypedSlice::try_from_slice(&data).unwrap();
 
     let repeated = slice.repeat(3).unwrap();

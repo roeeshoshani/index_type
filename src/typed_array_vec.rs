@@ -32,11 +32,11 @@
 
 use core::{
     iter::FusedIterator,
-    mem::MaybeUninit,
+    mem::{ManuallyDrop, MaybeUninit},
     ops::{Index, IndexMut},
 };
 
-use crate::{typed_array::TypedArray, typed_slice::TypedSlice, IndexScalarType, IndexType};
+use crate::{IndexScalarType, IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
 
 #[cold]
 fn panic_insufficient_capacity() -> ! {
@@ -108,6 +108,21 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     pub fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
         // SAFETY: The storage is initialized up to self.len.
         unsafe { TypedSlice::from_raw_parts_mut(self.storage.as_mut_ptr().cast(), self.len) }
+    }
+
+    /// Casts the index type of the `TypedArrayVec`.
+    #[inline]
+    pub fn cast_index_type<I2: IndexType>(
+        self,
+    ) -> Result<TypedArrayVec<I2, T, N>, I2::IndexTooBigError> {
+        let len = self.len;
+        let me = ManuallyDrop::new(self);
+        unsafe {
+            Ok(TypedArrayVec {
+                storage: core::ptr::read(&me.storage).cast_index_type()?,
+                len: I2::from_raw_index_unchecked(len.to_raw_index()),
+            })
+        }
     }
 
     /// Appends an element to the back of the `TypedArrayVec`.

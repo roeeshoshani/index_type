@@ -32,7 +32,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{typed_slice::TypedSlice, IndexType};
+use crate::{IndexType, typed_slice::TypedSlice};
 
 /// An array wrapper that uses a custom index type.
 #[repr(transparent)]
@@ -59,6 +59,18 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     pub const fn as_mut_slice(&mut self) -> &mut TypedSlice<I, T> {
         // SAFETY: The length of the array is guaranteed to be valid for I by the type system.
         unsafe { TypedSlice::from_slice_unchecked_mut(&mut self.raw) }
+    }
+
+    /// Casts the index type of the `TypedArray`.
+    #[inline]
+    pub fn cast_index_type<I2: IndexType>(
+        self,
+    ) -> Result<TypedArray<I2, T, N>, I2::IndexTooBigError> {
+        if I::MAX_RAW_INDEX <= I2::MAX_RAW_INDEX {
+            Ok(unsafe { TypedArray::from_array_unchecked(self.raw) })
+        } else {
+            TypedArray::try_from_array(self.raw)
+        }
     }
 
     #[inline]

@@ -1,4 +1,4 @@
-use index_type::{typed_vec::TypedVec, IndexType};
+use index_type::{IndexType, typed_vec::TypedVec};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -222,9 +222,10 @@ fn test_try_insert_out_of_bounds() {
     vec.push(1);
     vec.push(2);
 
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         vec.insert(unsafe { MyIndex::from_raw_index_unchecked(5) }, 3);
     }));
+    assert!(res.is_err());
 }
 
 #[test]
@@ -491,4 +492,46 @@ fn test_try_from_raw_parts_overflow() {
     assert!(result.is_err());
 
     std::mem::forget(result);
+}
+
+#[test]
+fn test_cast_index_type_upcast() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let vec: TypedVec<SmallIndex, i32> = TypedVec::from_vec(vec![1, 2, 3, 4, 5]);
+
+    let cast: TypedVec<MyIndex, i32> = vec.cast_index_type::<MyIndex>().unwrap();
+    assert_eq!(cast.len_usize(), 5);
+    assert_eq!(cast[MyIndex::ZERO], 1);
+}
+
+#[test]
+fn test_cast_index_type_downcast() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let vec: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![1, 2, 3, 4, 5]);
+
+    let result = vec.cast_index_type::<SmallIndex>();
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_cast_index_type_downcast_fails() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let vec: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![1; 300]);
+
+    let result = vec.cast_index_type::<SmallIndex>();
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_cast_index_type_same() {
+    let vec: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![1, 2, 3, 4, 5]);
+
+    let cast: TypedVec<MyIndex, i32> = vec.cast_index_type::<MyIndex>().unwrap();
+    assert_eq!(cast.len_usize(), 5);
 }

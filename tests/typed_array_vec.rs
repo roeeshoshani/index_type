@@ -275,3 +275,49 @@ fn test_remaining_capacity() {
     vec.push(1);
     assert_eq!(vec.remaining_capacity().to_raw_index(), 3);
 }
+
+#[test]
+fn test_cast_index_type_upcast() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedArrayVec<SmallIndex, i32, 16> = TypedArrayVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+    vec.push(4);
+    vec.push(5);
+
+    let cast: TypedArrayVec<MyIndex, i32, 16> = vec.cast_index_type::<MyIndex>().unwrap();
+    assert_eq!(cast.len().to_raw_index(), 5);
+    assert_eq!(cast[MyIndex::ZERO], 1);
+}
+
+#[test]
+fn test_cast_index_type_downcast() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedArrayVec<MyIndex, i32, 16> = TypedArrayVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+    vec.push(4);
+    vec.push(5);
+
+    let result = vec.cast_index_type::<SmallIndex>();
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_cast_index_type_same() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 16> = TypedArrayVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+    vec.push(4);
+    vec.push(5);
+
+    let cast: TypedArrayVec<MyIndex, i32, 16> = vec.cast_index_type::<MyIndex>().unwrap();
+    assert_eq!(cast.len().to_raw_index(), 5);
+}
