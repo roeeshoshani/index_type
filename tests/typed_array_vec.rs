@@ -93,6 +93,25 @@ fn test_into_iter() {
 }
 
 #[test]
+fn test_into_iter_panic() {
+    let drop_counter = Rc::new(Cell::new(0));
+    let mut vec: TypedArrayVec<MyIndex, DropCounter<i32>, 8> = TypedArrayVec::new();
+    for i in 1..=5 {
+        vec.push(DropCounter {
+            value: i,
+            drop_counter: Rc::clone(&drop_counter),
+        });
+    }
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let mut iter = vec.into_iter();
+        assert_eq!(iter.next().unwrap().value, 1);
+        assert_eq!(iter.next().unwrap().value, 2);
+        panic!("panic during iteration");
+    }));
+    assert_eq!(drop_counter.get(), 5);
+}
+
+#[test]
 fn test_from_array() {
     let array = TypedArray::<MyIndex, i32, 3>::from_array([1, 2, 3]);
     let vec = TypedArrayVec::<MyIndex, i32, 3>::from(array);
