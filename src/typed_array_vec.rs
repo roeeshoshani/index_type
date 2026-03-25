@@ -494,6 +494,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         R: core::ops::RangeBounds<I>,
     {
         let range = resolve_range_bounds(&range, self.len);
+        let old_len = self.len;
 
         assert!(
             range.start <= range.end && range.end <= self.len,
@@ -508,6 +509,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
             cur_start: range.start,
             cur_end: range.end,
             tail_start: range.end,
+            old_len,
             inner: self,
         }
     }
@@ -519,6 +521,7 @@ pub struct Drain<'a, I: IndexType, T, const N: usize> {
     cur_start: I,
     cur_end: I,
     tail_start: I,
+    old_len: I,
 }
 
 impl<I: IndexType, T, const N: usize> Iterator for Drain<'_, I, T, N> {
@@ -574,7 +577,7 @@ impl<I: IndexType, T, const N: usize> Drop for Drain<'_, I, T, N> {
         while self.next().is_some() {}
 
         // Move the tail back.
-        let tail_len = unsafe { self.inner.len().unchecked_sub_index(self.tail_start) };
+        let tail_len = unsafe { self.old_len.unchecked_sub_index(self.tail_start) };
         if tail_len > I::Scalar::ZERO {
             unsafe {
                 let src = self
