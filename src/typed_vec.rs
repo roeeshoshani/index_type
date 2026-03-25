@@ -1026,7 +1026,7 @@ impl<'a, I: IndexType, T: Clone> From<&'a TypedSlice<I, T>> for TypedVec<I, T> {
         unsafe { Self::from_vec_unchecked(Vec::from(value.as_slice())) }
     }
 }
-impl<I: IndexType, T: Clone> IntoIterator for TypedVec<I, T> {
+impl<I: IndexType, T> IntoIterator for TypedVec<I, T> {
     type Item = T;
 
     type IntoIter = alloc::vec::IntoIter<T>;
