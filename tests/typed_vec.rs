@@ -1,4 +1,4 @@
-use index_type::{IndexType, typed_vec::TypedVec};
+use index_type::{typed_vec::TypedVec, IndexType};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -384,7 +384,7 @@ fn test_truncate() {
     vec.push(4);
     vec.push(5);
 
-    vec.truncate(unsafe { MyIndex::from_raw_index_unchecked(3).to_scalar() });
+    vec.truncate(unsafe { MyIndex::from_raw_index_unchecked(3) });
     assert_eq!(vec.len_usize(), 3);
     assert_eq!(vec[MyIndex::ZERO], 1);
     assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 3);

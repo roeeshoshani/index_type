@@ -387,8 +387,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// If `len` is greater than the current length, this has no effect.
     #[inline]
-    pub fn truncate(&mut self, len: I::Scalar) {
-        self.raw.truncate(len.to_usize());
+    pub fn truncate(&mut self, len: I) {
+        self.raw.truncate(len.to_raw_index());
     }
 
     /// Returns the vector as a typed slice reference.
