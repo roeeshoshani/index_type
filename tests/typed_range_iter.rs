@@ -1,5 +1,5 @@
 use core::num::NonZeroUsize;
-use index_type::{typed_range_iter::TypedRangeIterExt, IndexType};
+use index_type::{IndexType, typed_range_iter::TypedRangeIterExt};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);

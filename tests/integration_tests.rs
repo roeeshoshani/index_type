@@ -1,6 +1,6 @@
 use core::num::NonZeroUsize;
 use index_type::{
-    typed_array::TypedArray, typed_slice::TypedSlice, typed_vec::TypedVec, IndexType,
+    IndexType, typed_array::TypedArray, typed_slice::TypedSlice, typed_vec::TypedVec,
 };
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -54,9 +54,10 @@ fn test_get_disjoint_mut() {
     assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 31);
 
     // Overlapping indices should fail
-    assert!(vec
-        .get_disjoint_mut([MyIndex::ZERO, MyIndex::ZERO])
-        .is_err());
+    assert!(
+        vec.get_disjoint_mut([MyIndex::ZERO, MyIndex::ZERO])
+            .is_err()
+    );
 }
 
 #[test]
