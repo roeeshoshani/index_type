@@ -32,7 +32,12 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{typed_slice::TypedSlice, IndexType};
+use crate::{
+    IndexType,
+    typed_iter_enumerate::TypedIterEnumerate,
+    typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
+    typed_slice::TypedSlice,
+};
 
 /// An array wrapper that uses a custom index type.
 #[repr(transparent)]
@@ -54,6 +59,39 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     pub fn len(&self) -> I {
         // SAFETY: The length N is guaranteed to be valid for I by the type system.
         unsafe { I::from_raw_index_unchecked(N) }
+    }
+
+    /// Returns the length of the array as a `usize`.
+    #[inline]
+    pub const fn len_usize(&self) -> usize {
+        N
+    }
+
+    /// Returns an iterator over the valid indices of this array.
+    #[inline]
+    pub fn indices(&self) -> TypedRangeIter<I> {
+        (I::ZERO..self.len()).iter()
+    }
+
+    /// Returns an iterator over the elements with their indices.
+    #[inline]
+    pub fn iter_enumerated(&self) -> TypedIterEnumerate<I, T, core::slice::Iter<'_, T>> {
+        // SAFETY: `self.raw.iter()` yields exactly `N` items, and `N` is guaranteed to fit in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.iter()) }
+    }
+
+    /// Returns an iterator over the elements with their mutable references and indices.
+    #[inline]
+    pub fn iter_mut_enumerated(&mut self) -> TypedIterEnumerate<I, T, core::slice::IterMut<'_, T>> {
+        // SAFETY: `self.raw.iter_mut()` yields exactly `N` items, and `N` is guaranteed to fit in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.iter_mut()) }
+    }
+
+    /// Consumes the array and returns an iterator over the elements with their indices.
+    #[inline]
+    pub fn into_iter_enumerated(self) -> TypedIterEnumerate<I, T, core::array::IntoIter<T, N>> {
+        // SAFETY: `self.raw.into_iter()` yields exactly `N` items, and `N` is guaranteed to fit in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.into_iter()) }
     }
 
     #[inline]

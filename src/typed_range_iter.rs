@@ -68,6 +68,12 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
 pub struct TypedRangeIter<I: IndexType>(pub core::ops::Range<I>);
 
 impl<I: IndexType> TypedRangeIter<I> {
+    /// Converts this range iterator into a raw range.
+    #[inline]
+    pub fn into_raw(self) -> core::ops::Range<I> {
+        self.0
+    }
+
     /// Returns the number of elements in the range.
     ///
     /// Returns 0 if `start >= end`.
@@ -201,6 +207,14 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
 /// Created by calling `.iter()` on a `RangeFrom<I>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedRangeFromIter<I: IndexType>(pub core::ops::RangeFrom<I>);
+
+impl<I: IndexType> TypedRangeFromIter<I> {
+    /// Converts this range iterator into a regular range.
+    #[inline]
+    pub fn into_raw(self) -> core::ops::RangeFrom<I> {
+        self.0
+    }
+}
 
 impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
     type Item = I;

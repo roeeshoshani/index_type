@@ -36,8 +36,11 @@ use core::{
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
-    typed_slice::TypedSlice, utils::range_bounds_to_raw, IndexScalarType, IndexTooBigError,
-    IndexType,
+    IndexScalarType, IndexTooBigError, IndexType,
+    typed_iter_enumerate::TypedIterEnumerate,
+    typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
+    typed_slice::TypedSlice,
+    utils::range_bounds_to_raw,
 };
 
 /// A growable vector with typed indexing.
@@ -245,12 +248,107 @@ impl<I: IndexType, T> TypedVec<I, T> {
         unsafe { I::from_raw_index_unchecked(self.raw.len()) }
     }
 
+    /// Returns the length of the vector as a `usize`.
+    #[inline]
+    pub const fn len_usize(&self) -> usize {
+        self.raw.len()
+    }
+
     /// Returns the total capacity of the vector (in elements).
     ///
     /// Note: This returns the raw `usize` capacity, not the typed capacity.
+    ///
+    /// # Design Decision
+    ///
+    /// Unlike [`len()`](Self::len) which returns a typed index `I`, this method returns a raw
+    /// `usize`. This is an intentional design choice: `TypedVec` may have a capacity that exceeds
+    /// what the index type `I` can represent.
+    ///
+    /// If we limited capacity to `I::MAX_RAW_INDEX`, strange behaviors would occur. For example,
+    /// with a `u8` index type (max 255), consider this scenario:
+    /// - Vector starts with capacity 100
+    /// - After some pushes, it reallocates and doubles to capacity 200
+    /// - The next push (201st element) would require reallocation to capacity 400, which exceeds
+    ///   `u8::MAX_RAW_INDEX` (255), so this push would fail
+    ///
+    /// This would be surprising: a vector with a `u8` index could suddenly fail to push even though
+    /// it should be able to hold up to 255 elements. By allowing capacity to exceed the index
+    /// type's range, we ensure that the vector can always grow to accommodate up to 255 elements,
+    /// even if it temporarily has excess capacity.
+    ///
+    /// Use [`len()`](Self::len) when you need the typed length, and [`remaining_capacity()`]
+    /// when you need to know how many more elements can be added before reaching the index limit.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.raw.capacity()
+    }
+
+    /// Returns the remaining capacity until the vector would exceed the index type's limit.
+    ///
+    /// This is the maximum number of additional elements that can be pushed before the
+    /// index type's maximum would be exceeded, regardless of the underlying allocation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u8);
+    ///
+    /// let vec: TypedVec<Idx, i32> = TypedVec::with_capacity(10);
+    /// // remaining_capacity is based on index type, not allocation
+    /// assert_eq!(vec.remaining_capacity().to_raw_index(), 255);
+    /// ```
+    #[inline]
+    pub fn remaining_capacity(&self) -> I {
+        // This is safe because remaining capacity is always within I's range
+        unsafe {
+            I::from_raw_index_unchecked(I::MAX_RAW_INDEX.saturating_sub(self.len().to_raw_index()))
+        }
+    }
+
+    /// Returns an iterator over the valid indices of this vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::typed_vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let vec: TypedVec<Idx, i32> = TypedVec::from_vec(vec![10, 20, 30]);
+    /// for idx in vec.indices() {
+    ///     println!("{}: {}", idx.to_raw_index(), vec[idx]);
+    /// }
+    /// ```
+    #[inline]
+    pub fn indices(&self) -> TypedRangeIter<I> {
+        (I::ZERO..self.len()).iter()
+    }
+
+    /// Returns an iterator over the elements with their indices.
+    #[inline]
+    pub fn iter_enumerated(&self) -> TypedIterEnumerate<I, T, core::slice::Iter<'_, T>> {
+        // SAFETY: `self.raw.iter()` yields exactly `self.len()` items, which already fit in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.iter()) }
+    }
+
+    /// Returns an iterator over the elements with their mutable references and indices.
+    #[inline]
+    pub fn iter_mut_enumerated(&mut self) -> TypedIterEnumerate<I, T, core::slice::IterMut<'_, T>> {
+        // SAFETY: `self.raw.iter_mut()` yields exactly `self.len()` items, which already fit in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.iter_mut()) }
+    }
+
+    /// Consumes the vector and returns an iterator over the elements with their indices.
+    #[inline]
+    pub fn into_iter_enumerated(self) -> TypedIterEnumerate<I, T, alloc::vec::IntoIter<T>> {
+        // SAFETY: `self.raw.into_iter()` yields exactly the vector length, which already fits in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.into_iter()) }
     }
 
     /// Attempts to append an element to the back of the vector.
@@ -693,6 +791,19 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
     #[inline]
     pub fn extend_from_slice(&mut self, other: &TypedSlice<I, T>) {
         self.raw.extend_from_slice(other.as_slice())
+    }
+
+    /// Attempts to extend the vector by cloning elements from a typed slice.
+    ///
+    /// Returns an error if the resulting length would exceed `I::MAX_RAW_INDEX`.
+    #[inline]
+    pub fn try_extend_from_slice(
+        &mut self,
+        other: &TypedSlice<I, T>,
+    ) -> Result<(), I::IndexTooBigError> {
+        let _new_len = self.len().checked_add_scalar(other.len().to_scalar())?;
+        self.raw.extend_from_slice(other.as_slice());
+        Ok(())
     }
 
     /// Copies elements from the specified range to the end of the vector.

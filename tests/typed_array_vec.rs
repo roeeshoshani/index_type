@@ -93,6 +93,52 @@ fn test_into_iter() {
 }
 
 #[test]
+fn test_iter_enumerated_supports_reverse_and_mixed_iteration() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
+    vec.push(10);
+    vec.push(20);
+    vec.push(30);
+
+    let reversed: Vec<_> = vec
+        .iter_enumerated()
+        .rev()
+        .map(|(idx, value)| (idx.to_raw_index(), *value))
+        .collect();
+    assert_eq!(reversed, vec![(2, 30), (1, 20), (0, 10)]);
+
+    let mut iter = vec.iter_enumerated();
+    assert_eq!(
+        iter.next().map(|(idx, value)| (idx.to_raw_index(), *value)),
+        Some((0, 10))
+    );
+    assert_eq!(
+        iter.next_back()
+            .map(|(idx, value)| (idx.to_raw_index(), *value)),
+        Some((2, 30))
+    );
+    assert_eq!(
+        iter.next().map(|(idx, value)| (idx.to_raw_index(), *value)),
+        Some((1, 20))
+    );
+    assert_eq!(iter.next_back(), None);
+}
+
+#[test]
+fn test_into_iter_enumerated_supports_reverse_iteration() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
+    vec.push(10);
+    vec.push(20);
+    vec.push(30);
+
+    let collected: Vec<_> = vec
+        .into_iter_enumerated()
+        .rev()
+        .map(|(idx, value)| (idx.to_raw_index(), value))
+        .collect();
+    assert_eq!(collected, vec![(2, 30), (1, 20), (0, 10)]);
+}
+
+#[test]
 fn test_into_iter_panic() {
     let drop_counter = Rc::new(Cell::new(0));
     let mut vec: TypedArrayVec<MyIndex, DropCounter<i32>, 8> = TypedArrayVec::new();
@@ -256,15 +302,6 @@ fn test_extend_from_slice() {
     vec.push(1);
     let other = index_type::typed_array![2, 3];
     vec.extend_from_slice(&other);
-    assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3]);
-}
-
-#[test]
-fn test_extend_from_slice_copy() {
-    let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
-    vec.push(1);
-    let other = index_type::typed_array![2, 3];
-    vec.extend_from_slice_copy(&other);
     assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3]);
 }
 

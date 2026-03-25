@@ -22,6 +22,41 @@ fn test_typed_slice_basic() {
 }
 
 #[test]
+fn test_iter_enumerated_supports_reverse_iteration() {
+    let data = [10, 20, 30];
+    let slice: &TypedSlice<MyIndex, i32> = TypedSlice::try_from_slice(&data).unwrap();
+
+    let collected: Vec<_> = slice
+        .iter_enumerated()
+        .rev()
+        .map(|(idx, value)| (idx.to_raw_index(), *value))
+        .collect();
+    assert_eq!(collected, vec![(2, 30), (1, 20), (0, 10)]);
+}
+
+#[test]
+fn test_iter_mut_enumerated_supports_mixed_iteration() {
+    let mut data = [10, 20, 30];
+    let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::try_from_slice_mut(&mut data).unwrap();
+
+    let mut iter = slice.iter_mut_enumerated();
+    let (front_idx, front_value) = iter.next().unwrap();
+    assert_eq!(front_idx.to_raw_index(), 0);
+    *front_value += 1;
+
+    let (back_idx, back_value) = iter.next_back().unwrap();
+    assert_eq!(back_idx.to_raw_index(), 2);
+    *back_value += 2;
+
+    let (middle_idx, middle_value) = iter.next().unwrap();
+    assert_eq!(middle_idx.to_raw_index(), 1);
+    *middle_value += 3;
+
+    assert!(iter.next_back().is_none());
+    assert_eq!(data, [11, 23, 32]);
+}
+
+#[test]
 fn test_cast_index_type_upcast() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);

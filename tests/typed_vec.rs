@@ -1,4 +1,4 @@
-use index_type::{typed_vec::TypedVec, IndexType};
+use index_type::{IndexType, typed_vec::TypedVec};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -23,6 +23,46 @@ fn test_typed_vec_basic() {
 
     assert_eq!(vec.pop(), Some(30));
     assert_eq!(vec.len_usize(), 2);
+}
+
+#[test]
+fn test_iter_enumerated_supports_reverse_and_mixed_iteration() {
+    let vec: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![10, 20, 30]);
+
+    let reversed: Vec<_> = vec
+        .iter_enumerated()
+        .rev()
+        .map(|(idx, value)| (idx.to_raw_index(), *value))
+        .collect();
+    assert_eq!(reversed, vec![(2, 30), (1, 20), (0, 10)]);
+
+    let mut iter = vec.iter_enumerated();
+    assert_eq!(
+        iter.next().map(|(idx, value)| (idx.to_raw_index(), *value)),
+        Some((0, 10))
+    );
+    assert_eq!(
+        iter.next_back()
+            .map(|(idx, value)| (idx.to_raw_index(), *value)),
+        Some((2, 30))
+    );
+    assert_eq!(
+        iter.next().map(|(idx, value)| (idx.to_raw_index(), *value)),
+        Some((1, 20))
+    );
+    assert_eq!(iter.next_back(), None);
+}
+
+#[test]
+fn test_into_iter_enumerated_preserves_indices_in_reverse() {
+    let vec: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![10, 20, 30]);
+
+    let collected: Vec<_> = vec
+        .into_iter_enumerated()
+        .rev()
+        .map(|(idx, value)| (idx.to_raw_index(), value))
+        .collect();
+    assert_eq!(collected, vec![(2, 30), (1, 20), (0, 10)]);
 }
 
 #[test]
@@ -307,6 +347,30 @@ fn test_extend_from_slice() {
         index_type::typed_slice::TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut data).unwrap();
     vec.extend_from_slice(&slice);
     assert_eq!(vec.len_usize(), 5);
+}
+
+#[test]
+fn test_try_extend_from_slice_overflow_leaves_vec_unchanged() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..200 {
+        vec.push(i);
+    }
+
+    let data = [1; 100];
+    let slice =
+        index_type::typed_slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+
+    let result = vec.try_extend_from_slice(slice);
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 200);
+    assert_eq!(vec[SmallIndex::ZERO], 0);
+    assert_eq!(
+        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
+        199
+    );
 }
 
 #[test]

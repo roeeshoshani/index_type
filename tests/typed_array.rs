@@ -13,6 +13,29 @@ fn test_typed_array_basic() {
 }
 
 #[test]
+fn test_iter_enumerated_supports_reverse_iteration() {
+    let arr: TypedArray<MyIndex, i32, 3> = TypedArray::try_from_array([10, 20, 30]).unwrap();
+
+    let collected: Vec<_> = arr
+        .iter_enumerated()
+        .rev()
+        .map(|(idx, value)| (idx.to_raw_index(), *value))
+        .collect();
+    assert_eq!(collected, vec![(2, 30), (1, 20), (0, 10)]);
+}
+
+#[test]
+fn test_into_iter_enumerated_supports_mixed_iteration() {
+    let arr: TypedArray<MyIndex, i32, 3> = TypedArray::try_from_array([10, 20, 30]).unwrap();
+    let mut iter = arr.into_iter_enumerated();
+
+    assert_eq!(iter.next(), Some((MyIndex(0), 10)));
+    assert_eq!(iter.next_back(), Some((MyIndex(2), 30)));
+    assert_eq!(iter.next(), Some((MyIndex(1), 20)));
+    assert_eq!(iter.next_back(), None);
+}
+
+#[test]
 fn test_cast_index_type_upcast() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);

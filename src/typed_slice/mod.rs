@@ -27,7 +27,13 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexScalarType, IndexType, typed_array::TypedArray, utils::range_bounds_to_raw};
+use crate::{
+    IndexScalarType, IndexType,
+    typed_array::TypedArray,
+    typed_iter_enumerate::TypedIterEnumerate,
+    typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
+    utils::range_bounds_to_raw,
+};
 
 #[cfg(feature = "alloc")]
 use crate::{IndexTooBigError, typed_vec::TypedVec};
@@ -451,6 +457,28 @@ impl<I: IndexType, T> TypedSlice<I, T> {
     #[inline]
     pub fn iter_mut(&mut self) -> core::slice::IterMut<'_, T> {
         self.raw.iter_mut()
+    }
+
+    /// Returns an iterator over the valid indices of this slice.
+    #[inline]
+    pub fn indices(&self) -> TypedRangeIter<I> {
+        (I::ZERO..self.len()).iter()
+    }
+
+    /// Returns an iterator over the elements with their indices.
+    #[inline]
+    pub fn iter_enumerated(&self) -> TypedIterEnumerate<I, T, core::slice::Iter<'_, T>> {
+        // SAFETY: `self.raw.iter()` yields exactly `self.len()` items, and typed slices only exist
+        // when their length fits in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.iter()) }
+    }
+
+    /// Returns an iterator over the elements with their mutable references and indices.
+    #[inline]
+    pub fn iter_mut_enumerated(&mut self) -> TypedIterEnumerate<I, T, core::slice::IterMut<'_, T>> {
+        // SAFETY: `self.raw.iter_mut()` yields exactly `self.len()` items, and typed slices only
+        // exist when their length fits in `I`.
+        unsafe { TypedIterEnumerate::new(self.raw.iter_mut()) }
     }
 
     /// # Safety

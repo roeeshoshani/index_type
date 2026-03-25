@@ -36,7 +36,13 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{typed_array::TypedArray, typed_slice::TypedSlice, IndexScalarType, IndexType};
+use crate::{
+    IndexScalarType, IndexType,
+    typed_array::TypedArray,
+    typed_iter_enumerate::TypedIterEnumerate,
+    typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
+    typed_slice::TypedSlice,
+};
 
 #[cold]
 fn panic_insufficient_capacity() -> ! {
@@ -68,6 +74,39 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     #[inline]
     pub const fn len(&self) -> I {
         self.len
+    }
+
+    /// Returns the number of elements in the `TypedArrayVec` as a `usize`.
+    #[inline]
+    pub fn len_usize(&self) -> usize {
+        self.len.to_raw_index()
+    }
+
+    /// Returns an iterator over the valid indices of this vector.
+    #[inline]
+    pub fn indices(&self) -> TypedRangeIter<I> {
+        (I::ZERO..self.len()).iter()
+    }
+
+    /// Returns an iterator over the elements with their indices.
+    #[inline]
+    pub fn iter_enumerated(&self) -> TypedIterEnumerate<I, T, core::slice::Iter<'_, T>> {
+        // SAFETY: `self.as_slice().iter()` yields exactly `self.len()` items, which already fit in `I`.
+        unsafe { TypedIterEnumerate::new(self.as_slice().iter()) }
+    }
+
+    /// Returns an iterator over the elements with their mutable references and indices.
+    #[inline]
+    pub fn iter_mut_enumerated(&mut self) -> TypedIterEnumerate<I, T, core::slice::IterMut<'_, T>> {
+        // SAFETY: `self.as_mut_slice().iter_mut()` yields exactly `self.len()` items, which already fit in `I`.
+        unsafe { TypedIterEnumerate::new(self.as_mut_slice().iter_mut()) }
+    }
+
+    /// Consumes the vector and returns an iterator over the elements with their indices.
+    #[inline]
+    pub fn into_iter_enumerated(self) -> TypedIterEnumerate<I, T, IntoIter<I, T, N>> {
+        // SAFETY: `self.into_iter()` yields exactly the vector length, which already fits in `I`.
+        unsafe { TypedIterEnumerate::new(self.into_iter()) }
     }
 
     /// Returns the capacity of the `TypedArrayVec` as an index.
@@ -155,8 +194,6 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Appends elements from a `TypedSlice` to the `TypedArrayVec`.
     ///
-    /// If `T: Copy`, consider using the [`extend_from_slice_copy`](Self::extend_from_slice_copy) for better performance.
-    ///
     /// # Panics
     ///
     /// Panics if the `TypedArrayVec` does not have enough capacity.
@@ -170,8 +207,6 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     }
 
     /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec`.
-    ///
-    /// If `T: Copy`, consider using the [`try_extend_from_slice_copy`](Self::try_extend_from_slice_copy) for better performance.
     ///
     /// Returns an error if the `TypedArrayVec` does not have enough capacity.
     #[inline]
@@ -197,56 +232,6 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
                 self.storage.get_unchecked_mut(self.len).write(item.clone());
                 self.len = self.len.unchecked_add_scalar(I::Scalar::ONE);
             }
-        }
-        Ok(())
-    }
-
-    /// Appends elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
-    ///
-    /// This is more performant that the non-copying variant of this function ([`extend_from_slice`](Self::extend_from_slice)),
-    /// but it has stricter bounds - it requires `T: Copy`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the `TypedArrayVec` does not have enough capacity.
-    #[inline]
-    pub fn extend_from_slice_copy(&mut self, other: &TypedSlice<I, T>)
-    where
-        T: Copy,
-    {
-        self.try_extend_from_slice_copy(other)
-            .unwrap_or_else(|_| panic_insufficient_capacity())
-    }
-
-    /// Tries to append elements from a `TypedSlice` to the `TypedArrayVec` where `T: Copy`.
-    ///
-    /// This is more performant that the non-copying variant of this function ([`try_extend_from_slice`](Self::try_extend_from_slice)),
-    /// but it has stricter bounds - it requires `T: Copy`.
-    ///
-    /// Returns an error if the `TypedArrayVec` does not have enough capacity.
-    #[inline]
-    pub fn try_extend_from_slice_copy(
-        &mut self,
-        other: &TypedSlice<I, T>,
-    ) -> Result<(), CapacityError<()>>
-    where
-        T: Copy,
-    {
-        let old_len = self.len;
-
-        let new_len = old_len
-            .checked_add_scalar(other.len().to_scalar())
-            .map_err(|_| CapacityError::new(()))?;
-
-        if new_len > self.capacity() {
-            return Err(CapacityError::new(()));
-        }
-
-        unsafe {
-            let src = other.as_ptr();
-            let dst = self.storage.get_unchecked_mut(old_len).as_mut_ptr();
-            core::ptr::copy_nonoverlapping(src, dst, other.len().to_raw_index());
-            self.len = new_len;
         }
         Ok(())
     }

@@ -278,6 +278,7 @@ mod index_scalar_types;
 pub mod macros;
 pub mod typed_array;
 pub mod typed_array_vec;
+pub mod typed_iter_enumerate;
 pub mod typed_range_iter;
 pub mod typed_slice;
 #[cfg(feature = "alloc")]
