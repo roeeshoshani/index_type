@@ -32,7 +32,7 @@
 
 use core::{
     iter::FusedIterator,
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::MaybeUninit,
     ops::{Index, IndexMut},
 };
 
