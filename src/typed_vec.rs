@@ -745,19 +745,6 @@ impl<I: IndexType, T> TypedVec<I, T> {
         }
         Ok(())
     }
-
-    /// Extends the vector with the contents of an iterator.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the new length would exceed `I::MAX_RAW_INDEX`.
-    #[inline]
-    pub fn extend<X: IntoIterator<Item = T>>(&mut self, iter: X) {
-        match self.try_extend(iter) {
-            Ok(()) => {}
-            Err(e) => panic!("{}", e),
-        }
-    }
 }
 
 /// An iterator adapter used by [`TypedVec::splice`] to cap replacement growth.
@@ -1068,7 +1055,10 @@ impl<'a, I: IndexType, T> IntoIterator for &'a mut TypedVec<I, T> {
 }
 impl<I: IndexType, T> Extend<T> for TypedVec<I, T> {
     fn extend<X: IntoIterator<Item = T>>(&mut self, iter: X) {
-        self.extend(iter);
+        match self.try_extend(iter) {
+            Ok(()) => {}
+            Err(e) => panic!("{}", e),
+        }
     }
 }
 
