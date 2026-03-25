@@ -19,7 +19,9 @@ pub fn resolve_range_bounds<I: IndexType, R: RangeBounds<I>>(r: &R, length: I) -
     };
 
     let end = match r.end_bound() {
-        core::ops::Bound::Included(i) => i.checked_add_scalar(I::Scalar::ONE).unwrap_or(*i),
+        core::ops::Bound::Included(i) => i
+            .checked_add_scalar(I::Scalar::ONE)
+            .expect("range out of bounds"),
         core::ops::Bound::Excluded(i) => *i,
         core::ops::Bound::Unbounded => length,
     };
