@@ -16,6 +16,8 @@ macro_rules! impl_for_uint_type {
 
             const ZERO: Self = 0;
 
+            const MAX_INDEX: Self = Self::MAX;
+
             const MAX_RAW_INDEX: usize = (Self::MAX) as usize;
 
             #[inline]
@@ -80,6 +82,11 @@ macro_rules! impl_for_uint_type {
             fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
                 self.checked_sub(rhs)
             }
+
+            #[inline]
+            fn checked_sub_index(self, rhs: Self) -> Option<Self::Scalar> {
+                self.checked_sub(rhs)
+            }
         }
     };
 }
@@ -106,6 +113,8 @@ macro_rules! impl_for_nonzero_uint_type {
             type Scalar = $scalar;
 
             const ZERO: Self = unsafe { Self::new_unchecked(1) };
+
+            const MAX_INDEX: Self = unsafe { Self::new_unchecked(<$scalar>::MAX) };
 
             const MAX_RAW_INDEX: usize = (<$scalar>::MAX - 1) as usize;
 
@@ -183,6 +192,11 @@ macro_rules! impl_for_nonzero_uint_type {
             fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
                 let val = self.get().checked_sub(rhs)?;
                 Self::new(val)
+            }
+
+            #[inline]
+            fn checked_sub_index(self, rhs: Self) -> Option<Self::Scalar> {
+                self.get().checked_sub(rhs.get())
             }
         }
     };

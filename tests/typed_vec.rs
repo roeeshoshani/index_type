@@ -291,6 +291,11 @@ fn test_try_extend_overflow() {
     let result = vec.try_extend(0..100);
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 200);
+    assert_eq!(vec[SmallIndex::ZERO], 0);
+    assert_eq!(
+        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
+        199
+    );
 }
 
 #[test]
@@ -310,33 +315,6 @@ fn test_extend_overflow_panic() {
 }
 
 #[test]
-fn test_try_extend_copy() {
-    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
-    vec.push(1);
-    vec.push(2);
-
-    let source = vec![3, 4, 5];
-    vec.try_extend_copy(&source).unwrap();
-    assert_eq!(vec.len_usize(), 5);
-}
-
-#[test]
-fn test_try_extend_copy_overflow() {
-    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-    struct SmallIndex(u8);
-
-    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
-    for i in 0..200 {
-        vec.push(i as i32);
-    }
-
-    let source = vec![1; 100];
-    let result = vec.try_extend_copy(&source);
-    assert!(result.is_err());
-    assert_eq!(vec.len_usize(), 200);
-}
-
-#[test]
 fn test_extend_from_slice() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
     vec.push(1);
@@ -345,8 +323,34 @@ fn test_extend_from_slice() {
     let mut data = [3, 4, 5];
     let slice =
         index_type::typed_slice::TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut data).unwrap();
-    vec.extend_from_slice(&slice);
+    vec.extend_from_slice(slice);
     assert_eq!(vec.len_usize(), 5);
+}
+
+#[test]
+fn test_extend_from_slice_overflow_panics_without_mutating_vec() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..200 {
+        vec.push(i);
+    }
+
+    let data = [1; 100];
+    let slice =
+        index_type::typed_slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        vec.extend_from_slice(slice);
+    }));
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 200);
+    assert_eq!(vec[SmallIndex::ZERO], 0);
+    assert_eq!(
+        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
+        199
+    );
 }
 
 #[test]
@@ -487,6 +491,99 @@ fn test_splice() {
     assert_eq!(removed, vec![1]);
     assert_eq!(vec.len_usize(), 4);
     assert_eq!(vec[MyIndex::ZERO], 10);
+}
+
+#[test]
+fn test_extend_from_within_overflow_panics_without_mutating_vec() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..200 {
+        vec.push(i);
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        vec.extend_from_within(
+            SmallIndex::ZERO..unsafe { SmallIndex::from_raw_index_unchecked(100) },
+        );
+    }));
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 200);
+    assert_eq!(vec[SmallIndex::ZERO], 0);
+    assert_eq!(
+        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
+        199
+    );
+}
+
+#[test]
+fn test_extend_from_within_inclusive_single_element_overflow_panics_without_mutating_vec() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        vec.extend_from_within(
+            unsafe { SmallIndex::from_raw_index_unchecked(254) }..=unsafe {
+                SmallIndex::from_raw_index_unchecked(254)
+            },
+        );
+    }));
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 255);
+    assert_eq!(vec[SmallIndex::ZERO], 0);
+    assert_eq!(
+        vec[unsafe { SmallIndex::from_raw_index_unchecked(254) }],
+        254
+    );
+}
+
+#[test]
+fn test_splice_overflow_panics_without_exceeding_index_bounds() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..200 {
+        vec.push(i);
+    }
+
+    let replacement = 0..100;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _ = vec.splice(
+            SmallIndex::ZERO..unsafe { SmallIndex::from_raw_index_unchecked(10) },
+            replacement,
+        );
+    }));
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 255);
+}
+
+#[test]
+fn test_splice_inclusive_single_element_overflow_panics_without_exceeding_index_bounds() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _ = vec.splice(
+            unsafe { SmallIndex::from_raw_index_unchecked(254) }..=unsafe {
+                SmallIndex::from_raw_index_unchecked(254)
+            },
+            [999, 1000],
+        );
+    }));
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 255);
 }
 
 #[test]

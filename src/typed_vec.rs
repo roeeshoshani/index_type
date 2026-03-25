@@ -29,6 +29,7 @@
 
 use core::{
     borrow::{Borrow, BorrowMut},
+    iter::FusedIterator,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -40,7 +41,7 @@ use crate::{
     typed_iter_enumerate::TypedIterEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
-    utils::range_bounds_to_raw,
+    utils::{range_bounds_to_raw, resolve_range_bounds},
 };
 
 /// A growable vector with typed indexing.
@@ -685,19 +686,37 @@ impl<I: IndexType, T> TypedVec<I, T> {
     where
         R: core::ops::RangeBounds<I>,
     {
-        self.raw.drain(range_bounds_to_raw(range))
+        self.raw.drain(range_bounds_to_raw(&range))
     }
 
     /// Creates a splicing iterator that removes the specified range and replaces it.
     ///
     /// See [`Vec::splice`] for details.
     #[inline]
-    pub fn splice<R, X>(&mut self, range: R, replace_with: X) -> alloc::vec::Splice<'_, X::IntoIter>
+    pub fn splice<R, X>(
+        &mut self,
+        range: R,
+        replace_with: X,
+    ) -> alloc::vec::Splice<'_, BoundedSpliceIter<I, X::IntoIter>>
     where
         R: core::ops::RangeBounds<I>,
         X: IntoIterator<Item = T>,
     {
-        self.raw.splice(range_bounds_to_raw(range), replace_with)
+        let resolved_range = resolve_range_bounds(&range, self.len());
+        let range_len = resolved_range
+            .end
+            .checked_sub_index(resolved_range.start)
+            .expect("invalid range");
+        let remaining_len = self
+            .len()
+            .checked_sub_scalar(range_len)
+            .expect("range out of bounds");
+        let replace_with_max_allowed_len =
+            unsafe { I::MAX_INDEX.unchecked_sub_index(remaining_len) };
+        self.raw.splice(
+            range_bounds_to_raw(&range),
+            BoundedSpliceIter::new(replace_with.into_iter(), replace_with_max_allowed_len),
+        )
     }
 
     /// Attempts to extend the vector with the contents of an iterator.
@@ -709,15 +728,22 @@ impl<I: IndexType, T> TypedVec<I, T> {
         &mut self,
         iter: X,
     ) -> Result<(), I::IndexTooBigError> {
-        let orig_raw_len = self.raw.len();
-        self.raw.extend(iter);
-        match I::try_from_raw_index(self.raw.len()) {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                self.raw.truncate(orig_raw_len);
-                Err(err)
-            }
+        let iter = iter.into_iter();
+
+        if let Some(upper_bound) = iter.size_hint().1 {
+            let _ = self.len().checked_add_scalar(
+                I::Scalar::try_from_usize(upper_bound).ok_or(I::IndexTooBigError::new())?,
+            )?;
         }
+
+        let orig_len = self.raw.len();
+        for item in iter {
+            self.try_push(item).map_err(|err| {
+                self.raw.truncate(orig_len);
+                err
+            })?;
+        }
+        Ok(())
     }
 
     /// Extends the vector with the contents of an iterator.
@@ -734,45 +760,76 @@ impl<I: IndexType, T> TypedVec<I, T> {
     }
 }
 
-impl<I: IndexType, T: Copy> TypedVec<I, T> {
-    /// Attempts to extend the vector by copying elements from a slice.
-    ///
-    /// See [`Vec::extend_from_slice`] for details.
+/// An iterator adapter used by [`TypedVec::splice`] to cap replacement growth.
+///
+/// This wrapper forwards items from an underlying iterator while tracking how many
+/// replacement elements may still be yielded without making the final vector length
+/// exceed the index type's maximum.
+///
+/// Once the allowed replacement count is exhausted, further iteration panics.
+#[derive(Debug)]
+pub struct BoundedSpliceIter<I: IndexType, Iter> {
+    inner: Iter,
+    remaining: I::Scalar,
+}
+
+impl<I: IndexType, Iter> BoundedSpliceIter<I, Iter> {
     #[inline]
-    pub fn try_extend_copy<'a, X: IntoIterator<Item = &'a T>>(
-        &mut self,
-        iter: X,
-    ) -> Result<(), I::IndexTooBigError>
-    where
-        T: 'a,
-    {
-        let orig_raw_len = self.raw.len();
-        self.raw.extend(iter);
-        match I::try_from_raw_index(self.raw.len()) {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                self.raw.truncate(orig_raw_len);
-                Err(err)
-            }
-        }
+    fn new(inner: Iter, remaining: I::Scalar) -> Self {
+        Self { inner, remaining }
     }
 
-    /// Extends the vector by copying elements from a slice.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the new length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
-    pub fn extend_copy<'a, X: IntoIterator<Item = &'a T>>(&mut self, iter: X)
-    where
-        T: 'a,
-    {
-        match self.try_extend_copy(iter) {
-            Ok(()) => {}
-            Err(e) => panic!("{}", e),
-        }
+    fn take_one(&mut self) {
+        self.remaining = self
+            .remaining
+            .checked_sub_scalar(I::Scalar::ONE)
+            .expect("splice would exceed the index type's maximum length");
     }
 }
+
+impl<I: IndexType, T, Iter: Iterator<Item = T>> Iterator for BoundedSpliceIter<I, Iter> {
+    type Item = T;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let item = self.inner.next()?;
+        self.take_one();
+        Some(item)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (lower, upper) = self.inner.size_hint();
+        let remaining = self.remaining.to_usize();
+        (
+            lower.min(remaining),
+            upper.map(|upper| upper.min(remaining)),
+        )
+    }
+}
+
+impl<I: IndexType, T, Iter: DoubleEndedIterator<Item = T>> DoubleEndedIterator
+    for BoundedSpliceIter<I, Iter>
+{
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let item = self.inner.next_back()?;
+        self.take_one();
+        Some(item)
+    }
+}
+
+impl<I: IndexType, T, Iter: ExactSizeIterator<Item = T>> ExactSizeIterator
+    for BoundedSpliceIter<I, Iter>
+{
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len().min(self.remaining.to_usize())
+    }
+}
+
+impl<I: IndexType, T, Iter: FusedIterator<Item = T>> FusedIterator for BoundedSpliceIter<I, Iter> {}
 
 impl<I: IndexType, T: PartialEq> TypedVec<I, T> {
     /// Removes consecutive duplicate elements.
@@ -790,7 +847,10 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
     /// See [`Vec::extend_from_slice`] for details.
     #[inline]
     pub fn extend_from_slice(&mut self, other: &TypedSlice<I, T>) {
-        self.raw.extend_from_slice(other.as_slice())
+        match self.try_extend_from_slice(other) {
+            Ok(()) => {}
+            Err(e) => panic!("{}", e),
+        }
     }
 
     /// Attempts to extend the vector by cloning elements from a typed slice.
@@ -806,6 +866,26 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         Ok(())
     }
 
+    /// Attempts to copy elements from the specified range to the end of the vector.
+    ///
+    /// Returns an error if the resulting length would exceed `I::MAX_RAW_INDEX`.
+    ///
+    /// See [`Vec::extend_from_within`] for details.
+    #[inline]
+    pub fn try_extend_from_within<R>(&mut self, src: R) -> Result<(), I::IndexTooBigError>
+    where
+        R: core::ops::RangeBounds<I>,
+    {
+        let src_range = resolve_range_bounds(&src, self.len());
+        let src_range_len = src_range
+            .end
+            .checked_sub_index(src_range.start)
+            .expect("invalid range");
+        let _ = self.len().checked_add_scalar(src_range_len)?;
+        self.raw.extend_from_within(range_bounds_to_raw(&src));
+        Ok(())
+    }
+
     /// Copies elements from the specified range to the end of the vector.
     ///
     /// See [`Vec::extend_from_within`] for details.
@@ -814,7 +894,7 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
     where
         R: core::ops::RangeBounds<I>,
     {
-        self.raw.extend_from_within(range_bounds_to_raw(src));
+        self.try_extend_from_within(src).unwrap();
     }
 
     /// Creates an iterator that filters and transforms elements, removing them in place.
@@ -826,7 +906,7 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
         F: FnMut(&mut T) -> bool,
         R: core::ops::RangeBounds<I>,
     {
-        self.raw.extract_if(range_bounds_to_raw(range), filter)
+        self.raw.extract_if(range_bounds_to_raw(&range), filter)
     }
 
     /// Resizes the vector to the specified length, filling new positions with `value`.

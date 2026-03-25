@@ -110,6 +110,8 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
 
             const ZERO: Self = Self(<#inner_ty as ::index_type::IndexType>::ZERO);
 
+            const MAX_INDEX: Self = Self(<#inner_ty as ::index_type::IndexType>::MAX_INDEX);
+
             const MAX_RAW_INDEX: usize = <#inner_ty as ::index_type::IndexType>::MAX_RAW_INDEX;
 
             fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError> {
@@ -154,6 +156,10 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
                 <#inner_ty as ::index_type::IndexType>::checked_mul_scalar(self.0, rhs)
                     .map(Self)
                     .map_err(|_| <#err_ty as ::index_type::IndexTooBigError>::new())
+            }
+
+            fn checked_sub_index(self, rhs: Self) -> Option<Self::Scalar> {
+                <#inner_ty as ::index_type::IndexType>::checked_sub_index(self.0, rhs.0) 
             }
 
             unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self {

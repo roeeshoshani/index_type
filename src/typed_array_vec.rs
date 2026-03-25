@@ -42,6 +42,7 @@ use crate::{
     typed_iter_enumerate::TypedIterEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
+    utils::resolve_range_bounds,
 };
 
 #[cold]
@@ -492,33 +493,22 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     where
         R: core::ops::RangeBounds<I>,
     {
-        // TODO: thoroughly check this code and all code below it
-        let old_len = self.len;
+        let range = resolve_range_bounds(&range, self.len);
 
-        let start = match range.start_bound() {
-            core::ops::Bound::Included(i) => *i,
-            core::ops::Bound::Excluded(i) => i.checked_add_scalar(I::Scalar::ONE).unwrap_or(*i),
-            core::ops::Bound::Unbounded => I::ZERO,
-        };
-
-        let end = match range.end_bound() {
-            core::ops::Bound::Included(i) => i.checked_sub_scalar(I::Scalar::ONE).unwrap_or(*i),
-            core::ops::Bound::Excluded(i) => *i,
-            core::ops::Bound::Unbounded => old_len,
-        };
-
-        assert!(start <= end && end <= old_len, "drain range out of bounds");
+        assert!(
+            range.start <= range.end && range.end <= self.len,
+            "drain range out of bounds"
+        );
 
         // We set the length to start, elements from start to end will be moved out by Drain.
         // Elements from end to old_len will be moved back after Drain is dropped.
-        self.len = start;
+        self.len = range.start;
 
         Drain {
+            cur_start: range.start,
+            cur_end: range.end,
+            tail_start: range.end,
             inner: self,
-            cur_start: start,
-            cur_end: end,
-            tail_start: end,
-            old_len,
         }
     }
 }
@@ -529,7 +519,6 @@ pub struct Drain<'a, I: IndexType, T, const N: usize> {
     cur_start: I,
     cur_end: I,
     tail_start: I,
-    old_len: I,
 }
 
 impl<I: IndexType, T, const N: usize> Iterator for Drain<'_, I, T, N> {
@@ -585,7 +574,7 @@ impl<I: IndexType, T, const N: usize> Drop for Drain<'_, I, T, N> {
         while self.next().is_some() {}
 
         // Move the tail back.
-        let tail_len = unsafe { self.old_len.unchecked_sub_index(self.tail_start) };
+        let tail_len = unsafe { self.inner.len().unchecked_sub_index(self.tail_start) };
         if tail_len > I::Scalar::ZERO {
             unsafe {
                 let src = self

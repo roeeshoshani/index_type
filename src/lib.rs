@@ -320,6 +320,11 @@ pub unsafe trait IndexType:
     /// This is typically `0` for regular integers, or `1` for [`NonZero`](core::num::NonZero) types.
     const ZERO: Self;
 
+    /// The maximum index value representable by this type.
+    ///
+    /// For `u8`, this is `255`. For [`NonZeroU8`](core::num::NonZeroU8), this is `NonZeroU8(255)`.
+    const MAX_INDEX: Self;
+
     /// The maximum raw index value representable by this type.
     ///
     /// For `u8`, this is `255`. For [`NonZeroU8`](core::num::NonZeroU8), this is `254` (since raw index 255 maps to [`NonZeroU8::MAX`](core::num::NonZeroU8::MAX) = 255).
@@ -369,6 +374,11 @@ pub unsafe trait IndexType:
     ///
     /// Returns an error if the result would exceed `MAX_RAW_INDEX`.
     fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError>;
+
+    /// Performs checked subtraction of another index, returning a scalar.
+    ///
+    /// Returns `None` if the result would underflow.
+    fn checked_sub_index(self, rhs: Self) -> Option<Self::Scalar>;
 
     /// Performs unchecked addition with a scalar value.
     ///

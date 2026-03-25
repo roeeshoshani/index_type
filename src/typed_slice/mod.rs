@@ -815,7 +815,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         T: Copy,
     {
         self.raw
-            .copy_within(range_bounds_to_raw(src), dest.to_raw_index())
+            .copy_within(range_bounds_to_raw(&src), dest.to_raw_index())
     }
 
     #[inline]

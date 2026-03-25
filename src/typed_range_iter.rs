@@ -79,11 +79,11 @@ impl<I: IndexType> TypedRangeIter<I> {
     /// Returns 0 if `start >= end`.
     #[inline]
     pub fn len(&self) -> usize {
-        if self.0.start < self.0.end {
-            unsafe { self.0.end.unchecked_sub_index(self.0.start) }.to_usize()
-        } else {
-            0
-        }
+        self.0
+            .end
+            .checked_sub_index(self.0.start)
+            .unwrap_or(I::Scalar::ZERO)
+            .to_usize()
     }
 }
 
