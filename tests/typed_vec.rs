@@ -692,3 +692,21 @@ fn test_cast_index_type_same() {
     let cast: TypedVec<MyIndex, i32> = vec.cast_index_type::<MyIndex>().unwrap();
     assert_eq!(cast.len_usize(), 5);
 }
+
+#[test]
+fn test_extend_via_trait_impl() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    Extend::extend(&mut vec, [10, 20, 30]);
+    assert_eq!(vec.as_slice().as_slice(), &[10, 20, 30]);
+}
+
+#[test]
+fn test_into_iter_does_not_require_clone() {
+    #[derive(Debug, PartialEq, Eq)]
+    struct NotClone(i32);
+
+    let vec: TypedVec<MyIndex, NotClone> =
+        TypedVec::from_vec(vec![NotClone(1), NotClone(2), NotClone(3)]);
+    let collected: Vec<_> = vec.into_iter().map(|v| v.0).collect();
+    assert_eq!(collected, vec![1, 2, 3]);
+}

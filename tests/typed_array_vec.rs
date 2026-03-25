@@ -358,3 +358,36 @@ fn test_cast_index_type_same() {
     let cast: TypedArrayVec<MyIndex, i32, 16> = vec.cast_index_type::<MyIndex>().unwrap();
     assert_eq!(cast.len().to_raw_index(), 5);
 }
+
+#[test]
+fn test_cast_index_type_error_drops_elements() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let drop_counter = Rc::new(Cell::new(0));
+    let mut vec: TypedArrayVec<MyIndex, DropCounter<i32>, 300> = TypedArrayVec::new();
+    vec.push(DropCounter {
+        value: 1,
+        drop_counter: drop_counter.clone(),
+    });
+    vec.push(DropCounter {
+        value: 2,
+        drop_counter: drop_counter.clone(),
+    });
+
+    let result = vec.cast_index_type::<SmallIndex>();
+    assert!(result.is_err());
+    assert_eq!(drop_counter.get(), 2);
+}
+
+#[test]
+#[should_panic(expected = "range out of bounds")]
+fn test_drain_inclusive_len_panics() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+
+    let len = vec.len();
+    let _ = vec.drain(MyIndex::ZERO..=len);
+}

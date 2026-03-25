@@ -1,4 +1,4 @@
-use core::num::NonZeroUsize;
+use core::num::{NonZeroU8, NonZeroUsize};
 use index_type::{
     IndexType, typed_array::TypedArray, typed_slice::TypedSlice, typed_vec::TypedVec,
 };
@@ -62,7 +62,6 @@ fn test_get_disjoint_mut() {
 
 #[test]
 fn test_nonzero_capacity_limit() {
-    use core::num::NonZeroU8;
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct NonZeroSmallIndex(NonZeroU8);
 
@@ -76,6 +75,17 @@ fn test_nonzero_capacity_limit() {
     // When len is 254, push returns raw index 254 and len becomes 255.
     // checked_add_scalar(254, 1) returns Err because 255 > 254.
     assert!(vec.try_push(254).is_err());
+}
+
+#[test]
+fn test_nonzero_checked_mul_scalar_uses_raw_index_semantics() {
+    let idx = NonZeroU8::try_from_raw_index(2).unwrap();
+    assert_eq!(idx.checked_mul_scalar(2).unwrap().to_raw_index(), 4);
+
+    let zero = NonZeroU8::ZERO;
+    assert_eq!(zero.checked_mul_scalar(10).unwrap().to_raw_index(), 0);
+
+    assert!(NonZeroU8::MAX_INDEX.checked_mul_scalar(2).is_err());
 }
 
 #[test]

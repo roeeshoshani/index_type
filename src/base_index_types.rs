@@ -166,8 +166,10 @@ macro_rules! impl_for_nonzero_uint_type {
 
             #[inline]
             fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
-                let rhs = Self::new(rhs).ok_or(GenericIndexTooBigError)?;
-                self.checked_mul(rhs).ok_or(GenericIndexTooBigError)
+                self.to_scalar()
+                    .checked_mul(rhs)
+                    .ok_or(GenericIndexTooBigError)
+                    .and_then(Self::try_from_scalar)
             }
 
             #[inline]
