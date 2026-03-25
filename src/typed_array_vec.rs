@@ -156,13 +156,14 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         self,
     ) -> Result<TypedArrayVec<I2, T, N>, I2::IndexTooBigError> {
         let len = self.len;
-        let me = ManuallyDrop::new(self);
-        unsafe {
-            Ok(TypedArrayVec {
-                storage: core::ptr::read(&me.storage).cast_index_type()?,
-                len: I2::from_raw_index_unchecked(len.to_raw_index()),
-            })
-        }
+        let storage = unsafe { core::ptr::read(&self.storage) };
+        let casted_storage = storage.cast_index_type()?;
+        let result = TypedArrayVec {
+            storage: casted_storage,
+            len: unsafe { I2::from_raw_index_unchecked(len.to_raw_index()) },
+        };
+        core::mem::forget(self);
+        Ok(result)
     }
 
     /// Appends an element to the back of the `TypedArrayVec`.
