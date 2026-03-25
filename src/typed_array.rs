@@ -32,7 +32,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use crate::{IndexType, typed_slice::TypedSlice};
+use crate::{typed_slice::TypedSlice, IndexType};
 
 /// An array wrapper that uses a custom index type.
 #[repr(transparent)]
@@ -48,6 +48,13 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     const _ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS: () = if N > I::MAX_RAW_INDEX {
         panic!("array length is not in bounds of the index type");
     };
+
+    /// Returns the length of the array as an index.
+    #[inline]
+    pub fn len(&self) -> I {
+        // SAFETY: The length N is guaranteed to be valid for I by the type system.
+        unsafe { I::from_raw_index_unchecked(N) }
+    }
 
     #[inline]
     pub const fn as_slice(&self) -> &TypedSlice<I, T> {

@@ -721,6 +721,38 @@ impl<I: IndexType, T: core::hash::Hash, const N: usize> core::hash::Hash
     }
 }
 
+impl<I: IndexType, T, const N: usize> AsRef<TypedSlice<I, T>> for TypedArrayVec<I, T, N> {
+    #[inline]
+    fn as_ref(&self) -> &TypedSlice<I, T> {
+        self.as_slice()
+    }
+}
+
+impl<I: IndexType, T, const N: usize> AsMut<TypedSlice<I, T>> for TypedArrayVec<I, T, N> {
+    #[inline]
+    fn as_mut(&mut self) -> &mut TypedSlice<I, T> {
+        self.as_mut_slice()
+    }
+}
+
+impl<I: IndexType, T, const N: usize> core::borrow::Borrow<TypedSlice<I, T>>
+    for TypedArrayVec<I, T, N>
+{
+    #[inline]
+    fn borrow(&self) -> &TypedSlice<I, T> {
+        self.as_slice()
+    }
+}
+
+impl<I: IndexType, T, const N: usize> core::borrow::BorrowMut<TypedSlice<I, T>>
+    for TypedArrayVec<I, T, N>
+{
+    #[inline]
+    fn borrow_mut(&mut self) -> &mut TypedSlice<I, T> {
+        self.as_mut_slice()
+    }
+}
+
 impl<I: IndexType, T, const N: usize> IntoIterator for TypedArrayVec<I, T, N> {
     type Item = T;
     type IntoIter = IntoIter<I, T, N>;
