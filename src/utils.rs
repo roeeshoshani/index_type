@@ -14,7 +14,9 @@ pub fn range_bounds_to_raw<I: IndexType, R: RangeBounds<I>>(r: &R) -> (Bound<usi
 pub fn resolve_range_bounds<I: IndexType, R: RangeBounds<I>>(r: &R, length: I) -> Range<I> {
     let start = match r.start_bound() {
         core::ops::Bound::Included(i) => *i,
-        core::ops::Bound::Excluded(i) => i.checked_add_scalar(I::Scalar::ONE).unwrap_or(*i),
+        core::ops::Bound::Excluded(i) => i
+            .checked_add_scalar(I::Scalar::ONE)
+            .expect("range out of bounds"),
         core::ops::Bound::Unbounded => I::ZERO,
     };
 

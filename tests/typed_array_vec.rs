@@ -391,3 +391,17 @@ fn test_drain_inclusive_len_panics() {
     let len = vec.len();
     let _ = vec.drain(MyIndex::ZERO..=len);
 }
+
+#[test]
+#[should_panic(expected = "range out of bounds")]
+fn test_drain_excluded_len_panics() {
+    let mut vec: TypedArrayVec<MyIndex, i32, 4> = TypedArrayVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+
+    let _ = vec.drain((
+        std::ops::Bound::Excluded(MyIndex::MAX_INDEX),
+        std::ops::Bound::Unbounded,
+    ));
+}

@@ -61,6 +61,7 @@ mod typed_range_iter {
         assert_eq!(iter.nth(0), Some(MyIndex(0)));
         assert_eq!(iter.nth(2), Some(MyIndex(3)));
         assert_eq!(iter.nth(100), None);
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
@@ -98,6 +99,7 @@ mod typed_range_iter {
         assert_eq!(iter.nth_back(0), Some(MyIndex(9)));
         assert_eq!(iter.nth_back(2), Some(MyIndex(6)));
         assert_eq!(iter.nth_back(100), None);
+        assert_eq!(iter.next_back(), None);
     }
 
     #[test]
@@ -148,6 +150,25 @@ mod typed_range_from_iter {
         let mut iter = (MyIndex(10)..).iter();
         assert_eq!(iter.nth(0), Some(MyIndex(10)));
         assert_eq!(iter.nth(5), Some(MyIndex(16)));
+    }
+
+    #[test]
+    fn test_range_from_panics_on_overflow_like_std() {
+        let mut iter = (SmallIndex(254)..).iter();
+        assert_eq!(iter.next(), Some(SmallIndex(254)));
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = iter.next();
+        }));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_range_from_nth_panics_on_overflow_like_std() {
+        let mut iter = (SmallIndex(250)..).iter();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = iter.nth(10);
+        }));
+        assert!(result.is_err());
     }
 
     #[test]
@@ -237,6 +258,7 @@ mod typed_range_inclusive_iter {
         let mut iter = (MyIndex(0)..=MyIndex(9)).iter();
         assert_eq!(iter.nth(10), None);
         assert_eq!(iter.nth(100), None);
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
@@ -282,6 +304,7 @@ mod typed_range_inclusive_iter {
         assert_eq!(iter.nth_back(0), Some(MyIndex(9)));
         assert_eq!(iter.nth_back(2), Some(MyIndex(6)));
         assert_eq!(iter.nth_back(9), None);
+        assert_eq!(iter.next_back(), None);
     }
 
     #[test]

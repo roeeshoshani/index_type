@@ -113,13 +113,18 @@ impl<I: IndexType> Iterator for TypedRangeIter<I> {
 
     #[inline]
     fn nth(&mut self, n: usize) -> Option<I> {
-        let res = self
-            .0
-            .start
-            .checked_add_scalar(I::Scalar::try_from_usize(n)?)
-            .ok()?;
+        let Some(offset) = I::Scalar::try_from_usize(n) else {
+            self.0.start = self.0.end;
+            return None;
+        };
+
+        let Ok(res) = self.0.start.checked_add_scalar(offset) else {
+            self.0.start = self.0.end;
+            return None;
+        };
 
         if res >= self.0.end {
+            self.0.start = self.0.end;
             return None;
         }
 
@@ -168,13 +173,23 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeIter<I> {
 
     #[inline]
     fn nth_back(&mut self, n: usize) -> Option<I> {
-        let res = self
+        let Some(offset) = I::Scalar::try_from_usize(n) else {
+            self.0.end = self.0.start;
+            return None;
+        };
+
+        let Some(res) = self
             .0
             .end
-            .checked_sub_scalar(I::Scalar::try_from_usize(n)?)?
-            .checked_sub_scalar(I::Scalar::ONE)?;
+            .checked_sub_scalar(offset)
+            .and_then(|x| x.checked_sub_scalar(I::Scalar::ONE))
+        else {
+            self.0.end = self.0.start;
+            return None;
+        };
 
         if res < self.0.start {
+            self.0.end = self.0.start;
             return None;
         }
 
@@ -359,12 +374,18 @@ impl<I: IndexType> Iterator for TypedRangeInclusiveIter<I> {
             return None;
         }
 
-        let res = self
-            .start
-            .checked_add_scalar(I::Scalar::try_from_usize(n)?)
-            .ok()?;
+        let Some(offset) = I::Scalar::try_from_usize(n) else {
+            self.exhausted = true;
+            return None;
+        };
+
+        let Ok(res) = self.start.checked_add_scalar(offset) else {
+            self.exhausted = true;
+            return None;
+        };
 
         if res > self.end {
+            self.exhausted = true;
             None
         } else if res == self.end {
             self.exhausted = true;
@@ -425,9 +446,18 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusiveIter<I> {
             return None;
         }
 
-        let res = self.end.checked_sub_scalar(I::Scalar::try_from_usize(n)?)?;
+        let Some(offset) = I::Scalar::try_from_usize(n) else {
+            self.exhausted = true;
+            return None;
+        };
+
+        let Some(res) = self.end.checked_sub_scalar(offset) else {
+            self.exhausted = true;
+            return None;
+        };
 
         if res < self.start {
+            self.exhausted = true;
             None
         } else if res == self.start {
             self.exhausted = true;

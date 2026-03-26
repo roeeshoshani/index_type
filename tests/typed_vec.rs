@@ -494,6 +494,29 @@ fn test_splice() {
 }
 
 #[test]
+fn test_leak_preserves_typed_slice_api() {
+    let leaked: &'static mut index_type::typed_slice::TypedSlice<MyIndex, i32> =
+        TypedVec::from_vec(vec![10, 20, 30]).leak();
+    leaked[MyIndex::ZERO] = 99;
+    assert_eq!(leaked[MyIndex::ZERO], 99);
+    assert_eq!(leaked.len_usize(), 3);
+}
+
+#[test]
+#[should_panic(expected = "range out of bounds")]
+fn test_extend_from_within_excluded_len_panics() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+
+    vec.extend_from_within((
+        std::ops::Bound::Excluded(MyIndex::MAX_INDEX),
+        std::ops::Bound::Unbounded,
+    ));
+}
+
+#[test]
 fn test_extend_from_within_overflow_panics_without_mutating_vec() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);

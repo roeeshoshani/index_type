@@ -674,8 +674,10 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// See [`Vec::leak`] for details.
     #[inline]
-    pub fn leak<'a>(self) -> &'a mut [T] {
-        self.raw.leak()
+    pub fn leak<'a>(self) -> &'a mut TypedSlice<I, T> {
+        let raw = self.raw.leak();
+        // SAFETY: The leaked slice has the same length as the vector, which was valid for `I`.
+        unsafe { TypedSlice::from_slice_unchecked_mut(raw) }
     }
 
     /// Creates a draining iterator that removes the specified range.
