@@ -266,7 +266,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         unsafe {
             let tail_len = old_len.unchecked_sub_index(len);
             let tail = core::slice::from_raw_parts_mut(
-                self.storage.get_unchecked_mut(len).as_mut_ptr(),
+                self.storage.as_mut_ptr().add(len.to_raw_index()),
                 tail_len.to_usize(),
             );
             core::ptr::drop_in_place(tail);
