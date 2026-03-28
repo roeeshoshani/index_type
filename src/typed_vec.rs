@@ -204,29 +204,30 @@ impl<I: IndexType, T> TypedVec<I, T> {
         capacity: usize,
     ) -> Result<Self, I::IndexTooBigError> {
         let _ = I::try_from_raw_index(length)?;
-        Ok(Self {
-            raw: unsafe { Vec::from_raw_parts(ptr, length, capacity) },
-            phantom: PhantomData,
-        })
+        Ok(unsafe { Self::from_raw_parts_unchecked(ptr, length, capacity) })
     }
 
-    /// Creates a `TypedVec` from raw parts.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the length exceeds `I::MAX_RAW_INDEX`.
+    /// Creates a `TypedVec` from raw parts without checking bounds.
     ///
     /// # Safety
     ///
     /// Same as [`Vec::from_raw_parts`], plus the length must not exceed `I::MAX_RAW_INDEX`.
     #[inline]
-    pub unsafe fn from_raw_parts(ptr: *mut T, length: usize, capacity: usize) -> Self {
-        unsafe {
-            match Self::try_from_raw_parts(ptr, length, capacity) {
-                Ok(v) => v,
-                Err(e) => panic!("{}", e),
-            }
+    pub unsafe fn from_raw_parts_unchecked(ptr: *mut T, length: usize, capacity: usize) -> Self {
+        Self {
+            raw: unsafe { Vec::from_raw_parts(ptr, length, capacity) },
+            phantom: PhantomData,
         }
+    }
+
+    /// Creates a `TypedVec` from raw parts.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`Vec::from_raw_parts`].
+    #[inline]
+    pub unsafe fn from_raw_parts(ptr: *mut T, length: I, capacity: usize) -> Self {
+        unsafe { Self::from_raw_parts_unchecked(ptr, length.to_raw_index(), capacity) }
     }
 
     /// Decomposes the `TypedVec` into its raw parts.

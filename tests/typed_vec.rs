@@ -503,13 +503,8 @@ fn test_leak_preserves_typed_slice_api() {
     assert_eq!(leaked.len_usize(), 3);
 
     // Avoid actually leaking the memory
-    let _ = unsafe {
-        TypedVec::<MyIndex, i32>::from_raw_parts(
-            leaked.as_mut_ptr(),
-            leaked.len().to_raw_index(),
-            cap,
-        )
-    };
+    let _ =
+        unsafe { TypedVec::<MyIndex, i32>::from_raw_parts(leaked.as_mut_ptr(), leaked.len(), cap) };
 }
 
 #[test]
@@ -659,6 +654,14 @@ fn test_try_from_raw_parts() {
     let (ptr, len, cap) = vec![1, 2, 3, 4, 5].into_raw_parts();
     let vec = unsafe { TypedVec::<MyIndex, i32>::try_from_raw_parts(ptr, len, cap).unwrap() };
     assert_eq!(vec.len_usize(), 5);
+}
+
+#[test]
+fn test_from_raw_parts() {
+    let (ptr, len, cap) = vec![1, 2, 3, 4, 5].into_raw_parts();
+    let len = unsafe { MyIndex::from_raw_index_unchecked(len) };
+    let vec = unsafe { TypedVec::<MyIndex, i32>::from_raw_parts(ptr, len, cap) };
+    assert_eq!(vec.len(), len);
 }
 
 #[test]
