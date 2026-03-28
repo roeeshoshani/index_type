@@ -495,11 +495,21 @@ fn test_splice() {
 
 #[test]
 fn test_leak_preserves_typed_slice_api() {
-    let leaked: &'static mut index_type::typed_slice::TypedSlice<MyIndex, i32> =
-        TypedVec::from_vec(vec![10, 20, 30]).leak();
+    let data: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![10, 20, 30]);
+    let cap = data.capacity();
+    let leaked: &'static mut index_type::typed_slice::TypedSlice<MyIndex, i32> = data.leak();
     leaked[MyIndex::ZERO] = 99;
     assert_eq!(leaked[MyIndex::ZERO], 99);
     assert_eq!(leaked.len_usize(), 3);
+
+    // Avoid actually leaking the memory
+    let _ = unsafe {
+        TypedVec::<MyIndex, i32>::from_raw_parts(
+            leaked.as_mut_ptr(),
+            leaked.len().to_raw_index(),
+            cap,
+        )
+    };
 }
 
 #[test]
@@ -646,15 +656,9 @@ fn test_len() {
 
 #[test]
 fn test_try_from_raw_parts() {
-    let mut data = vec![1, 2, 3, 4, 5];
-    let ptr = data.as_mut_ptr();
-    let len = 5;
-    let capacity = 5;
-    std::mem::forget(data);
-
-    let vec = unsafe { TypedVec::<MyIndex, i32>::try_from_raw_parts(ptr, len, capacity).unwrap() };
+    let (ptr, len, cap) = vec![1, 2, 3, 4, 5].into_raw_parts();
+    let vec = unsafe { TypedVec::<MyIndex, i32>::try_from_raw_parts(ptr, len, cap).unwrap() };
     assert_eq!(vec.len_usize(), 5);
-    std::mem::forget(vec);
 }
 
 #[test]
@@ -662,16 +666,14 @@ fn test_try_from_raw_parts_overflow() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);
 
-    let mut data = vec![1; 256];
-    let ptr = data.as_mut_ptr();
-    let cap = data.capacity();
-    std::mem::forget(data);
+    let (ptr, len, cap) = vec![1; 256].into_raw_parts();
 
     let result: Result<TypedVec<SmallIndex, i32>, _> =
         unsafe { TypedVec::try_from_raw_parts(ptr, 256, cap) };
     assert!(result.is_err());
 
-    std::mem::forget(result);
+    // Avoid leaking the vec
+    let _ = unsafe { Vec::from_raw_parts(ptr, len, cap) };
 }
 
 #[test]
