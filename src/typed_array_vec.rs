@@ -581,16 +581,9 @@ impl<I: IndexType, T, const N: usize> Drop for Drain<'_, I, T, N> {
         let tail_len = unsafe { self.old_len.unchecked_sub_index(self.tail_start) };
         if tail_len > I::Scalar::ZERO {
             unsafe {
-                let src = self
-                    .inner
-                    .storage
-                    .as_ptr()
-                    .add(self.tail_start.to_raw_index());
-                let dst = self
-                    .inner
-                    .storage
-                    .as_mut_ptr()
-                    .add(self.inner.len.to_raw_index());
+                let storage_ptr = self.inner.storage.as_mut_ptr();
+                let src = storage_ptr.add(self.tail_start.to_raw_index());
+                let dst = storage_ptr.add(self.inner.len.to_raw_index());
                 core::ptr::copy(src, dst, tail_len.to_usize());
             }
         }
