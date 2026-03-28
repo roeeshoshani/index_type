@@ -303,9 +303,9 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
         // SAFETY: We checked bounds and capacity.
         unsafe {
-            let p = self.storage.get_unchecked_mut(index).as_mut_ptr();
+            let p = self.storage.as_mut_ptr().add(index.to_raw_index());
             core::ptr::copy(p, p.add(1), old_len.unchecked_sub_index(index).to_usize());
-            core::ptr::write(p, element);
+            core::ptr::write(p, MaybeUninit::new(element));
             self.len = self.len.unchecked_add_scalar(I::Scalar::ONE);
         }
         Ok(())
