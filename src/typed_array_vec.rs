@@ -326,10 +326,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         unsafe {
             let new_len = old_len.unchecked_sub_scalar(I::Scalar::ONE);
 
-            let entry = self.storage.get_unchecked_mut(index);
-            let result = entry.assume_init_read();
-
-            let p = entry.as_mut_ptr();
+            let p = self.storage.as_mut_ptr().add(index.to_raw_index());
+            let result = p.read().assume_init();
             core::ptr::copy(p.add(1), p, new_len.unchecked_sub_index(index).to_usize());
 
             self.len = new_len;
