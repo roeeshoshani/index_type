@@ -412,11 +412,13 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
             fn drop(&mut self) {
                 let remaining = unsafe { self.original_len.unchecked_sub_index(self.read) };
 
+                let storage_ptr = self.v.storage.as_mut_ptr();
+
                 // SAFETY: Trailing unchecked items must be valid since we never touch them.
                 unsafe {
                     core::ptr::copy(
-                        self.v.as_ptr().add(self.read.to_raw_index()),
-                        self.v.as_mut_ptr().add(self.write.to_raw_index()),
+                        storage_ptr.add(self.read.to_raw_index()),
+                        storage_ptr.add(self.write.to_raw_index()),
                         remaining.to_usize(),
                     );
                 }
@@ -452,16 +454,17 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         unsafe { core::ptr::drop_in_place(&mut *g.v.as_mut_ptr().add(read.to_raw_index())) };
 
         while g.read < g.original_len {
-            let cur = unsafe { &mut *g.v.as_mut_ptr().add(g.read.to_raw_index()) };
-            if !f(cur) {
+            let storage_ptr = g.v.storage.as_mut_ptr();
+            let cur_ptr = unsafe { storage_ptr.add(g.read.to_raw_index()) };
+            if !f(unsafe { (&mut *cur_ptr).assume_init_mut() }) {
                 // Advance `read` early to avoid double drop if `drop_in_place` panicked.
                 g.read = unsafe { g.read.unchecked_add_scalar(I::Scalar::ONE) };
-                unsafe { core::ptr::drop_in_place(cur) };
+                unsafe { core::ptr::drop_in_place(cur_ptr) };
             } else {
                 // We use copy for move, and never touch the source element again.
                 unsafe {
-                    let hole = g.v.as_mut_ptr().add(g.write.to_raw_index());
-                    core::ptr::copy_nonoverlapping(cur, hole, 1);
+                    let hole = storage_ptr.add(g.write.to_raw_index());
+                    core::ptr::copy_nonoverlapping(cur_ptr, hole, 1);
                 }
                 g.write = unsafe { g.write.unchecked_add_scalar(I::Scalar::ONE) };
                 g.read = unsafe { g.read.unchecked_add_scalar(I::Scalar::ONE) };
