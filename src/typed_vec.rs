@@ -44,6 +44,11 @@ use crate::{
     utils::{range_bounds_to_raw, resolve_range_bounds},
 };
 
+#[cold]
+fn panic_index_too_big<I: IndexType>(error: I::IndexTooBigError) -> ! {
+    panic!("{}", error)
+}
+
 /// A growable vector with typed indexing.
 ///
 /// `TypedVec<I, T>` is a wrapper around `Vec<T>` that uses the custom index type `I`
@@ -173,10 +178,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// ```
     #[inline]
     pub fn from_vec(vec: Vec<T>) -> Self {
-        match Self::try_from_vec(vec) {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
-        }
+        Self::try_from_vec(vec).unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Creates a `TypedVec` from a `Vec` without checking bounds.
@@ -388,10 +390,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// Panics if the length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn push(&mut self, value: T) -> I {
-        match self.try_push(value) {
-            Ok(idx) => idx,
-            Err(e) => panic!("{}", e),
-        }
+        self.try_push(value)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Attempts to append all elements from another `TypedVec` to this one.
@@ -414,10 +414,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// Panics if the combined length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn append(&mut self, other: &mut TypedVec<I, T>) {
-        match self.try_append(other) {
-            Ok(()) => {}
-            Err(e) => panic!("{}", e),
-        }
+        self.try_append(other)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Returns a raw pointer to the vector's buffer.
@@ -562,10 +560,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// Panics if `index > len` or if the new length would exceed `I::MAX_RAW_INDEX`.
     #[inline]
     pub fn insert(&mut self, index: I, element: T) {
-        match self.try_insert(index, element) {
-            Ok(()) => {}
-            Err(e) => panic!("{}", e),
-        }
+        self.try_insert(index, element)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Removes and returns the element at `index`, shifting all elements after it to the left.
@@ -837,10 +833,8 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
     /// See [`Vec::extend_from_slice`] for details.
     #[inline]
     pub fn extend_from_slice(&mut self, other: &TypedSlice<I, T>) {
-        match self.try_extend_from_slice(other) {
-            Ok(()) => {}
-            Err(e) => panic!("{}", e),
-        }
+        self.try_extend_from_slice(other)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Attempts to extend the vector by cloning elements from a typed slice.
@@ -884,7 +878,8 @@ impl<I: IndexType, T: Clone> TypedVec<I, T> {
     where
         R: core::ops::RangeBounds<I>,
     {
-        self.try_extend_from_within(src).unwrap();
+        self.try_extend_from_within(src)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Creates an iterator that filters and transforms elements, removing them in place.
@@ -939,10 +934,8 @@ impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
     ///
     /// Panics if the flattened length would exceed `I::MAX_RAW_INDEX`.
     pub fn into_flattened(self) -> TypedVec<I, T> {
-        match self.try_into_flattened() {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
-        }
+        self.try_into_flattened()
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 }
 impl<I: IndexType, T: core::fmt::Debug> core::fmt::Debug for TypedVec<I, T> {
@@ -1058,10 +1051,8 @@ impl<'a, I: IndexType, T> IntoIterator for &'a mut TypedVec<I, T> {
 }
 impl<I: IndexType, T> Extend<T> for TypedVec<I, T> {
     fn extend<X: IntoIterator<Item = T>>(&mut self, iter: X) {
-        match self.try_extend(iter) {
-            Ok(()) => {}
-            Err(e) => panic!("{}", e),
-        }
+        self.try_extend(iter)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 }
 
