@@ -24,7 +24,7 @@ This project aims for high test coverage and high quality tests to ensure correc
 
 Add regression coverage in `tests/` next to the affected feature area, for example `tests/typed_slice.rs` or `tests/typed_range_iter.rs`. Name tests with a `test_` prefix and describe the behavior under test, such as `test_try_push_overflow`.
 
-Before opening a PR, run `cargo test` and `cargo miri test`. Run `cargo fmt --check` to verify formatting. Run `cargo clippy --all-targets --all-features` for nontrivial changes; it currently reports warnings, so avoid adding new ones.
+Before opening a PR, run `cargo test` and `cargo miri test`. Run `cargo fmt --check` to verify formatting. Always run `cargo clippy --all-targets --all-features` before opening a PR; the project must always have zero warnings.
 
 ## Commit & Pull Request Guidelines
 Recent commits use short, imperative summaries such as `minor fixes` and `add tests for typed range iter`. Keep commit subjects concise and specific.
