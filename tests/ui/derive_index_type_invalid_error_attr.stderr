@@ -1,0 +1,5 @@
+error: Unexpected type `int`
+ --> tests/ui/derive_index_type_invalid_error_attr.rs:4:22
+  |
+4 | #[index_type(error = 123)]
+  |                      ^^^

@@ -12,3 +12,6 @@ alloc = []
 
 [dependencies]
 index_type_macros = { path = "index_type_macros" }
+
+[dev-dependencies]
+trybuild = "1.0"

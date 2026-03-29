@@ -1,0 +1,5 @@
+error: Unexpected type `int`
+ --> tests/ui/derive_index_too_big_error_invalid_msg.rs:4:29
+  |
+4 | #[index_too_big_error(msg = 123)]
+  |                             ^^^

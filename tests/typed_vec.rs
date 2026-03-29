@@ -1,4 +1,12 @@
-use index_type::{IndexType, typed_enumerate::TypedIteratorExt, typed_vec::TypedVec};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
+
+use index_type::{
+    IndexType, typed_enumerate::TypedIteratorExt, typed_slice::TypedSlice, typed_vec::TypedVec,
+};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -517,6 +525,150 @@ fn test_leak_preserves_typed_slice_api() {
     // Avoid actually leaking the memory
     let _ =
         unsafe { TypedVec::<MyIndex, i32>::from_raw_parts(leaked.as_mut_ptr(), leaked.len(), cap) };
+}
+
+#[test]
+fn test_trait_storage_and_collection_apis() {
+    let mut vec = TypedVec::<MyIndex, i32>::with_capacity(2);
+    assert!(vec.capacity() >= 2);
+    vec.reserve(8);
+    vec.reserve_exact(1);
+    vec.try_reserve(1).unwrap();
+    vec.try_reserve_exact(1).unwrap();
+
+    let first = vec.push(1);
+    let second = vec.push(2);
+    assert_eq!((first.to_raw_index(), second.to_raw_index()), (0, 1));
+    assert_eq!(vec.as_ptr(), vec.as_slice().as_ptr());
+    assert_eq!(vec.as_mut_ptr(), vec.as_mut_slice().as_mut_ptr());
+    assert_eq!(
+        vec.remaining_capacity().to_raw_index(),
+        MyIndex::MAX_RAW_INDEX - 2
+    );
+
+    let borrowed_slice: &TypedSlice<MyIndex, i32> = vec.borrow();
+    assert_eq!(borrowed_slice.as_slice(), &[1, 2]);
+    let borrowed_slice_mut: &mut TypedSlice<MyIndex, i32> = vec.borrow_mut();
+    borrowed_slice_mut[MyIndex::ZERO] = 10;
+    assert_eq!(vec.as_slice().as_slice(), &[10, 2]);
+
+    let as_ref_vec: &TypedVec<MyIndex, i32> = vec.as_ref();
+    assert_eq!(as_ref_vec.len_usize(), 2);
+    let as_mut_vec: &mut TypedVec<MyIndex, i32> = vec.as_mut();
+    as_mut_vec[MyIndex(1)] = 20;
+    assert_eq!(vec.as_slice().as_slice(), &[10, 20]);
+
+    let cloned = vec.clone();
+    let mut clone_target = TypedVec::<MyIndex, i32>::default();
+    clone_target.clone_from(&cloned);
+    assert_eq!(clone_target, cloned);
+    assert_eq!(format!("{cloned:?}"), "[10, 20]");
+    assert_eq!(
+        cloned.partial_cmp(&TypedVec::from_vec(vec![10, 21])),
+        Some(std::cmp::Ordering::Less)
+    );
+
+    let mut hasher = DefaultHasher::new();
+    cloned.hash(&mut hasher);
+    assert_ne!(hasher.finish(), 0);
+
+    let from_iter: TypedVec<MyIndex, i32> = [3, 4, 5].into_iter().collect();
+    let from_slice = TypedVec::<MyIndex, i32>::from(from_iter.as_slice());
+    assert_eq!(from_iter, from_slice);
+    assert!(from_iter == from_iter.as_slice());
+    let slice_ref: &&TypedSlice<MyIndex, i32> = &from_slice.as_slice();
+    assert!(from_iter == *slice_ref);
+
+    let mut from_slice_mut_source = TypedVec::<MyIndex, i32>::from_vec(vec![3, 4, 5]);
+    let slice_mut: &&mut TypedSlice<MyIndex, i32> = &from_slice_mut_source.as_mut_slice();
+    assert!(from_iter == *slice_mut);
+
+    let iterated: Vec<_> = (&from_iter).into_iter().copied().collect();
+    assert_eq!(iterated, vec![3, 4, 5]);
+    for value in &mut from_slice_mut_source {
+        *value *= 2;
+    }
+    assert_eq!(from_slice_mut_source.into_vec(), vec![6, 8, 10]);
+
+    let boxed = cloned.clone().into_boxed_slice();
+    assert_eq!(boxed.as_slice(), &[10, 20]);
+
+    let mut shrink = TypedVec::<MyIndex, i32>::from_vec(vec![1, 2, 3, 4, 5]);
+    shrink.reserve(32);
+    let cap_before = shrink.capacity();
+    shrink.shrink_to(4);
+    assert!(shrink.capacity() <= cap_before);
+    shrink.shrink_to_fit();
+    assert!(shrink.capacity() >= shrink.len_usize());
+
+    let mut unsafe_vec = TypedVec::<MyIndex, i32>::with_capacity(3);
+    unsafe {
+        let ptr = unsafe_vec.as_mut_ptr();
+        ptr.write(7);
+        ptr.add(1).write(8);
+        unsafe_vec.set_len(MyIndex(2));
+    }
+    assert_eq!(unsafe_vec.into_vec(), vec![7, 8]);
+}
+
+#[test]
+fn test_mutation_helpers_cover_real_edge_cases() {
+    let mut vec = TypedVec::<MyIndex, i32>::from_vec(vec![1, 1, 2, 2, 3, 3, 4]);
+    vec.dedup();
+    assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3, 4]);
+
+    vec.try_extend_from_within(MyIndex(1)..MyIndex(3)).unwrap();
+    assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3, 4, 2, 3]);
+
+    let removed = vec.swap_remove(MyIndex(1));
+    assert_eq!(removed, 2);
+    assert_eq!(vec.as_slice().as_slice(), &[1, 3, 3, 4, 2]);
+
+    let removed = vec.remove(MyIndex(2));
+    assert_eq!(removed, 3);
+    assert_eq!(vec.as_slice().as_slice(), &[1, 3, 4, 2]);
+
+    vec.retain(|value| *value != 2);
+    vec.retain_mut(|value| {
+        *value *= 10;
+        *value >= 30
+    });
+    assert_eq!(vec.as_slice().as_slice(), &[30, 40]);
+
+    vec.extend([40, 40, 50, 50]);
+    vec.dedup_by_key(|value| *value / 10);
+    assert_eq!(vec.as_slice().as_slice(), &[30, 40, 50]);
+
+    vec.extend([51, 60]);
+    vec.dedup_by(|a, b| (*a / 10) == (*b / 10));
+    assert_eq!(vec.as_slice().as_slice(), &[30, 40, 50, 60]);
+
+    assert_eq!(vec.pop_if(|value| *value == 999), None);
+    assert_eq!(vec.pop_if(|value| *value == 60), Some(60));
+    assert_eq!(vec.as_slice().as_slice(), &[30, 40, 50]);
+
+    let extracted: Vec<_> = vec.extract_if(MyIndex(1).., |value| *value >= 40).collect();
+    assert_eq!(extracted, vec![40, 50]);
+    assert_eq!(vec.as_slice().as_slice(), &[30]);
+
+    vec.clear();
+    assert!(vec.is_empty());
+}
+
+#[test]
+fn test_unbounded_range_helpers_behave_like_std_collections() {
+    let mut vec = TypedVec::<MyIndex, i32>::from_vec(vec![1, 2, 3, 4]);
+    vec.try_extend_from_within(..).unwrap();
+    assert_eq!(vec.as_slice().as_slice(), &[1, 2, 3, 4, 1, 2, 3, 4]);
+
+    let drained: Vec<_> = vec.drain(..).collect();
+    assert_eq!(drained, vec![1, 2, 3, 4, 1, 2, 3, 4]);
+    assert!(vec.is_empty());
+
+    vec.extend([10, 20, 30]);
+    let removed: Vec<_> = vec.splice(.., [40, 50]).collect();
+    assert_eq!(removed, vec![10, 20, 30]);
+    assert_eq!(vec.as_slice().as_slice(), &[40, 50]);
 }
 
 #[test]

@@ -1,6 +1,17 @@
-use std::{cell::Cell, rc::Rc};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    cell::Cell,
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 
-use index_type::{IndexType, typed_array::TypedArray, typed_array_vec::TypedArrayVec};
+use index_type::{
+    IndexType,
+    typed_array::TypedArray,
+    typed_array_vec::{CapacityError, TypedArrayVec},
+    typed_slice::TypedSlice,
+};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -404,4 +415,96 @@ fn test_drain_excluded_len_panics() {
         std::ops::Bound::Excluded(MyIndex::MAX_INDEX),
         std::ops::Bound::Unbounded,
     ));
+}
+
+#[test]
+fn test_traits_iterators_and_capacity_error() {
+    let mut vec = TypedArrayVec::<MyIndex, i32, 4>::default();
+    assert_eq!(vec.capacity().to_raw_index(), 4);
+    assert_eq!(
+        vec.indices()
+            .map(|idx| idx.to_raw_index())
+            .collect::<Vec<_>>(),
+        Vec::<usize>::new()
+    );
+
+    vec.extend([1, 2, 3]);
+    assert_eq!(
+        vec.indices()
+            .map(|idx| idx.to_raw_index())
+            .collect::<Vec<_>>(),
+        vec![0, 1, 2]
+    );
+    assert_eq!(vec.as_ptr(), vec.as_slice().as_ptr());
+    assert_eq!(vec.as_mut_ptr(), vec.as_mut_slice().as_mut_ptr());
+
+    let as_ref_slice: &TypedSlice<MyIndex, i32> = vec.as_ref();
+    assert_eq!(as_ref_slice.as_slice(), &[1, 2, 3]);
+    let borrowed_slice: &TypedSlice<MyIndex, i32> = vec.borrow();
+    assert_eq!(borrowed_slice.as_slice(), &[1, 2, 3]);
+    let as_mut_slice: &mut TypedSlice<MyIndex, i32> = vec.as_mut();
+    as_mut_slice[MyIndex(1)] = 20;
+    let borrowed_mut: &mut TypedSlice<MyIndex, i32> = vec.borrow_mut();
+    borrowed_mut[MyIndex(2)] = 30;
+    assert_eq!(vec.as_slice().as_slice(), &[1, 20, 30]);
+
+    let cloned = vec.clone();
+    assert_eq!(format!("{cloned:?}"), "[1, 20, 30]");
+    assert_eq!(
+        cloned.partial_cmp(&TypedArrayVec::from_iter([1, 20, 31])),
+        Some(std::cmp::Ordering::Less)
+    );
+    let mut hasher = DefaultHasher::new();
+    cloned.hash(&mut hasher);
+    assert_ne!(hasher.finish(), 0);
+
+    let by_ref: Vec<_> = (&vec).into_iter().copied().collect();
+    assert_eq!(by_ref, vec![1, 20, 30]);
+    for value in &mut vec {
+        *value += 1;
+    }
+    assert_eq!(vec.as_slice().as_slice(), &[2, 21, 31]);
+
+    let mut into_iter = vec.clone().into_iter();
+    assert_eq!(into_iter.len(), 3);
+    assert_eq!(into_iter.size_hint(), (3, Some(3)));
+    assert_eq!(into_iter.next_back(), Some(31));
+    assert_eq!(into_iter.len(), 2);
+    assert_eq!(into_iter.next(), Some(2));
+    drop(into_iter);
+
+    let enumerated: Vec<_> = vec
+        .clone()
+        .into_iter_enumerated()
+        .map(|(idx, value)| (idx.to_raw_index(), value))
+        .collect();
+    assert_eq!(enumerated, vec![(0, 2), (1, 21), (2, 31)]);
+
+    let mut uninit = TypedArrayVec::<MyIndex, i32, 4>::new();
+    unsafe {
+        let ptr = uninit.as_mut_ptr();
+        ptr.write(7);
+        ptr.add(1).write(8);
+        uninit.set_len(MyIndex(2));
+    }
+    assert_eq!(uninit.as_slice().as_slice(), &[7, 8]);
+
+    let err = CapacityError::new("x");
+    assert_eq!(err.to_string(), "insufficient capacity");
+    fn assert_error<E: std::error::Error>(_err: &E) {}
+    assert_error(&err);
+}
+
+#[test]
+fn test_drain_len_and_partial_drop_behavior() {
+    let mut vec = TypedArrayVec::<MyIndex, i32, 6>::from_iter([1, 2, 3, 4, 5, 6]);
+    {
+        let mut drain = vec.drain(MyIndex(1)..MyIndex(5));
+        assert_eq!(drain.len(), 4);
+        assert_eq!(drain.size_hint(), (4, Some(4)));
+        assert_eq!(drain.next(), Some(2));
+        assert_eq!(drain.next_back(), Some(5));
+        assert_eq!(drain.len(), 2);
+    }
+    assert_eq!(vec.as_slice().as_slice(), &[1, 6]);
 }
