@@ -38,7 +38,7 @@ use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
     IndexScalarType, IndexTooBigError, IndexType,
-    typed_iter_enumerate::TypedIterEnumerate,
+    typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
     utils::{range_bounds_to_raw, resolve_range_bounds},
@@ -336,23 +336,25 @@ impl<I: IndexType, T> TypedVec<I, T> {
 
     /// Returns an iterator over the elements with their indices.
     #[inline]
-    pub fn iter_enumerated(&self) -> TypedIterEnumerate<I, T, core::slice::Iter<'_, T>> {
+    pub fn iter_enumerated(&self) -> UncheckedTypedEnumerate<I, core::slice::Iter<'_, T>> {
         // SAFETY: `self.raw.iter()` yields exactly `self.len()` items, which already fit in `I`.
-        unsafe { TypedIterEnumerate::new(self.raw.iter()) }
+        unsafe { UncheckedTypedEnumerate::new(self.raw.iter()) }
     }
 
     /// Returns an iterator over the elements with their mutable references and indices.
     #[inline]
-    pub fn iter_mut_enumerated(&mut self) -> TypedIterEnumerate<I, T, core::slice::IterMut<'_, T>> {
+    pub fn iter_mut_enumerated(
+        &mut self,
+    ) -> UncheckedTypedEnumerate<I, core::slice::IterMut<'_, T>> {
         // SAFETY: `self.raw.iter_mut()` yields exactly `self.len()` items, which already fit in `I`.
-        unsafe { TypedIterEnumerate::new(self.raw.iter_mut()) }
+        unsafe { UncheckedTypedEnumerate::new(self.raw.iter_mut()) }
     }
 
     /// Consumes the vector and returns an iterator over the elements with their indices.
     #[inline]
-    pub fn into_iter_enumerated(self) -> TypedIterEnumerate<I, T, alloc::vec::IntoIter<T>> {
+    pub fn into_iter_enumerated(self) -> UncheckedTypedEnumerate<I, alloc::vec::IntoIter<T>> {
         // SAFETY: `self.raw.into_iter()` yields exactly the vector length, which already fits in `I`.
-        unsafe { TypedIterEnumerate::new(self.raw.into_iter()) }
+        unsafe { UncheckedTypedEnumerate::new(self.raw.into_iter()) }
     }
 
     /// Attempts to append an element to the back of the vector.

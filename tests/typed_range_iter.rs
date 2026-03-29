@@ -1,5 +1,7 @@
 use core::num::NonZeroUsize;
-use index_type::{IndexType, typed_range_iter::TypedRangeIterExt};
+use index_type::{
+    IndexType, typed_enumerate::TypedIteratorExt, typed_range_iter::TypedRangeIterExt,
+};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -129,6 +131,49 @@ mod typed_range_iter {
         assert_eq!((MyIndex(0)..MyIndex(5)).iter().max(), Some(MyIndex(4)));
         assert_eq!((MyIndex(5)..MyIndex(5)).iter().min(), None);
         assert_eq!((MyIndex(5)..MyIndex(5)).iter().max(), None);
+    }
+
+    #[test]
+    fn test_typed_enumerate() {
+        let indexed: Vec<_> = (MyIndex(10)..MyIndex(13))
+            .iter()
+            .typed_enumerate::<MyIndex>()
+            .collect();
+        assert_eq!(
+            indexed,
+            vec![
+                (MyIndex(0), MyIndex(10)),
+                (MyIndex(1), MyIndex(11)),
+                (MyIndex(2), MyIndex(12))
+            ]
+        );
+    }
+
+    #[test]
+    fn test_typed_enumerate_supports_reverse_and_mixed_iteration() {
+        let reversed: Vec<_> = (MyIndex(10)..MyIndex(13))
+            .iter()
+            .typed_enumerate::<MyIndex>()
+            .rev()
+            .map(|(idx, value)| (idx.to_raw_index(), value.to_raw_index()))
+            .collect();
+        assert_eq!(reversed, vec![(2, 12), (1, 11), (0, 10)]);
+
+        let mut iter = (MyIndex(10)..MyIndex(13))
+            .iter()
+            .typed_enumerate::<MyIndex>();
+        assert_eq!(iter.next(), Some((MyIndex(0), MyIndex(10))));
+        assert_eq!(iter.next_back(), Some((MyIndex(2), MyIndex(12))));
+        assert_eq!(iter.next(), Some((MyIndex(1), MyIndex(11))));
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn test_typed_enumerate_panics_on_overflow() {
+        let result = std::panic::catch_unwind(|| {
+            let _ = (0usize..256).typed_enumerate::<SmallIndex>().count();
+        });
+        assert!(result.is_err());
     }
 }
 

@@ -192,6 +192,27 @@ for idx in (start..end).iter() {
 }
 ```
 
+### Typed Enumerate
+
+Use [`TypedIteratorExt`](crate::typed_enumerate::TypedIteratorExt) to enumerate any
+iterator with typed indices:
+
+```rust
+use index_type::IndexType;
+use index_type::typed_enumerate::TypedIteratorExt;
+
+#[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct RowIdx(u32);
+
+let pairs: Vec<_> = ["a", "b", "c"]
+    .into_iter()
+    .typed_enumerate::<RowIdx>()
+    .collect();
+
+assert_eq!(pairs[1].0, RowIdx(1));
+assert_eq!(pairs[1].1, "b");
+```
+
 ### Macros
 
 Convenience macros for creating typed collections:

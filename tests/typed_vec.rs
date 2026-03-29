@@ -1,4 +1,4 @@
-use index_type::{IndexType, typed_vec::TypedVec};
+use index_type::{IndexType, typed_enumerate::TypedIteratorExt, typed_vec::TypedVec};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -63,6 +63,18 @@ fn test_into_iter_enumerated_preserves_indices_in_reverse() {
         .map(|(idx, value)| (idx.to_raw_index(), value))
         .collect();
     assert_eq!(collected, vec![(2, 30), (1, 20), (0, 10)]);
+}
+
+#[test]
+fn test_typed_enumerate_on_slice_iterator() {
+    let vec: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![10, 20, 30]);
+
+    let collected: Vec<_> = vec
+        .iter()
+        .typed_enumerate::<MyIndex>()
+        .map(|(idx, value)| (idx.to_raw_index(), *value))
+        .collect();
+    assert_eq!(collected, vec![(0, 10), (1, 20), (2, 30)]);
 }
 
 #[test]

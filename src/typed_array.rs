@@ -34,7 +34,7 @@ use core::{
 
 use crate::{
     IndexType,
-    typed_iter_enumerate::TypedIterEnumerate,
+    typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
 };
@@ -75,23 +75,25 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
 
     /// Returns an iterator over the elements with their indices.
     #[inline]
-    pub fn iter_enumerated(&self) -> TypedIterEnumerate<I, T, core::slice::Iter<'_, T>> {
+    pub fn iter_enumerated(&self) -> UncheckedTypedEnumerate<I, core::slice::Iter<'_, T>> {
         // SAFETY: `self.raw.iter()` yields exactly `N` items, and `N` is guaranteed to fit in `I`.
-        unsafe { TypedIterEnumerate::new(self.raw.iter()) }
+        unsafe { UncheckedTypedEnumerate::new(self.raw.iter()) }
     }
 
     /// Returns an iterator over the elements with their mutable references and indices.
     #[inline]
-    pub fn iter_mut_enumerated(&mut self) -> TypedIterEnumerate<I, T, core::slice::IterMut<'_, T>> {
+    pub fn iter_mut_enumerated(
+        &mut self,
+    ) -> UncheckedTypedEnumerate<I, core::slice::IterMut<'_, T>> {
         // SAFETY: `self.raw.iter_mut()` yields exactly `N` items, and `N` is guaranteed to fit in `I`.
-        unsafe { TypedIterEnumerate::new(self.raw.iter_mut()) }
+        unsafe { UncheckedTypedEnumerate::new(self.raw.iter_mut()) }
     }
 
     /// Consumes the array and returns an iterator over the elements with their indices.
     #[inline]
-    pub fn into_iter_enumerated(self) -> TypedIterEnumerate<I, T, core::array::IntoIter<T, N>> {
+    pub fn into_iter_enumerated(self) -> UncheckedTypedEnumerate<I, core::array::IntoIter<T, N>> {
         // SAFETY: `self.raw.into_iter()` yields exactly `N` items, and `N` is guaranteed to fit in `I`.
-        unsafe { TypedIterEnumerate::new(self.raw.into_iter()) }
+        unsafe { UncheckedTypedEnumerate::new(self.raw.into_iter()) }
     }
 
     #[inline]

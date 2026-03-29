@@ -39,7 +39,7 @@ use core::{
 use crate::{
     IndexScalarType, IndexType,
     typed_array::TypedArray,
-    typed_iter_enumerate::TypedIterEnumerate,
+    typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
     utils::resolve_range_bounds,
@@ -91,23 +91,25 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Returns an iterator over the elements with their indices.
     #[inline]
-    pub fn iter_enumerated(&self) -> TypedIterEnumerate<I, T, core::slice::Iter<'_, T>> {
+    pub fn iter_enumerated(&self) -> UncheckedTypedEnumerate<I, core::slice::Iter<'_, T>> {
         // SAFETY: `self.as_slice().iter()` yields exactly `self.len()` items, which already fit in `I`.
-        unsafe { TypedIterEnumerate::new(self.as_slice().iter()) }
+        unsafe { UncheckedTypedEnumerate::new(self.as_slice().iter()) }
     }
 
     /// Returns an iterator over the elements with their mutable references and indices.
     #[inline]
-    pub fn iter_mut_enumerated(&mut self) -> TypedIterEnumerate<I, T, core::slice::IterMut<'_, T>> {
+    pub fn iter_mut_enumerated(
+        &mut self,
+    ) -> UncheckedTypedEnumerate<I, core::slice::IterMut<'_, T>> {
         // SAFETY: `self.as_mut_slice().iter_mut()` yields exactly `self.len()` items, which already fit in `I`.
-        unsafe { TypedIterEnumerate::new(self.as_mut_slice().iter_mut()) }
+        unsafe { UncheckedTypedEnumerate::new(self.as_mut_slice().iter_mut()) }
     }
 
     /// Consumes the vector and returns an iterator over the elements with their indices.
     #[inline]
-    pub fn into_iter_enumerated(self) -> TypedIterEnumerate<I, T, IntoIter<I, T, N>> {
+    pub fn into_iter_enumerated(self) -> UncheckedTypedEnumerate<I, IntoIter<I, T, N>> {
         // SAFETY: `self.into_iter()` yields exactly the vector length, which already fits in `I`.
-        unsafe { TypedIterEnumerate::new(self.into_iter()) }
+        unsafe { UncheckedTypedEnumerate::new(self.into_iter()) }
     }
 
     /// Returns the capacity of the `TypedArrayVec` as an index.
