@@ -9,6 +9,7 @@
 Use Cargo from the repository root:
 
 - `cargo test`: runs integration tests and doctests for the workspace.
+- `cargo miri test`: runs tests under Miri to detect undefined behavior.
 - `cargo fmt --check`: verifies standard Rust formatting.
 - `cargo clippy --all-targets --all-features`: runs lint checks across library code, tests, and examples.
 - `cargo test --test typed_vec`: runs a focused integration test file while iterating on one area.
@@ -19,9 +20,11 @@ Follow default `rustfmt` style with 4-space indentation and standard import orde
 Prefer small, explicit APIs and keep `no_std` compatibility in mind. If a change touches user-facing behavior, update `README.md` examples or docs in `src/lib.rs`.
 
 ## Testing Guidelines
+This project aims for high test coverage and high quality tests to ensure correctness. All tests must pass under both standard execution and Miri (Rust's interpreter for detecting undefined behavior).
+
 Add regression coverage in `tests/` next to the affected feature area, for example `tests/typed_slice.rs` or `tests/typed_range_iter.rs`. Name tests with a `test_` prefix and describe the behavior under test, such as `test_try_push_overflow`.
 
-Before opening a PR, run `cargo test` and `cargo fmt --check`. Run `cargo clippy --all-targets --all-features` for nontrivial changes; it currently reports warnings, so avoid adding new ones.
+Before opening a PR, run `cargo test` and `cargo miri test`. Run `cargo fmt --check` to verify formatting. Run `cargo clippy --all-targets --all-features` for nontrivial changes; it currently reports warnings, so avoid adding new ones.
 
 ## Commit & Pull Request Guidelines
 Recent commits use short, imperative summaries such as `minor fixes` and `add tests for typed range iter`. Keep commit subjects concise and specific.
