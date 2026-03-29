@@ -12,7 +12,7 @@ pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {
             }
         };
     }
-    let _ = AssertLenInBounds::<I, N>::OK;
+    const { AssertLenInBounds::<I, N>::OK };
 }
 
 #[cfg(feature = "alloc")]

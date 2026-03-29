@@ -85,6 +85,12 @@ impl<I: IndexType> TypedRangeIter<I> {
             .unwrap_or(I::Scalar::ZERO)
             .to_usize()
     }
+
+    /// Returns `true` if the range contains no elements.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.start >= self.0.end
+    }
 }
 
 impl<I: IndexType> Iterator for TypedRangeIter<I> {
@@ -318,6 +324,12 @@ impl<I: IndexType> TypedRangeInclusiveIter<I> {
     #[inline]
     pub fn end(&self) -> I {
         self.end
+    }
+
+    /// Returns `true` if the range contains no elements, or if the iterator has been exhausted.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.exhausted
     }
 
     /// Returns the number of elements in the range.

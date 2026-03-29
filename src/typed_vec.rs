@@ -739,9 +739,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
 
         let orig_len = self.raw.len();
         for item in iter {
-            self.try_push(item).map_err(|err| {
+            self.try_push(item).inspect_err(|_err| {
                 self.raw.truncate(orig_len);
-                err
             })?;
         }
         Ok(())
@@ -1039,7 +1038,7 @@ impl<'a, I: IndexType, T> IntoIterator for &'a TypedVec<I, T> {
     type IntoIter = core::slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.raw).into_iter()
+        self.raw.iter()
     }
 }
 impl<'a, I: IndexType, T> IntoIterator for &'a mut TypedVec<I, T> {
@@ -1048,7 +1047,7 @@ impl<'a, I: IndexType, T> IntoIterator for &'a mut TypedVec<I, T> {
     type IntoIter = core::slice::IterMut<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&mut self.raw).into_iter()
+        self.raw.iter_mut()
     }
 }
 impl<I: IndexType, T> Extend<T> for TypedVec<I, T> {

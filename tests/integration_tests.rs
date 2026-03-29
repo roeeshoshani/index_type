@@ -69,7 +69,7 @@ fn test_nonzero_capacity_limit() {
     // NonZeroU8 MAX is 255. ZERO is 1. MAX_RAW_INDEX is 254.
     // Raw indices are 0..=254.
     for i in 0..254 {
-        vec.push(i as i32);
+        vec.push(i);
     }
     assert_eq!(vec.len_usize(), 254);
     // When len is 254, push returns raw index 254 and len becomes 255.

@@ -64,7 +64,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     /// Creates a new, empty `TypedArrayVec`.
     #[inline]
     pub const fn new() -> Self {
-        let _ = Self::_ASSERT_CAPACITY_IN_INDEX_BOUNDS;
+        const { Self::_ASSERT_CAPACITY_IN_INDEX_BOUNDS };
         Self {
             storage: TypedArray::from_array([const { MaybeUninit::uninit() }; N]),
             len: I::ZERO,
@@ -487,8 +487,10 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     /// This method is `unsafe` because it changes the notion of the
     /// number of “valid” elements in the vector. Use with care.
     ///
-    /// This method uses *debug assertions* to check that `length` is
-    /// not greater than the capacity.
+    /// # Safety
+    ///
+    /// The caller must ensure that `length` is less than or equal to the capacity,
+    /// and that the first `length` elements are initialized.
     #[inline]
     pub unsafe fn set_len(&mut self, length: I) {
         debug_assert!(length <= self.capacity());
@@ -802,7 +804,7 @@ impl<I: IndexType, T, const N: usize> Drop for IntoIter<I, T, N> {
         let remaining_len = unsafe { self.len.unchecked_sub_index(self.index).to_usize() };
         // SAFETY: These elements are still initialized and have not been moved out.
         unsafe {
-            core::ptr::drop_in_place(core::slice::from_raw_parts_mut(
+            core::ptr::drop_in_place(core::ptr::slice_from_raw_parts_mut(
                 remaining_ptr,
                 remaining_len,
             ));
@@ -856,7 +858,7 @@ impl<I: IndexType, T, const N: usize> From<crate::typed_array::TypedArray<I, T, 
         core::mem::forget(array);
 
         Self {
-            storage: storage,
+            storage,
             len: unsafe { I::from_raw_index_unchecked(N) },
         }
     }

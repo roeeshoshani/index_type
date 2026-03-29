@@ -58,6 +58,7 @@ mod typed_range_iter {
     }
 
     #[test]
+    #[allow(clippy::iter_nth_zero)]
     fn test_nth() {
         let mut iter = (MyIndex(0)..MyIndex(10)).iter();
         assert_eq!(iter.nth(0), Some(MyIndex(0)));
@@ -191,6 +192,7 @@ mod typed_range_from_iter {
     }
 
     #[test]
+    #[allow(clippy::iter_nth_zero)]
     fn test_nth() {
         let mut iter = (MyIndex(10)..).iter();
         assert_eq!(iter.nth(0), Some(MyIndex(10)));
@@ -285,6 +287,7 @@ mod typed_range_inclusive_iter {
     }
 
     #[test]
+    #[allow(clippy::iter_nth_zero)]
     fn test_nth() {
         let mut iter = (MyIndex(0)..=MyIndex(9)).iter();
         assert_eq!(iter.nth(0), Some(MyIndex(0)));
@@ -485,7 +488,7 @@ mod edge_case_iteration {
     fn test_chain() {
         let a: Vec<_> = (MyIndex(0)..MyIndex(2)).iter().collect();
         let b: Vec<_> = (MyIndex(2)..MyIndex(4)).iter().collect();
-        let combined: Vec<_> = a.into_iter().chain(b.into_iter()).collect();
+        let combined: Vec<_> = a.into_iter().chain(b).collect();
         assert_eq!(
             combined,
             vec![MyIndex(0), MyIndex(1), MyIndex(2), MyIndex(3)]
@@ -495,7 +498,7 @@ mod edge_case_iteration {
     #[test]
     fn test_zip() {
         let indices: Vec<_> = (MyIndex(0)..MyIndex(3)).iter().collect();
-        let values = vec![10, 20, 30];
+        let values = [10, 20, 30];
         let zipped: Vec<_> = indices.iter().zip(values.iter()).collect();
         assert_eq!(zipped.len(), 3);
     }

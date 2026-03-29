@@ -197,14 +197,14 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     /// Creates a `TypedArray` from a raw array while checking that N is in bounds for I at compile time.
     #[inline]
     pub const fn from_array(array: [T; N]) -> Self {
-        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
+        const { Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS };
         unsafe { Self::from_array_unchecked(array) }
     }
 
     /// Creates a `TypedArray` reference from a raw array reference while checking that N is in bounds for I at compile time.
     #[inline]
     pub const fn from_array_ref(array: &[T; N]) -> &TypedArray<I, T, N> {
-        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
+        const { Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS };
         unsafe { Self::from_array_ref_unchecked(array) }
     }
 
@@ -212,7 +212,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     /// compile time.
     #[inline]
     pub const fn from_array_mut(array: &mut [T; N]) -> &mut TypedArray<I, T, N> {
-        let _ = Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS;
+        const { Self::_ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS };
         unsafe { Self::from_array_mut_unchecked(array) }
     }
 
@@ -434,7 +434,7 @@ impl<'a, I: IndexType, T: Copy, const N: usize> TryFrom<&'a mut TypedSlice<I, T>
     }
 }
 
-impl<'a, I: IndexType, T, const N: usize> core::ops::Deref for TypedArray<I, T, N> {
+impl<I: IndexType, T, const N: usize> core::ops::Deref for TypedArray<I, T, N> {
     type Target = TypedSlice<I, T>;
 
     fn deref(&self) -> &Self::Target {
@@ -442,7 +442,7 @@ impl<'a, I: IndexType, T, const N: usize> core::ops::Deref for TypedArray<I, T, 
     }
 }
 
-impl<'a, I: IndexType, T, const N: usize> core::ops::DerefMut for TypedArray<I, T, N> {
+impl<I: IndexType, T, const N: usize> core::ops::DerefMut for TypedArray<I, T, N> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
     }

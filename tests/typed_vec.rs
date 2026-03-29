@@ -92,7 +92,7 @@ fn test_typed_vec_capacity_limit() {
 
     let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..255 {
-        vec.push(i as i32);
+        vec.push(i);
     }
     assert_eq!(vec.len_usize(), 255);
     assert!(vec.try_push(255).is_err());
@@ -103,11 +103,11 @@ fn test_try_from_vec_too_big() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);
 
-    let vec = (0..256).map(|i| i as i32).collect::<Vec<_>>();
+    let vec: Vec<_> = (0..256).collect();
     let result: Result<TypedVec<SmallIndex, i32>, _> = TypedVec::try_from_vec(vec);
     assert!(result.is_err());
 
-    let vec = (0..255).map(|i| i as i32).collect::<Vec<_>>();
+    let vec: Vec<_> = (0..255).collect();
     let result: Result<TypedVec<SmallIndex, i32>, _> = TypedVec::try_from_vec(vec);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len_usize(), 255);
@@ -118,7 +118,7 @@ fn test_try_from_vec_max_value() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);
 
-    let vec = (0..256).map(|i| i as i32).collect::<Vec<_>>();
+    let vec: Vec<_> = (0..256).collect();
     let result: Result<TypedVec<SmallIndex, i32>, _> = TypedVec::try_from_vec(vec);
     assert!(result.is_err());
 }
@@ -128,7 +128,7 @@ fn test_from_vec_panic() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);
 
-    let vec = (0..256).map(|i| i as i32).collect::<Vec<_>>();
+    let vec: Vec<_> = (0..256).collect();
     let result = std::panic::catch_unwind(|| TypedVec::<SmallIndex, i32>::from_vec(vec));
     assert!(result.is_err());
 }
@@ -148,7 +148,7 @@ fn test_try_push_overflow() {
     assert_eq!(vec.len_usize(), 3);
 
     for i in 3..255 {
-        vec.push(i as i32);
+        vec.push(i);
     }
     assert_eq!(vec.len_usize(), 255);
 
@@ -163,7 +163,7 @@ fn test_push_panic_overflow() {
 
     let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..255 {
-        vec.push(i as i32);
+        vec.push(i);
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -197,12 +197,12 @@ fn test_try_append_overflow() {
 
     let mut vec1: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..200 {
-        vec1.push(i as i32);
+        vec1.push(i);
     }
 
     let mut vec2: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..100 {
-        vec2.push(i as i32);
+        vec2.push(i);
     }
 
     let result = vec1.try_append(&mut vec2);
@@ -217,12 +217,12 @@ fn test_append_overflow_panic() {
 
     let mut vec1: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..200 {
-        vec1.push(i as i32);
+        vec1.push(i);
     }
 
     let mut vec2: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..100 {
-        vec2.push(i as i32);
+        vec2.push(i);
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -252,7 +252,7 @@ fn test_try_insert_overflow() {
 
     let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..255 {
-        vec.push(i as i32);
+        vec.push(i);
     }
 
     let result = vec.try_insert(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
@@ -267,7 +267,7 @@ fn test_insert_overflow_panic() {
 
     let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..255 {
-        vec.push(i as i32);
+        vec.push(i);
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -305,7 +305,7 @@ fn test_try_extend_overflow() {
 
     let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..200 {
-        vec.push(i as i32);
+        vec.push(i);
     }
 
     let result = vec.try_extend(0..100);
@@ -325,7 +325,7 @@ fn test_extend_overflow_panic() {
 
     let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
     for i in 0..200 {
-        vec.push(i as i32);
+        vec.push(i);
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -424,7 +424,7 @@ fn test_try_into_flattened_overflow() {
 
     let mut vec: TypedVec<SmallIndex, [i32; 2]> = TypedVec::new();
     for i in 0..128 {
-        vec.push([i as i32, 0]);
+        vec.push([i, 0]);
     }
 
     let result = vec.try_into_flattened();
@@ -438,7 +438,7 @@ fn test_into_flattened_panic() {
 
     let mut vec: TypedVec<SmallIndex, [i32; 2]> = TypedVec::new();
     for i in 0..128 {
-        vec.push([i as i32, 0]);
+        vec.push([i, 0]);
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

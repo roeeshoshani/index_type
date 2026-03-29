@@ -21,6 +21,8 @@
 //! assert_eq!(slice[ColIdx::ZERO], 1.0);
 //! ```
 
+#![allow(clippy::type_complexity)]
+
 use core::{
     marker::PhantomData,
     mem::MaybeUninit,
@@ -1372,6 +1374,12 @@ mod private_get_disjoint_mut_typed_index {
     pub trait Sealed {}
 }
 
+/// A trait for providing safety checks for disjoint mutable indexing.
+///
+/// # Safety
+///
+/// Implementors must ensure that the `is_in_bounds` and `is_overlapping` methods
+/// correctly implement the safety contract required for safe disjoint mutable access.
 pub unsafe trait GetDisjointMutTypedIndex:
     private_get_disjoint_mut_typed_index::Sealed
 {
