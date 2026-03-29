@@ -1,4 +1,5 @@
 #[test]
+#[cfg_attr(miri, ignore)]
 fn test_compile_fail_contracts() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/ui/derive_index_too_big_error_non_empty.rs");
