@@ -1,6 +1,7 @@
 use core::num::{NonZeroU8, NonZeroUsize};
 use index_type::{
-    IndexType, typed_array::TypedArray, typed_slice::TypedSlice, typed_vec::TypedVec,
+    IndexType, typed_array::TypedArray, typed_array_vec::TypedArrayVec, typed_slice::TypedSlice,
+    typed_vec::TypedVec,
 };
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -90,7 +91,22 @@ fn test_nonzero_checked_mul_scalar_uses_raw_index_semantics() {
 
 #[test]
 fn test_macros() {
-    use index_type::{typed_array, typed_slice, typed_slice_mut, typed_vec};
+    use index_type::{typed_array, typed_array_vec, typed_slice, typed_slice_mut, typed_vec};
+
+    // Test typed_array_vec!
+    let av: TypedArrayVec<MyIndex, i32, 3> = typed_array_vec![1, 2, 3];
+    assert_eq!(av.len_usize(), 3);
+    assert_eq!(av[MyIndex::ZERO], 1);
+
+    let av2: TypedArrayVec<MyIndex, i32, 5> = typed_array_vec![0; 5];
+    assert_eq!(av2.len_usize(), 5);
+    assert_eq!(av2[MyIndex::ZERO], 0);
+
+    // Ensure it works with non-const lengths
+    let count = 4;
+    let av3: TypedArrayVec<MyIndex, i32, 4> = typed_array_vec![1; count];
+    assert_eq!(av3.len_usize(), 4);
+    assert_eq!(av3[MyIndex::ZERO], 1);
 
     // Test typed_vec!
     let v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
@@ -127,6 +143,7 @@ fn test_macros() {
     // Basic verify of macro existence and return types
     let _v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
     let _a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
+    let _av: TypedArrayVec<MyIndex, i32, 3> = typed_array_vec![1, 2, 3];
     let _s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
     let _s: &mut TypedSlice<MyIndex, i32> = typed_slice_mut![1, 2, 3];
 }

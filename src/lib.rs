@@ -222,9 +222,10 @@
 //! Convenience macros for creating typed collections:
 //!
 //! ```
-//! use index_type::{typed_vec, typed_array, typed_slice, typed_slice_mut, IndexType};
+//! use index_type::{typed_vec, typed_array, typed_array_vec, typed_slice, typed_slice_mut, IndexType};
 //! use index_type::typed_vec::TypedVec;
 //! use index_type::typed_array::TypedArray;
+//! use index_type::typed_array_vec::TypedArrayVec;
 //! use index_type::typed_slice::TypedSlice;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -235,6 +236,9 @@
 //!
 //! // Create a TypedArray
 //! let a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
+//!
+//! // Create a TypedArrayVec
+//! let av: TypedArrayVec<MyIndex, i32, 4> = typed_array_vec![1, 2, 3, 4];
 //!
 //! // Create a TypedSlice reference
 //! let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];

@@ -86,6 +86,32 @@ macro_rules! typed_vec {
     }};
 }
 
+/// Creates a [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) containing the arguments.
+///
+/// `typed_array_vec!` allows `TypedArrayVec` to be defined with the same syntax as the standard library's `vec!` macro.
+///
+/// # Usage Example
+///
+/// ```rust
+/// use index_type::{IndexType, typed_array_vec};
+/// use index_type::typed_array_vec::TypedArrayVec;
+///
+/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// struct MyIndex(u32);
+///
+/// let v: TypedArrayVec<MyIndex, i32, 3> = typed_array_vec![1, 2, 3];
+/// assert_eq!(v.len_usize(), 3);
+/// ```
+#[macro_export]
+macro_rules! typed_array_vec {
+    ($elem:expr; $n:expr) => {{
+        $crate::typed_array_vec::TypedArrayVec::<_, _, _>::from_iter(core::iter::repeat($elem).take($n))
+    }};
+    ($($x:expr),* $(,)?) => {{
+        $crate::typed_array_vec::TypedArrayVec::from_iter([$($x),*])
+    }};
+}
+
 /// Creates a [`TypedArray`](crate::typed_array::TypedArray) containing the arguments.
 ///
 /// # Usage Example

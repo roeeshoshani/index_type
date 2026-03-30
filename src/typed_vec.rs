@@ -37,11 +37,11 @@ use core::{
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
+    IndexScalarType, IndexTooBigError, IndexType,
     typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
     utils::{range_bounds_to_raw, resolve_range_bounds},
-    IndexScalarType, IndexTooBigError, IndexType,
 };
 
 #[cold]
