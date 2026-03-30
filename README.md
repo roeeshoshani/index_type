@@ -1,20 +1,40 @@
 # index_type
 
-A Rust crate providing **strongly typed indices** for collections, designed for both `std` and `no_std` environments.
+A Rust library providing **strongly typed indices** for collections, designed for both `std` and `no_std` environments.
 
-### Overview
+### What are typed indices?
 
-This crate allows you to define custom index types for your collections, providing compile-time
-guarantees that indices from one collection cannot be accidentally used with another. It also
-supports using smaller integer types for indices to save memory in large data structures.
+In standard Rust, collections use `usize` for indexing. This works well but provides no compile-time
+protection against using an index from one collection with another. Typed indices solve this by
+creating custom index types that are statically associated with specific collections.
+
+Consider this bug in standard Rust:
+```rust
+let nodes = vec![Node::new(); 10];
+let edges = vec![Edge::new(); 5];
+let bad_index = 3;
+nodes[bad_index]; // Works fine
+edges[bad_index]; // Also works, but may be a bug if you meant nodes[bad_index]
+```
+
+With typed indices, this becomes a compile error:
+```rust
+#[derive(IndexType)] struct NodeId(u32);
+#[derive(IndexType)] struct EdgeId(u32);
+let nodes: TypedVec<NodeId, Node> = ...;
+let edges: TypedVec<EdgeId, Edge> = ...;
+let id = NodeId(3);
+nodes[id]; // OK
+edges[id]; // COMPILE ERROR: expected EdgeId, found NodeId
+```
 
 ### Features
 
 - **Type Safety**: Prevents accidental misuse of indices between different collections at compile time
 - **`no_std` Support**: Works in embedded systems and other `no_std` environments
-- **Memory Efficiency**: Use smaller integer types (e.g., `u8`, `u16`) for indices when you know your collection won't exceed a certain size
-- **Niche Optimization**: Supports `NonZero` types for `Option<T>` space optimization
-- **Rich Collection Support**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), [`TypedArray`](crate::typed_array::TypedArray), and [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) - thin wrappers around standard library types with typed indexing
+- **Memory Efficiency**: Use smaller integer types (`u8`, `u16`) for indices when collections are bounded
+- **Niche Optimization**: Supports [`NonZero`](core::num::NonZero) types so `Option<Index>` has the same size as `Index`
+- **Rich Collections**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), [`TypedArray`](crate::typed_array::TypedArray), and [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec)
 - **Derive Macros**: Easy to define custom index types with `#[derive(IndexType)]`
 - **Range Iterators**: Iterate over ranges using custom index types
 
@@ -34,7 +54,7 @@ assert_eq!(vec[idx], 42);
 // vec[0usize]; // This won't compile - requires MyIndex type
 ```
 
-### Defining Custom Index Types
+### Defining Index Types
 
 Use the `#[derive(IndexType)]` macro on a newtype struct:
 
@@ -45,7 +65,8 @@ use index_type::IndexType;
 struct MyIndex(u32);
 ```
 
-By default, this generates an error type `MyIndexTooBigError`. You can specify a custom error:
+The macro automatically implements the [`IndexType`] trait for your custom type. By default,
+it generates an error type `MyIndexTooBigError`. You can specify a custom error type:
 
 ```rust
 use index_type::IndexType;
@@ -80,12 +101,12 @@ let id1 = nodes.push("Bob".to_string());
 println!("Node 0: {}", nodes[id0]);
 ```
 
-All operations that can fail due to index overflow have both panicking and fallible variants:
+Operations that can fail due to index overflow have both panicking and fallible variants:
 
 ```rust
 let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
 vec.push(1);                              // Panics if index too big
-let result = vec.try_push(2);             // Returns [`Result`](core::result::Result)<(), Error>
+let result = vec.try_push(2);             // Returns Result<(), Error>
 ```
 
 #### TypedSlice
@@ -109,7 +130,8 @@ let first = slice[RowId::ZERO];
 
 #### TypedArray
 
-A fixed-size array with typed indexing. See [`TypedArray`](crate::typed_array::TypedArray) for the full API.
+A fixed-size array with typed indexing. The array length `N` is checked at compile time
+to ensure it fits within the index type's range. See [`TypedArray`](crate::typed_array::TypedArray) for the full API.
 
 ```rust
 use index_type::IndexType;
@@ -120,11 +142,13 @@ struct PixelIdx(u8);
 
 let mut pixels: TypedArray<PixelIdx, [u8; 3], 4> = TypedArray::default();
 pixels[PixelIdx::ZERO] = [255, 0, 0];  // Red
+pixels[PixelIdx(1)] = [0, 255, 0];     // Green
 ```
 
 #### TypedArrayVec
 
-A fixed-capacity vector with typed indexing - ideal for embedded systems. See [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) for the full API.
+A fixed-capacity vector ideal for embedded systems. It never allocates after creation.
+See [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) for the full API.
 
 ```rust
 use index_type::IndexType;
@@ -138,26 +162,26 @@ buffer.push(42);
 assert_eq!(buffer.len().to_raw_index(), 1);
 ```
 
-It is also very compact - [`TypedArrayVec<u8, u8, 3>`](crate::typed_array_vec::TypedArrayVec) is only 4 bytes (3 bytes for the array + 1 byte for the length).
+A `TypedArrayVec<u8, u8, 3>` is only 4 bytes (3 bytes for data + 1 byte for length).
 
 ### Memory-Efficient Indices
 
-Using smaller integer types reduces memory usage when storing many indices:
+Using smaller integer types reduces memory when storing many indices:
 
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct SmallIndex(u8);  // Only 1 byte per index!
 
-// Compare memory usage:
 println!("SmallIndex: {} bytes", std::mem::size_of::<SmallIndex>());
 println!("u32 index: {} bytes", std::mem::size_of::<u32>());
 ```
 
-For collections that will never exceed 255 elements, `u8` saves 75% memory compared to `u32`.
+For collections with at most 255 elements, `u8` saves 75% memory compared to `u32`.
 
 ### NonZero Indices and Niche Optimization
 
-Using [`NonZero`](core::num::NonZero) types enables niche optimization, where `Option<Index>` has the same size as `Index`:
+Using [`NonZero`](core::num::NonZero) types enables niche optimization, where `Option<Index>`
+has the same size as `Index`:
 
 ```rust
 use index_type::IndexType;
@@ -173,9 +197,8 @@ assert_eq!(std::mem::size_of::<Option<SafeId>>(), 4);
 
 ### Range Iterators
 
-Standard Rust range types ([`Range`](core::ops::Range), [`RangeFrom`](core::ops::RangeFrom), [`RangeInclusive`](core::ops::RangeInclusive)) require the [`Step`](core::iter::Step)
-trait to iterate, which is currently unstable. To iterate over ranges with custom index
-types, use the [`TypedRangeIterExt`](crate::typed_range_iter::TypedRangeIterExt) extension trait:
+Standard Rust ranges require the unstable [`Step`](core::iter::Step) trait. This crate provides
+[`TypedRangeIterExt`](crate::typed_range_iter::TypedRangeIterExt) for iterating over ranges with custom index types:
 
 ```rust
 use index_type::IndexType;
@@ -194,8 +217,7 @@ for idx in (start..end).iter() {
 
 ### Typed Enumerate
 
-Use [`TypedIteratorExt`](crate::typed_enumerate::TypedIteratorExt) to enumerate any
-iterator with typed indices:
+Use [`TypedIteratorExt`](crate::typed_enumerate::TypedIteratorExt) to enumerate any iterator with typed indices:
 
 ```rust
 use index_type::IndexType;
@@ -234,7 +256,7 @@ let v: TypedVec<MyIndex, i32> = typed_vec![1, 2, 3];
 let a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
 
 // Create a TypedArrayVec
-let av: TypedArrayVec<MyIndex, i32, 4> = typed_array_vec![1, 2, 3, 4];
+let av: TypedArrayVec<MyIndex, u8, 4> = typed_array_vec![1, 2, 3, 4];
 
 // Create a TypedSlice reference
 let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
@@ -242,7 +264,7 @@ let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
 
 ### Error Handling
 
-Operations that can fail due to index overflow return `Result` types with a specific error:
+Operations that can fail due to index overflow return `Result` types:
 
 ```rust
 use index_type::IndexType;
@@ -273,3 +295,4 @@ For pure `no_std` environments without heap allocation, disable the `alloc` feat
 [dependencies]
 index_type = { version = "0.1", default-features = false }
 ```
+

@@ -1,3 +1,34 @@
+//! Typed enumerate adapters for iterators.
+//!
+//! This module provides iterator adapters that yield typed indices alongside items,
+//! similar to [`Iterator::enumerate`] but using a custom [`IndexType`] for compile-time
+//! type safety.
+//!
+//! # Checked vs Unchecked
+//!
+//! - [`TypedEnumerate`] performs runtime overflow checks on each iteration, panicking
+//!   if the iterator yields more than `I::MAX_RAW_INDEX` items.
+//! - [`UncheckedTypedEnumerate`] skips these checks for better performance, but requires
+//!   the caller to guarantee the iterator length is within bounds.
+//!
+//! # Example
+//!
+//! ```
+//! use index_type::IndexType;
+//! use index_type::typed_enumerate::TypedIteratorExt;
+//!
+//! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct RowIdx(u32);
+//!
+//! let pairs: Vec<_> = ["a", "b", "c"]
+//!     .into_iter()
+//!     .typed_enumerate::<RowIdx>()
+//!     .collect();
+//!
+//! assert_eq!(pairs[0].0, RowIdx(0));
+//! assert_eq!(pairs[0].1, "a");
+//! ```
+
 use core::iter::FusedIterator;
 
 use crate::{IndexScalarType, IndexType};
@@ -11,7 +42,10 @@ fn panic_typed_enumerate_overflow() -> ! {
 /// An iterator adapter like [`Iterator::enumerate`] that yields typed indices.
 ///
 /// This adapter checks on every call that the iterator has not yielded more than
-/// `I::MAX_RAW_INDEX` items.
+/// `I::MAX_RAW_INDEX` items. If the iterator yields more items, it will panic.
+///
+/// For scenarios where the iterator length is guaranteed to be within bounds,
+/// use [`UncheckedTypedEnumerate`] instead to avoid runtime overhead.
 #[derive(Debug, Clone)]
 pub struct TypedEnumerate<I: IndexType, Iter> {
     iter: Iter,
@@ -84,6 +118,12 @@ impl<I: IndexType, Iter: FusedIterator> FusedIterator for TypedEnumerate<I, Iter
 ///
 /// Unlike [`TypedEnumerate`], this variant does not perform runtime overflow checks while
 /// iterating. The caller must guarantee its length invariant up front.
+///
+/// # Safety
+///
+/// The total number of items the iterator can yield must not exceed `I::MAX_RAW_INDEX`.
+/// Additionally, if the iterator implements [`ExactSizeIterator`], its `len()` must accurately
+/// report the number of remaining items.
 #[derive(Debug, Clone)]
 pub struct UncheckedTypedEnumerate<I: IndexType, Iter> {
     iter: Iter,
@@ -162,10 +202,35 @@ impl<I: IndexType, Iter: ExactSizeIterator> ExactSizeIterator for UncheckedTyped
 impl<I: IndexType, Iter: FusedIterator> FusedIterator for UncheckedTypedEnumerate<I, Iter> {}
 
 /// Extension methods for typed enumerate adapters.
+///
+/// This trait is automatically implemented for all types implementing [`Iterator`].
+/// Use it to add typed indices to any iterator.
+///
+/// # Example
+///
+/// ```
+/// use index_type::IndexType;
+/// use index_type::typed_enumerate::TypedIteratorExt;
+///
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// struct RowIdx(u32);
+///
+/// let pairs: Vec<_> = ["a", "b", "c"]
+///     .into_iter()
+///     .typed_enumerate::<RowIdx>()
+///     .collect();
+///
+/// assert_eq!(pairs[0].0, RowIdx(0));
+/// assert_eq!(pairs[0].1, "a");
+/// ```
 pub trait TypedIteratorExt: Iterator + Sized {
     /// Returns an iterator that yields typed indices alongside items.
     ///
     /// This is like [`Iterator::enumerate`], but it uses an [`IndexType`] for the index.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the iterator yields more than `I::MAX_RAW_INDEX` items.
     #[inline]
     fn typed_enumerate<I: IndexType>(self) -> TypedEnumerate<I, Self> {
         TypedEnumerate::new(self)

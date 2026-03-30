@@ -6,7 +6,7 @@
 //!
 //! # No Heap Allocation After Creation
 //!
-//! Unlike `TypedVec`, `TypedArrayVec` has a fixed capacity determined at compile time. Once created,
+//! Unlike [`TypedVec`][crate::typed_vec::TypedVec], `TypedArrayVec` has a fixed capacity determined at compile time. Once created,
 //! it will never allocate additional memory. Operations that would exceed capacity return errors
 //! or panic.
 //!
@@ -14,6 +14,11 @@
 //!
 //! The capacity `N` is checked at compile time to ensure it fits within the index type `I`'s
 //! representable range.
+//!
+//! # Memory Efficiency
+//!
+//! `TypedArrayVec` is extremely compact. For example, `TypedArrayVec<u8, u8, 16>` is only
+//! 17 bytes: 16 bytes for data + 1 byte for length.
 //!
 //! # Example
 //!
@@ -37,12 +42,12 @@ use core::{
 };
 
 use crate::{
-    IndexScalarType, IndexType,
     typed_array::TypedArray,
     typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
     utils::resolve_range_bounds,
+    IndexScalarType, IndexType,
 };
 
 #[cold]
@@ -864,7 +869,28 @@ impl<I: IndexType, T, const N: usize> From<crate::typed_array::TypedArray<I, T, 
     }
 }
 
-/// An error type used when a collection is at full capacity.
+/// An error returned when an operation would exceed a collection's capacity.
+///
+/// This error is returned by [`TypedArrayVec::try_push`] and similar methods
+/// when the collection is at full capacity.
+///
+/// # Example
+///
+/// ```
+/// use index_type::IndexType;
+/// use index_type::typed_array_vec::{TypedArrayVec, CapacityError};
+///
+/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// struct Idx(u8);
+///
+/// let mut vec: TypedArrayVec<Idx, u8, 2> = TypedArrayVec::new();
+/// vec.push(1);
+/// vec.push(2);
+///
+/// // This fails because the vec is full
+/// let result = vec.try_push(3);
+/// assert!(matches!(result, Err(CapacityError { .. })));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CapacityError<T> {
     element: T,

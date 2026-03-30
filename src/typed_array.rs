@@ -1,14 +1,17 @@
 //! A fixed-size array with typed indexing.
 //!
 //! This module provides [`TypedArray`], a wrapper around `[T; N]` that uses a custom
-//! [`IndexType`] for all indexing operations. Unlike `TypedSlice`, `TypedArray` has a
-//! fixed size known at compile time.
+//! [`IndexType`] for all indexing operations. Unlike [`TypedSlice`],
+//! `TypedArray` has a fixed size known at compile time.
 //!
 //! # Compile-Time Bounds Checking
 //!
 //! `TypedArray` performs compile-time checks to ensure that the array length `N`
 //! fits within the bounds of the index type `I`. If `N > I::MAX_RAW_INDEX`, the
 //! code will not compile.
+//!
+//! This makes `TypedArray` ideal for scenarios where you need maximum performance
+//! and want to catch index errors at compile time rather than runtime.
 //!
 //! # Example
 //!
@@ -33,10 +36,10 @@ use core::{
 };
 
 use crate::{
-    IndexType,
     typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
+    IndexType,
 };
 
 /// An array wrapper that uses a custom index type.

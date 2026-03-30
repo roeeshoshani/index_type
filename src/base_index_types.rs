@@ -1,8 +1,8 @@
 #[cfg(target_pointer_width = "64")]
 use core::num::NonZeroU64;
-use core::num::{NonZeroU8, NonZeroU16, NonZeroU32, NonZeroUsize};
+use core::num::{NonZeroU16, NonZeroU32, NonZeroU8, NonZeroUsize};
 
-use crate::{IndexType, error::GenericIndexTooBigError};
+use crate::{error::GenericIndexTooBigError, IndexType};
 
 macro_rules! impl_for_uint_type {
     {$t: ty} => {

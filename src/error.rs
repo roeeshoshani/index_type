@@ -1,7 +1,7 @@
 //! Error types for the index_type crate.
-
+//!
 //! This module provides the [`GenericIndexTooBigError`] type, which can be used
-//! as the error type for custom index types.
+//! as the error type for custom index types derived with `#[derive(IndexType)]`.
 
 use crate::IndexTooBigError;
 

@@ -1,8 +1,8 @@
 //! A growable vector with typed indexing.
 //!
-//! This module provides [`TypedVec`], a wrapper around [`Vec`] that uses a custom
+//! This module provides [`TypedVec`], a wrapper around [`alloc::vec::Vec`] that uses a custom
 //! [`IndexType`] for all indexing operations. This provides compile-time guarantees that
-//! indices cannot be accidentally used with the wrong collection.
+//! indices from one `TypedVec` cannot be accidentally used with another.
 //!
 //! # Example
 //!
@@ -23,7 +23,7 @@
 //!
 //! # Capacity and Growth
 //!
-//! `TypedVec` has the same growth behavior as `Vec`. Operations that would cause the length
+//! `TypedVec` has the same growth behavior as [`Vec`]. Operations that would cause the length
 //! to exceed `I::MAX_RAW_INDEX` return an error or panic, depending on whether you use
 //! the fallible or infallible variant.
 
@@ -37,11 +37,11 @@ use core::{
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
-    IndexScalarType, IndexTooBigError, IndexType,
     typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
     utils::{range_bounds_to_raw, resolve_range_bounds},
+    IndexScalarType, IndexTooBigError, IndexType,
 };
 
 #[cold]

@@ -1,40 +1,55 @@
 use core::{hint::unreachable_unchecked, ops::RangeBounds};
 
-use crate::{IndexScalarType, IndexType, typed_slice::TypedSlice};
+use crate::{typed_slice::TypedSlice, IndexScalarType, IndexType};
 
 mod private_typed_slice_index {
     pub trait Sealed {}
 }
 
-/// A trait for types that can be used to index a `TypedSlice`.
+/// A trait for types that can be used to index a [`TypedSlice`].
 ///
 /// This trait is analogous to the [`core::slice::SliceIndex`] trait from the standard library.
+/// It enables using various index types to access elements or slices of a `TypedSlice`.
+///
+/// Implemented for:
+/// - Single index types (`I: IndexType`) → returns `&T` or `&mut T`
+/// - `Range<I>` → returns `&TypedSlice<I, T>` or `&mut TypedSlice<I, T>`
+/// - `RangeFrom<I>`, `RangeTo<I>`, `RangeInclusive<I>`, `RangeToInclusive<I>`
+/// - `RangeFull` (the full slice)
 ///
 /// # Safety
 ///
 /// This trait should not be implemented manually.
-/// Implementations must uphold some implicitly assumed invariants, and wrong implementations may lead to undefined behaviour.
-/// This trait is sealed to prevent such wrong implementations.
+/// Implementations must uphold invariants about bounds checking, and incorrect implementations
+/// may lead to undefined behavior. This trait is sealed to prevent incorrect implementations.
 pub unsafe trait TypedSliceIndex<T: ?Sized>: private_typed_slice_index::Sealed {
     /// The output type of the indexing operation.
     type Output: ?Sized;
 
+    /// Returns a reference to the output type, or `None` if out of bounds.
     fn get(self, slice: &T) -> Option<&Self::Output>;
 
+    /// Returns a mutable reference to the output type, or `None` if out of bounds.
     fn get_mut(self, slice: &mut T) -> Option<&mut Self::Output>;
 
+    /// Returns a reference to the output type without bounds checking.
+    ///
     /// # Safety
     ///
     /// The index must be in bounds.
     unsafe fn get_unchecked(self, slice: *const T) -> *const Self::Output;
 
+    /// Returns a mutable reference to the output type without bounds checking.
+    ///
     /// # Safety
     ///
     /// The index must be in bounds.
     unsafe fn get_unchecked_mut(self, slice: *mut T) -> *mut Self::Output;
 
+    /// Returns a reference to the output type, panicking if out of bounds.
     fn index(self, slice: &T) -> &Self::Output;
 
+    /// Returns a mutable reference to the output type, panicking if out of bounds.
     fn index_mut(self, slice: &mut T) -> &mut Self::Output;
 }
 

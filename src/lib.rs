@@ -1,19 +1,52 @@
 #![no_std]
-//! A Rust crate providing **strongly typed indices** for collections, designed for both `std` and `no_std` environments.
+//! A Rust library providing **strongly typed indices** for collections, designed for both `std` and `no_std` environments.
 //!
-//! ## Overview
+//! ## What are typed indices?
 //!
-//! This crate allows you to define custom index types for your collections, providing compile-time
-//! guarantees that indices from one collection cannot be accidentally used with another. It also
-//! supports using smaller integer types for indices to save memory in large data structures.
+//! In standard Rust, collections use `usize` for indexing. This works well but provides no compile-time
+//! protection against using an index from one collection with another. Typed indices solve this by
+//! creating custom index types that are statically associated with specific collections.
+//!
+//! In standard Rust, a raw `usize` can index any collection. This allows subtle bugs:
+//! ```rust
+//! # #[derive(Default, Clone, Copy)]
+//! # struct Node;
+//! # #[derive(Default, Clone, Copy)]
+//! # struct Edge;
+//! let nodes: Vec<Node> = vec![Node::default(); 10];  // 10 nodes
+//! let edges: Vec<Edge> = vec![Edge::default(); 5];   // 5 edges
+//! let node_index = 3;
+//! nodes[node_index];
+//! edges[node_index]; // compiles just fine!
+//! ```
+//!
+//! With typed indices, cross-contamination becomes a compile error:
+//! ```compile_fail
+//! # use index_type::{IndexType, typed_vec::TypedVec};
+//! # #[derive(Default, Clone, Copy)]
+//! # struct Node;
+//! # #[derive(Default, Clone, Copy)]
+//! # struct Edge;
+//! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct NodeId(u32);
+//!
+//! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct EdgeId(u32);
+//!
+//! let nodes: TypedVec<NodeId, Node> = TypedVec::new();
+//! let edges: TypedVec<EdgeId, Edge> = TypedVec::new();
+//! let node_id = NodeId(3);
+//! nodes[node_id]; // OK
+//! edges[node_id]; // COMPILE ERROR: expected EdgeId, found NodeId
+//! ```
 //!
 //! ## Features
 //!
 //! - **Type Safety**: Prevents accidental misuse of indices between different collections at compile time
 //! - **`no_std` Support**: Works in embedded systems and other `no_std` environments
-//! - **Memory Efficiency**: Use smaller integer types (e.g., `u8`, `u16`) for indices when you know your collection won't exceed a certain size
-//! - **Niche Optimization**: Supports `NonZero` types for `Option<T>` space optimization
-//! - **Rich Collection Support**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), [`TypedArray`](crate::typed_array::TypedArray), and [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) - thin wrappers around standard library types with typed indexing
+//! - **Memory Efficiency**: Use smaller integer types (`u8`, `u16`) for indices when collections are bounded
+//! - **Niche Optimization**: Supports [`NonZero`](core::num::NonZero) types so `Option<Index>` has the same size as `Index`
+//! - **Rich Collections**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), [`TypedArray`](crate::typed_array::TypedArray), and [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec)
 //! - **Derive Macros**: Easy to define custom index types with `#[derive(IndexType)]`
 //! - **Range Iterators**: Iterate over ranges using custom index types
 //!
@@ -33,7 +66,7 @@
 //! // vec[0usize]; // This won't compile - requires MyIndex type
 //! ```
 //!
-//! ## Defining Custom Index Types
+//! ## Defining Index Types
 //!
 //! Use the `#[derive(IndexType)]` macro on a newtype struct:
 //!
@@ -44,7 +77,8 @@
 //! struct MyIndex(u32);
 //! ```
 //!
-//! By default, this generates an error type `MyIndexTooBigError`. You can specify a custom error:
+//! The macro automatically implements the [`IndexType`] trait for your custom type. By default,
+//! it generates an error type `MyIndexTooBigError`. You can specify a custom error type:
 //!
 //! ```
 //! use index_type::IndexType;
@@ -79,7 +113,7 @@
 //! println!("Node 0: {}", nodes[id0]);
 //! ```
 //!
-//! All operations that can fail due to index overflow have both panicking and fallible variants:
+//! Operations that can fail due to index overflow have both panicking and fallible variants:
 //!
 //! ```
 //! # use index_type::IndexType;
@@ -88,7 +122,7 @@
 //! # struct MyIndex(u32);
 //! let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
 //! vec.push(1);                              // Panics if index too big
-//! let result = vec.try_push(2);             // Returns [`Result`](core::result::Result)<(), Error>
+//! let result = vec.try_push(2);             // Returns Result<(), Error>
 //! ```
 //!
 //! ### TypedSlice
@@ -112,7 +146,8 @@
 //!
 //! ### TypedArray
 //!
-//! A fixed-size array with typed indexing. See [`TypedArray`](crate::typed_array::TypedArray) for the full API.
+//! A fixed-size array with typed indexing. The array length `N` is checked at compile time
+//! to ensure it fits within the index type's range. See [`TypedArray`](crate::typed_array::TypedArray) for the full API.
 //!
 //! ```
 //! use index_type::IndexType;
@@ -123,11 +158,13 @@
 //!
 //! let mut pixels: TypedArray<PixelIdx, [u8; 3], 4> = TypedArray::default();
 //! pixels[PixelIdx::ZERO] = [255, 0, 0];  // Red
+//! pixels[PixelIdx(1)] = [0, 255, 0];     // Green
 //! ```
 //!
 //! ### TypedArrayVec
 //!
-//! A fixed-capacity vector with typed indexing - ideal for embedded systems. See [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) for the full API.
+//! A fixed-capacity vector ideal for embedded systems. It never allocates after creation.
+//! See [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) for the full API.
 //!
 //! ```
 //! use index_type::IndexType;
@@ -141,27 +178,27 @@
 //! assert_eq!(buffer.len().to_raw_index(), 1);
 //! ```
 //!
-//! It is also very compact - [`TypedArrayVec<u8, u8, 3>`](crate::typed_array_vec::TypedArrayVec) is only 4 bytes (3 bytes for the array + 1 byte for the length).
+//! A `TypedArrayVec<u8, u8, 3>` is only 4 bytes (3 bytes for data + 1 byte for length).
 //!
 //! ## Memory-Efficient Indices
 //!
-//! Using smaller integer types reduces memory usage when storing many indices:
+//! Using smaller integer types reduces memory when storing many indices:
 //!
 //! ```
 //! # use index_type::IndexType;
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct SmallIndex(u8);  // Only 1 byte per index!
 //!
-//! // Compare memory usage:
 //! println!("SmallIndex: {} bytes", std::mem::size_of::<SmallIndex>());
 //! println!("u32 index: {} bytes", std::mem::size_of::<u32>());
 //! ```
 //!
-//! For collections that will never exceed 255 elements, `u8` saves 75% memory compared to `u32`.
+//! For collections with at most 255 elements, `u8` saves 75% memory compared to `u32`.
 //!
 //! ## NonZero Indices and Niche Optimization
 //!
-//! Using [`NonZero`](core::num::NonZero) types enables niche optimization, where `Option<Index>` has the same size as `Index`:
+//! Using [`NonZero`](core::num::NonZero) types enables niche optimization, where `Option<Index>`
+//! has the same size as `Index`:
 //!
 //! ```
 //! use index_type::IndexType;
@@ -177,9 +214,8 @@
 //!
 //! ## Range Iterators
 //!
-//! Standard Rust range types ([`Range`](core::ops::Range), [`RangeFrom`](core::ops::RangeFrom), [`RangeInclusive`](core::ops::RangeInclusive)) require the [`Step`](core::iter::Step)
-//! trait to iterate, which is currently unstable. To iterate over ranges with custom index
-//! types, use the [`TypedRangeIterExt`](crate::typed_range_iter::TypedRangeIterExt) extension trait:
+//! Standard Rust ranges require the unstable [`Step`](core::iter::Step) trait. This crate provides
+//! [`TypedRangeIterExt`](crate::typed_range_iter::TypedRangeIterExt) for iterating over ranges with custom index types:
 //!
 //! ```
 //! use index_type::IndexType;
@@ -198,8 +234,7 @@
 //!
 //! ## Typed Enumerate
 //!
-//! Use [`TypedIteratorExt`](crate::typed_enumerate::TypedIteratorExt) to enumerate any
-//! iterator with typed indices:
+//! Use [`TypedIteratorExt`](crate::typed_enumerate::TypedIteratorExt) to enumerate any iterator with typed indices:
 //!
 //! ```
 //! use index_type::IndexType;
@@ -238,7 +273,7 @@
 //! let a: TypedArray<MyIndex, i32, 3> = typed_array![1, 2, 3];
 //!
 //! // Create a TypedArrayVec
-//! let av: TypedArrayVec<MyIndex, i32, 4> = typed_array_vec![1, 2, 3, 4];
+//! let av: TypedArrayVec<MyIndex, u8, 4> = typed_array_vec![1, 2, 3, 4];
 //!
 //! // Create a TypedSlice reference
 //! let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
@@ -246,7 +281,7 @@
 //!
 //! ## Error Handling
 //!
-//! Operations that can fail due to index overflow return `Result` types with a specific error:
+//! Operations that can fail due to index overflow return `Result` types:
 //!
 //! ```
 //! use index_type::IndexType;
@@ -275,8 +310,9 @@
 //!
 //! ```toml
 //! [dependencies]
-//! index_type = { version = "0.1", default-features = false }
+//! index_type = { version = "...", default-features = false }
 //! ```
+//!
 
 pub use crate::error::GenericIndexTooBigError;
 
@@ -300,11 +336,30 @@ mod utils;
 
 pub use index_type_macros::{IndexTooBigError, IndexType};
 
-/// A trait for types that can be used as indices to collections.
+/// A trait for types that can be used as indices into typed collections.
+///
+/// This trait is the foundation of the crate. It is implemented for primitive unsigned integer
+/// types (`u8`, `u16`, `u32`, `u64`, `usize`) and their [`NonZero`](core::num::NonZero) variants. Custom index types
+/// should be defined using the `#[derive(IndexType)]` macro, which implements this trait for a
+/// newtype struct.
 ///
 /// # Safety
 ///
 /// Do not implement directly; use `#[derive(IndexType)]` instead.
+///
+/// # Index vs Raw Index
+///
+/// The distinction between "index" and "raw index" is important for [`NonZero`](core::num::NonZero) types.
+/// For a regular type like `u8`:
+/// - Raw index 0 maps to `u8::ZERO` (0)
+/// - Raw index 255 maps to `u8::MAX` (255)
+///
+/// For a [`NonZero`](core::num::NonZero) type like `NonZeroU8`:
+/// - Raw index 0 maps to `NonZeroU8::new_unchecked(1)` (the minimum valid value)
+/// - Raw index 254 maps to `NonZeroU8::new_unchecked(255)` (the maximum valid value)
+/// - Raw index 255 is **invalid** because it would overflow when adding 1 to get the inner value
+///
+/// This design allows `Option<NonZeroU8>` to occupy a single byte (niche optimization).
 ///
 /// # Example
 ///
@@ -316,6 +371,7 @@ pub use index_type_macros::{IndexTooBigError, IndexType};
 ///
 /// let idx = MyIndex::ZERO;
 /// let next = MyIndex::try_from_raw_index(5).unwrap();
+/// assert_eq!(next.to_raw_index(), 5);
 /// ```
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
@@ -335,12 +391,13 @@ pub unsafe trait IndexType:
 
     /// The maximum index value representable by this type.
     ///
-    /// For `u8`, this is `255`. For [`NonZeroU8`](core::num::NonZeroU8), this is `NonZeroU8(255)`.
+    /// For `u8`, this is `255`. For [`NonZeroU8`](core::num::NonZeroU8), this is `NonZeroU8::new(255)`.
     const MAX_INDEX: Self;
 
     /// The maximum raw index value representable by this type.
     ///
-    /// For `u8`, this is `255`. For [`NonZeroU8`](core::num::NonZeroU8), this is `254` (since raw index 255 maps to [`NonZeroU8::MAX`](core::num::NonZeroU8::MAX) = 255).
+    /// For `u8`, this is `255`. For [`NonZeroU8`](core::num::NonZeroU8), this is `254`
+    /// (since raw index 255 would map to a value outside the valid range).
     const MAX_RAW_INDEX: usize;
 
     /// Attempts to create an index from a raw `usize` value.
@@ -438,7 +495,7 @@ pub unsafe trait IndexScalarType:
 
     /// Attempts to convert a `usize` to this scalar type.
     ///
-    /// Returns `None` if the value cannot be represented.
+    /// Returns `None` if the value exceeds the maximum representable value.
     fn try_from_usize(value: usize) -> Option<Self>;
 
     /// Converts a `usize` to this scalar type without bounds checking.
@@ -452,9 +509,13 @@ pub unsafe trait IndexScalarType:
     fn to_usize(self) -> usize;
 
     /// Performs checked addition with another scalar.
+    ///
+    /// Returns `None` if overflow would occur.
     fn checked_add_scalar(self, rhs: Self) -> Option<Self>;
 
     /// Performs checked subtraction with another scalar.
+    ///
+    /// Returns `None` if underflow would occur.
     fn checked_sub_scalar(self, rhs: Self) -> Option<Self>;
 
     /// Performs unchecked addition with another scalar.

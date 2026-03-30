@@ -1,9 +1,9 @@
 //! Extension traits and iterators for iterating over ranges with custom index types.
 //!
-//! The standard library's range types (`Range`, `RangeFrom`, `RangeInclusive`) cannot be directly
-//! iterated over with custom index types because they require the `Step` trait, which is
+//! The standard library's range types ([`core::ops::Range`], [`core::ops::RangeFrom`], [`core::ops::RangeInclusive`]) cannot be directly
+//! iterated over with custom index types because they require the [`core::iter::Step`] trait, which is
 //! currently unstable. This module provides extension traits that convert range types into
-//! iterator types that work with any `IndexType`.
+//! iterator types that work with any [`IndexType`].
 //!
 //! # Example
 //!

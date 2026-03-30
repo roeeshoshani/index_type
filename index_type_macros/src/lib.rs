@@ -42,7 +42,7 @@ struct IndexTypeArgs {
 /// ```rust
 /// use index_type::IndexType;
 ///
-/// #[derive(IndexType)]
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);
 /// ```
 ///
@@ -55,7 +55,7 @@ struct IndexTypeArgs {
 /// ```rust
 /// use index_type::{IndexType, GenericIndexTooBigError};
 ///
-/// #[derive(IndexType)]
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// #[index_type(error = GenericIndexTooBigError)]
 /// struct MyIndex(u32);
 /// ```

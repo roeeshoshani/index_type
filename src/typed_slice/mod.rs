@@ -2,7 +2,8 @@
 //!
 //! This module provides [`TypedSlice`], a wrapper around `[T]` that uses a custom
 //! [`IndexType`] for all indexing operations. `TypedSlice` is the core typed collection
-//! that `TypedVec`, `TypedArrayVec`, and `TypedArray` are built upon.
+//! type that [`TypedVec`], [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec),
+//! and [`TypedArray`] are built upon.
 //!
 //! # Example
 //!
@@ -30,15 +31,15 @@ use core::{
 };
 
 use crate::{
-    IndexScalarType, IndexType,
     typed_array::TypedArray,
     typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     utils::range_bounds_to_raw,
+    IndexScalarType, IndexType,
 };
 
 #[cfg(feature = "alloc")]
-use crate::{IndexTooBigError, typed_vec::TypedVec};
+use crate::{typed_vec::TypedVec, IndexTooBigError};
 
 mod index;
 
