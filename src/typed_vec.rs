@@ -37,11 +37,11 @@ use core::{
 use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
-    IndexScalarType, IndexTooBigError, IndexType,
     typed_enumerate::UncheckedTypedEnumerate,
     typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
     typed_slice::TypedSlice,
     utils::{range_bounds_to_raw, resolve_range_bounds},
+    IndexScalarType, IndexTooBigError, IndexType,
 };
 
 #[cold]
@@ -280,7 +280,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// type's range, we ensure that the vector can always grow to accommodate up to 255 elements,
     /// even if it temporarily has excess capacity.
     ///
-    /// Use [`len()`](Self::len) when you need the typed length, and [`remaining_capacity()`]
+    /// Use [`len()`](Self::len) when you need the typed length, and [`remaining_capacity`](Self::remaining_capacity)
     /// when you need to know how many more elements can be added before reaching the index limit.
     #[inline]
     pub fn capacity(&self) -> usize {
