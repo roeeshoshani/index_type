@@ -14,6 +14,15 @@ Use Cargo from the repository root:
 - `cargo clippy --all-targets --all-features`: runs lint checks across library code, tests, and examples.
 - `cargo test --test typed_vec`: runs a focused integration test file while iterating on one area.
 
+## README Generation
+The `README.md` file is generated from the crate documentation in `src/lib.rs` using `cargo readme`. To regenerate it after updating docs, run:
+
+```
+cargo readme > README.md
+```
+
+Do not edit `README.md` directly; any changes will be overwritten. Update the documentation in `src/lib.rs` instead.
+
 ## Coding Style & Naming Conventions
 Follow default `rustfmt` style with 4-space indentation and standard import ordering. Use `snake_case` for modules, files, functions, and test names. Public types and traits use `UpperCamelCase`; index newtypes follow the existing pattern like `NodeId`, `MyIndex`, or `BufferIndex`.
 
