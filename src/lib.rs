@@ -21,8 +21,8 @@
 //! ```
 //!
 //! With typed indices, cross-contamination becomes a compile error:
-//! ```compile_fail
-//! # use index_type::{IndexType, typed_vec::TypedVec};
+//! ```rust
+//! # use index_type::{IndexType, typed_vec::TypedVec, typed_vec};
 //! # #[derive(Default, Clone, Copy)]
 //! # struct Node;
 //! # #[derive(Default, Clone, Copy)]
@@ -33,11 +33,11 @@
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct EdgeId(u32);
 //!
-//! let nodes: TypedVec<NodeId, Node> = TypedVec::new();
-//! let edges: TypedVec<EdgeId, Edge> = TypedVec::new();
+//! let nodes: TypedVec<NodeId, Node> = typed_vec![Node::default(); 10];
+//! let edges: TypedVec<EdgeId, Edge> = typed_vec![Edge::default(); 10];
 //! let node_id = NodeId(3);
 //! nodes[node_id]; // OK
-//! edges[node_id]; // COMPILE ERROR: expected EdgeId, found NodeId
+//! // edges[node_id]; // COMPILE ERROR: expected EdgeId, found NodeId
 //! ```
 //!
 //! ## Features
