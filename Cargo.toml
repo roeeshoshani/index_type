@@ -1,6 +1,6 @@
 [package]
 name = "index_type"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Type-safe newtype indices for Rust"
 readme = "README.md"
@@ -17,7 +17,7 @@ default = ["alloc"]
 alloc = []
 
 [dependencies]
-index_type_macros = { path = "index_type_macros", version = "0.1.0" }
+index_type_macros = { path = "index_type_macros", version = "0.1.1" }
 
 [dev-dependencies]
 trybuild = "1.0"
