@@ -2,6 +2,12 @@
 name = "index_type"
 version = "0.1.0"
 edition = "2024"
+description = "Type-safe newtype indices for Rust"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/roeeshoshani/index_type"
+keywords = ["index", "typed", "collection", "safe"]
+categories = ["rust-patterns", "no-std"]
 
 [workspace]
 members = ["index_type_macros"]

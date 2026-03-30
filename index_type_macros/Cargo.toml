@@ -2,6 +2,9 @@
 name = "index_type_macros"
 version = "0.1.0"
 edition = "2024"
+description = "Derive macros for index_type crate"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/roeeshoshani/index_type"
 
 [lib]
 proc-macro = true
