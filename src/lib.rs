@@ -244,18 +244,6 @@
 //! let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
 //! ```
 //!
-//! ## Trait Implementations
-//!
-//! The typed collections implement many standard library traits:
-//!
-//! - [`Deref`](core::ops::Deref) / [`DerefMut`](core::ops::DerefMut) → [`TypedSlice`](crate::typed_slice::TypedSlice)
-//! - [`IntoIterator`] for values, references, and mutable references
-//! - [`FromIterator`] and [`Extend`]
-//! - [`AsRef`] / [`AsMut`] for [`TypedSlice`](crate::typed_slice::TypedSlice) and [`TypedVec`](crate::typed_vec::TypedVec)
-//! - [`PartialEq`], [`Eq`], [`PartialOrd`], [`Ord`], [`Hash`]
-//! - [`Debug`], [`Clone`], [`Default`]
-//! - [`Index`](core::ops::Index) / [`IndexMut`](core::ops::IndexMut) with typed indices
-//!
 //! ## Error Handling
 //!
 //! Operations that can fail due to index overflow return `Result` types with a specific error:
