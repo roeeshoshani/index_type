@@ -8,24 +8,33 @@ In standard Rust, collections use `usize` for indexing. This works well but prov
 protection against using an index from one collection with another. Typed indices solve this by
 creating custom index types that are statically associated with specific collections.
 
-Consider this bug in standard Rust:
+In standard Rust, a raw `usize` can index any collection. This allows subtle bugs:
 ```rust
-let nodes = vec![Node::new(); 10];
-let edges = vec![Edge::new(); 5];
-let bad_index = 3;
-nodes[bad_index]; // Works fine
-edges[bad_index]; // Also works, but may be a bug if you meant nodes[bad_index]
+let nodes: Vec<Node> = vec![Node::default(); 10];  // 10 nodes
+let edges: Vec<Edge> = vec![Edge::default(); 5];   // 5 edges
+let node_index = 3;
+nodes[node_index];
+edges[node_index]; // compiles just fine!
 ```
 
-With typed indices, this becomes a compile error:
-```rust
-#[derive(IndexType)] struct NodeId(u32);
-#[derive(IndexType)] struct EdgeId(u32);
-let nodes: TypedVec<NodeId, Node> = ...;
-let edges: TypedVec<EdgeId, Edge> = ...;
-let id = NodeId(3);
-nodes[id]; // OK
-edges[id]; // COMPILE ERROR: expected EdgeId, found NodeId
+With typed indices, cross-contamination becomes a compile error:
+```compile_fail
+# use index_type::{IndexType, typed_vec::TypedVec};
+# #[derive(Default, Clone, Copy)]
+# struct Node;
+# #[derive(Default, Clone, Copy)]
+# struct Edge;
+#[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct NodeId(u32);
+
+#[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct EdgeId(u32);
+
+let nodes: TypedVec<NodeId, Node> = TypedVec::new();
+let edges: TypedVec<EdgeId, Edge> = TypedVec::new();
+let node_id = NodeId(3);
+nodes[node_id]; // OK
+edges[node_id]; // COMPILE ERROR: expected EdgeId, found NodeId
 ```
 
 ### Features
@@ -293,6 +302,8 @@ For pure `no_std` environments without heap allocation, disable the `alloc` feat
 
 ```toml
 [dependencies]
-index_type = { version = "0.1", default-features = false }
+index_type = { version = "...", default-features = false }
 ```
 
+
+License: MIT OR Apache-2.0
