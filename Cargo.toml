@@ -17,7 +17,7 @@ default = ["alloc"]
 alloc = []
 
 [dependencies]
-index_type_macros = { path = "index_type_macros" }
+index_type_macros = { path = "index_type_macros", version = "0.1.0" }
 
 [dev-dependencies]
 trybuild = "1.0"
