@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`src/` contains the main `index_type` library. Core modules include `typed_vec.rs`, `typed_array.rs`, `typed_array_vec.rs`, `typed_range_iter.rs`, and `typed_slice/` for slice-specific logic. Shared traits and scalar helpers live in `base_index_types.rs`, `index_scalar_types.rs`, `error.rs`, and `utils.rs`.
+`src/` contains the main `index_type` library. Core modules include `typed_vec.rs`, `typed_array.rs`, `typed_array_vec.rs`, `typed_range.rs`, and `typed_slice/` for slice-specific logic. Shared traits and scalar helpers live in `base_index_types.rs`, `index_scalar_types.rs`, `error.rs`, and `utils.rs`.
 
 `index_type_macros/` is a workspace member that provides the derive macros used by the main crate. Integration and regression tests live in `tests/`; keep new coverage there unless a private helper needs a unit test in the defining module. `README.md` doubles as public usage documentation, and its examples are exercised by doctests.
 
@@ -31,7 +31,7 @@ Prefer small, explicit APIs and keep `no_std` compatibility in mind. If a change
 ## Testing Guidelines
 This project aims for high test coverage and high quality tests to ensure correctness. All tests must pass under both standard execution and Miri (Rust's interpreter for detecting undefined behavior).
 
-Add regression coverage in `tests/` next to the affected feature area, for example `tests/typed_slice.rs` or `tests/typed_range_iter.rs`. Name tests with a `test_` prefix and describe the behavior under test, such as `test_try_push_overflow`.
+Add regression coverage in `tests/` next to the affected feature area, for example `tests/typed_slice.rs` or `tests/typed_range.rs`. Name tests with a `test_` prefix and describe the behavior under test, such as `test_try_push_overflow`.
 
 Before opening a PR, run `cargo test` and `cargo miri test`. Run `cargo fmt --check` to verify formatting. Always run `cargo clippy --all-targets --all-features` before opening a PR; the project must always have zero warnings.
 

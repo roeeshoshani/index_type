@@ -1,7 +1,5 @@
 use core::num::NonZeroUsize;
-use index_type::{
-    IndexType, typed_enumerate::TypedIteratorExt, typed_range_iter::TypedRangeIterExt,
-};
+use index_type::{IndexType, typed_enumerate::TypedIteratorExt, typed_range::TypedRangeIterExt};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -9,7 +7,7 @@ struct MyIndex(u32);
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct SmallIndex(u8);
 
-mod typed_range_iter {
+mod typed_range {
     use super::*;
 
     #[test]

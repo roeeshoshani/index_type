@@ -36,10 +36,10 @@ use core::{
 };
 
 use crate::{
-    typed_enumerate::UncheckedTypedEnumerate,
-    typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
-    typed_slice::TypedSlice,
     IndexType,
+    typed_enumerate::UncheckedTypedEnumerate,
+    typed_range::{TypedRange, TypedRangeIterExt},
+    typed_slice::TypedSlice,
 };
 
 /// An array wrapper that uses a custom index type.
@@ -72,7 +72,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
 
     /// Returns an iterator over the valid indices of this array.
     #[inline]
-    pub fn indices(&self) -> TypedRangeIter<I> {
+    pub fn indices(&self) -> TypedRange<I> {
         (I::ZERO..self.len()).iter()
     }
 

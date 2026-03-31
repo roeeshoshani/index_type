@@ -9,7 +9,7 @@
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_range_iter::TypedRangeIterExt;
+//! use index_type::typed_range::TypedRangeIterExt;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIdx(u32);
@@ -32,7 +32,7 @@ use crate::{IndexScalarType, IndexType};
 ///
 /// ```
 /// use index_type::IndexType;
-/// use index_type::typed_range_iter::TypedRangeIterExt;
+/// use index_type::typed_range::TypedRangeIterExt;
 ///
 /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct Idx(u32);
@@ -53,11 +53,11 @@ pub trait TypedRangeIterExt<I: IndexType> {
 }
 
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
-    type Iter = TypedRangeIter<I>;
+    type Iter = TypedRange<I>;
 
     #[inline]
     fn iter(self) -> Self::Iter {
-        TypedRangeIter(self)
+        TypedRange(self)
     }
 }
 
@@ -65,9 +65,9 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
 ///
 /// Created by calling `.iter()` on a `Range<I>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TypedRangeIter<I: IndexType>(pub core::ops::Range<I>);
+pub struct TypedRange<I: IndexType>(pub core::ops::Range<I>);
 
-impl<I: IndexType> TypedRangeIter<I> {
+impl<I: IndexType> TypedRange<I> {
     /// Converts this range iterator into a raw range.
     #[inline]
     pub fn into_raw(self) -> core::ops::Range<I> {
@@ -93,7 +93,7 @@ impl<I: IndexType> TypedRangeIter<I> {
     }
 }
 
-impl<I: IndexType> Iterator for TypedRangeIter<I> {
+impl<I: IndexType> Iterator for TypedRange<I> {
     type Item = I;
 
     #[inline]
@@ -166,7 +166,7 @@ impl<I: IndexType> Iterator for TypedRangeIter<I> {
     }
 }
 
-impl<I: IndexType> DoubleEndedIterator for TypedRangeIter<I> {
+impl<I: IndexType> DoubleEndedIterator for TypedRange<I> {
     #[inline]
     fn next_back(&mut self) -> Option<I> {
         if self.0.start >= self.0.end {
@@ -205,21 +205,21 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeIter<I> {
     }
 }
 
-impl<I: IndexType> ExactSizeIterator for TypedRangeIter<I> {
+impl<I: IndexType> ExactSizeIterator for TypedRange<I> {
     #[inline]
     fn len(&self) -> usize {
         self.len()
     }
 }
 
-impl<I: IndexType> FusedIterator for TypedRangeIter<I> {}
+impl<I: IndexType> FusedIterator for TypedRange<I> {}
 
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
-    type Iter = TypedRangeFromIter<I>;
+    type Iter = TypedRangeFrom<I>;
 
     #[inline]
     fn iter(self) -> Self::Iter {
-        TypedRangeFromIter(self)
+        TypedRangeFrom(self)
     }
 }
 
@@ -227,9 +227,9 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
 ///
 /// Created by calling `.iter()` on a `RangeFrom<I>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TypedRangeFromIter<I: IndexType>(pub core::ops::RangeFrom<I>);
+pub struct TypedRangeFrom<I: IndexType>(pub core::ops::RangeFrom<I>);
 
-impl<I: IndexType> TypedRangeFromIter<I> {
+impl<I: IndexType> TypedRangeFrom<I> {
     /// Converts this range iterator into a regular range.
     #[inline]
     pub fn into_raw(self) -> core::ops::RangeFrom<I> {
@@ -237,7 +237,7 @@ impl<I: IndexType> TypedRangeFromIter<I> {
     }
 }
 
-impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
+impl<I: IndexType> Iterator for TypedRangeFrom<I> {
     type Item = I;
 
     #[inline]
@@ -279,14 +279,14 @@ impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
     }
 }
 
-impl<I: IndexType> FusedIterator for TypedRangeFromIter<I> {}
+impl<I: IndexType> FusedIterator for TypedRangeFrom<I> {}
 
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeInclusive<I> {
-    type Iter = TypedRangeInclusiveIter<I>;
+    type Iter = TypedRangeInclusive<I>;
 
     #[inline]
     fn iter(self) -> Self::Iter {
-        TypedRangeInclusiveIter::new(self)
+        TypedRangeInclusive::new(self)
     }
 }
 
@@ -294,13 +294,13 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeInclusive<I> {
 ///
 /// Created by calling `.iter()` on a `RangeInclusive<I>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TypedRangeInclusiveIter<I: IndexType> {
+pub struct TypedRangeInclusive<I: IndexType> {
     start: I,
     end: I,
     exhausted: bool,
 }
 
-impl<I: IndexType> TypedRangeInclusiveIter<I> {
+impl<I: IndexType> TypedRangeInclusive<I> {
     /// Creates a new inclusive range iterator.
     #[inline]
     pub fn new(range: core::ops::RangeInclusive<I>) -> Self {
@@ -350,7 +350,7 @@ impl<I: IndexType> TypedRangeInclusiveIter<I> {
     }
 }
 
-impl<I: IndexType> Iterator for TypedRangeInclusiveIter<I> {
+impl<I: IndexType> Iterator for TypedRangeInclusive<I> {
     type Item = I;
 
     #[inline]
@@ -435,7 +435,7 @@ impl<I: IndexType> Iterator for TypedRangeInclusiveIter<I> {
     }
 }
 
-impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusiveIter<I> {
+impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusive<I> {
     #[inline]
     fn next_back(&mut self) -> Option<I> {
         if self.exhausted {
@@ -481,10 +481,10 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusiveIter<I> {
     }
 }
 
-impl<I: IndexType> ExactSizeIterator for TypedRangeInclusiveIter<I> {
+impl<I: IndexType> ExactSizeIterator for TypedRangeInclusive<I> {
     fn len(&self) -> usize {
         self.len()
     }
 }
 
-impl<I: IndexType> FusedIterator for TypedRangeInclusiveIter<I> {}
+impl<I: IndexType> FusedIterator for TypedRangeInclusive<I> {}

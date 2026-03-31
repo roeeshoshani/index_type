@@ -31,15 +31,15 @@ use core::{
 };
 
 use crate::{
+    IndexScalarType, IndexType,
     typed_array::TypedArray,
     typed_enumerate::UncheckedTypedEnumerate,
-    typed_range_iter::{TypedRangeIter, TypedRangeIterExt},
+    typed_range::{TypedRange, TypedRangeIterExt},
     utils::range_bounds_to_raw,
-    IndexScalarType, IndexType,
 };
 
 #[cfg(feature = "alloc")]
-use crate::{typed_vec::TypedVec, IndexTooBigError};
+use crate::{IndexTooBigError, typed_vec::TypedVec};
 
 mod index;
 
@@ -464,7 +464,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     /// Returns an iterator over the valid indices of this slice.
     #[inline]
-    pub fn indices(&self) -> TypedRangeIter<I> {
+    pub fn indices(&self) -> TypedRange<I> {
         (I::ZERO..self.len()).iter()
     }
 
