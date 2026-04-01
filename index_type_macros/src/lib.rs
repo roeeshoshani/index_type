@@ -114,6 +114,8 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
 
             const MAX_RAW_INDEX: usize = <#inner_ty as ::index_type::IndexType>::MAX_RAW_INDEX;
 
+            const BIAS: usize = <#inner_ty as ::index_type::IndexType>::BIAS;
+
             fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError> {
                 <#inner_ty as ::index_type::IndexType>::try_from_raw_index(index)
                     .map(Self)
@@ -126,6 +128,10 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
 
             fn to_raw_index(self) -> usize {
                 <#inner_ty as ::index_type::IndexType>::to_raw_index(self.0)
+            }
+
+            fn to_raw_index_biased(self) -> usize {
+                <#inner_ty as ::index_type::IndexType>::to_raw_index_biased(self.0)
             }
 
             fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {

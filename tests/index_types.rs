@@ -18,7 +18,9 @@ fn test_error_and_index_primitives_cover_basic_contracts() {
     assert_eq!(unsafe { u8::from_usize_unchecked(7) }, 7);
 
     assert_eq!(u16::try_from_raw_index(42).unwrap(), 42);
+    assert_eq!(u16::BIAS, 0);
     assert_eq!(u16::MAX_INDEX.to_raw_index(), u16::MAX as usize);
+    assert_eq!(u16::MAX_INDEX.to_raw_index_biased(), u16::MAX as usize);
     assert_eq!(u16::try_from_scalar(9).unwrap().to_scalar(), 9);
     assert_eq!(u16::checked_mul_scalar(7, 6).unwrap(), 42);
     assert_eq!(IndexType::checked_sub_scalar(3u16, 5), None);
@@ -29,9 +31,13 @@ fn test_error_and_index_primitives_cover_basic_contracts() {
     assert_eq!(unsafe { u16::unchecked_sub_index(9, 5) }, 4);
 
     let nz = NonZeroU8::try_from_raw_index(4).unwrap();
+    assert_eq!(NonZeroU8::BIAS, 1);
     assert_eq!(nz.to_raw_index(), 4);
+    assert_eq!(nz.to_raw_index_biased(), 5);
     assert_eq!(NonZeroU8::ZERO.to_raw_index(), 0);
+    assert_eq!(NonZeroU8::ZERO.to_raw_index_biased(), 1);
     assert_eq!(NonZeroU8::MAX_INDEX.to_raw_index(), 254);
+    assert_eq!(NonZeroU8::MAX_INDEX.to_raw_index_biased(), 255);
     assert_eq!(NonZeroU8::try_from_scalar(6).unwrap().to_scalar(), 6);
     assert_eq!(nz.checked_add_scalar(3).unwrap().to_raw_index(), 7);
     assert_eq!(nz.checked_mul_scalar(3).unwrap().to_raw_index(), 12);

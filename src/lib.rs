@@ -210,6 +210,9 @@
 //! // Option<SafeId> takes only 4 bytes, not 8!
 //! assert_eq!(std::mem::size_of::<SafeId>(), 4);
 //! assert_eq!(std::mem::size_of::<Option<SafeId>>(), 4);
+//! assert_eq!(SafeId::BIAS, 1);
+//! assert_eq!(SafeId::ZERO.to_raw_index(), 0);
+//! assert_eq!(SafeId::ZERO.to_raw_index_biased(), 1);
 //! ```
 //!
 //! ## Range Iterators
@@ -353,11 +356,13 @@ pub use index_type_macros::{IndexTooBigError, IndexType};
 /// For a regular type like `u8`:
 /// - Raw index 0 maps to `u8::ZERO` (0)
 /// - Raw index 255 maps to `u8::MAX` (255)
+/// - `BIAS` is `0`, so `to_raw_index()` and `to_raw_index_biased()` return the same value
 ///
 /// For a [`NonZero`](core::num::NonZero) type like `NonZeroU8`:
 /// - Raw index 0 maps to `NonZeroU8::new_unchecked(1)` (the minimum valid value)
 /// - Raw index 254 maps to `NonZeroU8::new_unchecked(255)` (the maximum valid value)
 /// - Raw index 255 is **invalid** because it would overflow when adding 1 to get the inner value
+/// - `BIAS` is `1`, so `to_raw_index_biased()` exposes the actual stored integer value
 ///
 /// This design allows `Option<NonZeroU8>` to occupy a single byte (niche optimization).
 ///
@@ -372,6 +377,8 @@ pub use index_type_macros::{IndexTooBigError, IndexType};
 /// let idx = MyIndex::ZERO;
 /// let next = MyIndex::try_from_raw_index(5).unwrap();
 /// assert_eq!(next.to_raw_index(), 5);
+/// assert_eq!(MyIndex::BIAS, 0);
+/// assert_eq!(next.to_raw_index_biased(), 5);
 /// ```
 pub unsafe trait IndexType:
     Sized + Clone + Copy + PartialEq + Eq + PartialOrd + Ord
@@ -400,6 +407,12 @@ pub unsafe trait IndexType:
     /// (since raw index 255 would map to a value outside the valid range).
     const MAX_RAW_INDEX: usize;
 
+    /// The offset between the logical raw index and the underlying integer representation.
+    ///
+    /// This is `0` for regular unsigned integer types and `1` for
+    /// [`NonZero`](core::num::NonZero) types.
+    const BIAS: usize;
+
     /// Attempts to create an index from a raw `usize` value.
     ///
     /// Returns an error if the value exceeds `MAX_RAW_INDEX`.
@@ -414,6 +427,15 @@ pub unsafe trait IndexType:
 
     /// Converts the index to a raw `usize` value.
     fn to_raw_index(self) -> usize;
+
+    /// Converts the index to its raw `usize` value in the underlying integer representation.
+    ///
+    /// This is equal to `self.to_raw_index() + Self::BIAS`.
+    ///
+    /// For regular integer index types, this is identical to [`Self::to_raw_index`].
+    /// For [`NonZero`](core::num::NonZero) index types, this returns the actual stored integer
+    /// value, which is one greater than the logical raw index.
+    fn to_raw_index_biased(self) -> usize;
 
     /// Attempts to create an index from a scalar value.
     ///
