@@ -1,5 +1,12 @@
-use core::num::NonZeroUsize;
-use index_type::{IndexType, typed_enumerate::TypedIteratorExt, typed_range::TypedRangeIterExt};
+use core::{
+    num::NonZeroUsize,
+    ops::{Bound, RangeBounds},
+};
+use index_type::{
+    IndexType,
+    typed_enumerate::TypedIteratorExt,
+    typed_range::{TypedRange, TypedRangeFrom, TypedRangeInclusive, TypedRangeIterExt},
+};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -232,6 +239,167 @@ mod typed_range_from_iter {
         let mut iter = (MyIndex(0)..).iter();
         assert_eq!(iter.next(), Some(MyIndex(0)));
         assert_eq!(iter.next(), Some(MyIndex(1)));
+    }
+}
+
+mod raw_conversions {
+    use super::*;
+
+    #[test]
+    fn test_typed_range_from_raw_and_into_raw_preserve_bounds() {
+        let range = TypedRange::from_raw(MyIndex(2)..MyIndex(5));
+        assert_eq!(range.start, MyIndex(2));
+        assert_eq!(range.end, MyIndex(5));
+
+        let raw = range.into_raw();
+        assert_eq!(raw.start, MyIndex(2));
+        assert_eq!(raw.end, MyIndex(5));
+    }
+
+    #[test]
+    fn test_typed_range_from_raw_preserves_empty_bounds() {
+        let range = TypedRange::from_raw(MyIndex(5)..MyIndex(3));
+        assert_eq!(range.start, MyIndex(5));
+        assert_eq!(range.end, MyIndex(3));
+        assert!(range.is_empty());
+
+        let raw = range.into_raw();
+        assert_eq!(raw.start, MyIndex(5));
+        assert_eq!(raw.end, MyIndex(3));
+    }
+
+    #[test]
+    fn test_typed_range_fields_update_during_iteration() {
+        let mut range = TypedRange::from_raw(MyIndex(2)..MyIndex(5));
+
+        assert_eq!(range.next(), Some(MyIndex(2)));
+        assert_eq!(range.start, MyIndex(3));
+        assert_eq!(range.end, MyIndex(5));
+
+        assert_eq!(range.next_back(), Some(MyIndex(4)));
+        assert_eq!(range.start, MyIndex(3));
+        assert_eq!(range.end, MyIndex(4));
+    }
+
+    #[test]
+    fn test_typed_range_from_from_raw_and_into_raw_preserve_start() {
+        let range = TypedRangeFrom::from_raw(MyIndex(7)..);
+        assert_eq!(range.start, MyIndex(7));
+
+        let raw = range.into_raw();
+        assert_eq!(raw.start, MyIndex(7));
+    }
+
+    #[test]
+    fn test_typed_range_from_field_updates_during_iteration() {
+        let mut range = TypedRangeFrom::from_raw(MyIndex(7)..);
+
+        assert_eq!(range.next(), Some(MyIndex(7)));
+        assert_eq!(range.start, MyIndex(8));
+
+        assert_eq!(range.nth(2), Some(MyIndex(10)));
+        assert_eq!(range.start, MyIndex(11));
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_from_raw_and_into_raw_preserve_non_empty_bounds() {
+        let range = TypedRangeInclusive::from_raw(MyIndex(2)..=MyIndex(5));
+        assert_eq!(range.start(), MyIndex(2));
+        assert_eq!(range.end(), MyIndex(5));
+        assert!(!range.is_empty());
+
+        let raw = range.into_raw();
+        assert_eq!(raw.start(), &MyIndex(2));
+        assert_eq!(raw.end(), &MyIndex(5));
+        assert_eq!(raw.end_bound(), Bound::Included(&MyIndex(5)));
+        assert!(!raw.is_empty());
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_from_raw_preserves_empty_non_exhausted_bounds() {
+        let range = TypedRangeInclusive::from_raw(MyIndex(5)..=MyIndex(3));
+        assert_eq!(range.start(), MyIndex(5));
+        assert_eq!(range.end(), MyIndex(3));
+        assert!(range.is_empty());
+
+        let raw = range.into_raw();
+        assert_eq!(raw.start(), &MyIndex(5));
+        assert_eq!(raw.end(), &MyIndex(3));
+        assert_eq!(raw.end_bound(), Bound::Included(&MyIndex(3)));
+        assert!(raw.is_empty());
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_from_raw_preserves_exhausted_std_range_state() {
+        let mut raw = 2usize..=4usize;
+        assert_eq!(raw.by_ref().collect::<Vec<_>>(), vec![2, 3, 4]);
+        assert_eq!(raw.start(), &4);
+        assert_eq!(raw.end(), &4);
+        assert_eq!(raw.end_bound(), Bound::Excluded(&4));
+        assert!(raw.is_empty());
+
+        let mut range = TypedRangeInclusive::from_raw(raw);
+        assert_eq!(range.start(), 4);
+        assert_eq!(range.end(), 4);
+        assert!(range.is_empty());
+        assert_eq!(range.len(), 0);
+        assert_eq!(range.next(), None);
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_from_raw_lossy_drops_exhausted_std_range_state() {
+        let mut raw = 2usize..=4usize;
+        let _ = raw.by_ref().count();
+        assert_eq!(raw.start(), &4);
+        assert_eq!(raw.end(), &4);
+        assert_eq!(raw.end_bound(), Bound::Excluded(&4));
+        assert!(raw.is_empty());
+
+        let mut range = TypedRangeInclusive::from_raw_lossy(raw);
+        assert_eq!(range.start(), 4);
+        assert_eq!(range.end(), 4);
+        assert!(!range.is_empty());
+        assert_eq!(range.len(), 1);
+        assert_eq!(range.next(), Some(4));
+        assert!(range.is_empty());
+        assert_eq!(range.next(), None);
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_into_raw_is_lossy_for_exhausted_ranges() {
+        let mut raw = 3usize..=3usize;
+        assert_eq!(raw.next(), Some(3));
+        assert_eq!(raw.start(), &3);
+        assert_eq!(raw.end(), &3);
+        assert_eq!(raw.end_bound(), Bound::Excluded(&3));
+        assert!(raw.is_empty());
+
+        let range = TypedRangeInclusive::from_raw(raw);
+        assert!(range.is_empty());
+        assert_eq!(range.start(), 3);
+        assert_eq!(range.end(), 3);
+
+        let raw_roundtrip = range.into_raw();
+        assert_eq!(raw_roundtrip.start(), &3);
+        assert_eq!(raw_roundtrip.end(), &3);
+        assert_eq!(raw_roundtrip.end_bound(), Bound::Included(&3));
+        assert!(!raw_roundtrip.is_empty());
+        assert_eq!(raw_roundtrip.collect::<Vec<_>>(), vec![3]);
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_accessors_update_during_iteration() {
+        let mut range = TypedRangeInclusive::from_raw(MyIndex(2)..=MyIndex(5));
+
+        assert_eq!(range.next(), Some(MyIndex(2)));
+        assert_eq!(range.start(), MyIndex(3));
+        assert_eq!(range.end(), MyIndex(5));
+        assert!(!range.is_empty());
+
+        assert_eq!(range.next_back(), Some(MyIndex(5)));
+        assert_eq!(range.start(), MyIndex(3));
+        assert_eq!(range.end(), MyIndex(4));
+        assert!(!range.is_empty());
     }
 }
 
