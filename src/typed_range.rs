@@ -377,8 +377,8 @@ impl<I: IndexType> TypedRangeInclusive<I> {
 
     /// Converts a raw range into a typed range, with potential loss of information about the `exhausted` state of the raw range.
     ///
-    /// Getting a [`RangeInclusive`] object into `exhausted` state when the index type `I` does not implement the unstable `Step` trait
-    /// is currently not possible using stable rust, since the range can't possibly be iterated.
+    /// Getting a [`RangeInclusive`](core::ops::RangeInclusive) object into `exhausted` state when the index type `I` does not
+    /// implement the unstable `Step` trait is currently not possible using stable rust, since the range can't possibly be iterated.
     ///
     /// All types other than standard rust integers (e.g u32, usize), for example user defined types or non zero integer types, do not
     /// implement the `Step` trait. So, for all such types, using this function will not actually cause any loss of information.
@@ -387,7 +387,7 @@ impl<I: IndexType> TypedRangeInclusive<I> {
     /// range (e.g `0..=5`), then you can safely use this function.
     ///
     /// If keeping the value of the `exhausted` state of the iterator is important to you, or if you are unsure whether you need it or
-    /// not and you are ok with running a couple more opcodes, use [`from_raw_exact`](TypedRangeInclusive::from_raw_exact) instead.
+    /// not and you are ok with running a couple more opcodes, use [`from_raw`](TypedRangeInclusive::from_raw) instead.
     #[inline]
     pub const fn from_raw_lossy(range: core::ops::RangeInclusive<I>) -> Self {
         let start = *range.start();
