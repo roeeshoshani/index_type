@@ -116,66 +116,80 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
 
             const BIAS: usize = <#inner_ty as ::index_type::IndexType>::BIAS;
 
+            #[inline]
             fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError> {
                 <#inner_ty as ::index_type::IndexType>::try_from_raw_index(index)
                     .map(Self)
                     .map_err(|_| <#err_ty as ::index_type::IndexTooBigError>::new())
             }
 
+            #[inline]
             unsafe fn from_raw_index_unchecked(index: usize) -> Self {
                 Self(unsafe { <#inner_ty as ::index_type::IndexType>::from_raw_index_unchecked(index) })
             }
 
+            #[inline]
             fn to_raw_index(self) -> usize {
                 <#inner_ty as ::index_type::IndexType>::to_raw_index(self.0)
             }
 
+            #[inline]
             fn to_raw_index_biased(self) -> usize {
                 <#inner_ty as ::index_type::IndexType>::to_raw_index_biased(self.0)
             }
 
+            #[inline]
             fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
                 <#inner_ty as ::index_type::IndexType>::try_from_scalar(scalar)
                     .map(Self)
                     .map_err(|_| <#err_ty as ::index_type::IndexTooBigError>::new())
             }
 
+            #[inline]
             unsafe fn from_scalar_unchecked(scalar: Self::Scalar) -> Self {
                 Self(unsafe { <#inner_ty as ::index_type::IndexType>::from_scalar_unchecked(scalar) })
             }
 
+            #[inline]
             fn to_scalar(self) -> Self::Scalar {
                 <#inner_ty as ::index_type::IndexType>::to_scalar(self.0)
             }
 
+            #[inline]
             fn checked_add_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
                 <#inner_ty as ::index_type::IndexType>::checked_add_scalar(self.0, rhs)
                     .map(Self)
                     .map_err(|_| <#err_ty as ::index_type::IndexTooBigError>::new())
             }
 
+            #[inline]
             fn checked_sub_scalar(self, rhs: Self::Scalar) -> Option<Self> {
                 <#inner_ty as ::index_type::IndexType>::checked_sub_scalar(self.0, rhs).map(Self)
             }
 
+            #[inline]
             fn checked_mul_scalar(self, rhs: Self::Scalar) -> Result<Self, Self::IndexTooBigError> {
                 <#inner_ty as ::index_type::IndexType>::checked_mul_scalar(self.0, rhs)
                     .map(Self)
                     .map_err(|_| <#err_ty as ::index_type::IndexTooBigError>::new())
             }
 
+            #[inline]
             fn checked_sub_index(self, rhs: Self) -> Option<Self::Scalar> {
                 <#inner_ty as ::index_type::IndexType>::checked_sub_index(self.0, rhs.0)
             }
 
+            #[inline]
             unsafe fn unchecked_add_scalar(self, rhs: Self::Scalar) -> Self {
                 Self(unsafe { <#inner_ty as ::index_type::IndexType>::unchecked_add_scalar(self.0, rhs) })
             }
 
+            #[inline]
             unsafe fn unchecked_sub_scalar(self, rhs: Self::Scalar) -> Self {
                 Self(unsafe { <#inner_ty as ::index_type::IndexType>::unchecked_sub_scalar(self.0, rhs) })
             }
 
+            #[inline]
             unsafe fn unchecked_sub_index(self, rhs: Self) -> Self::Scalar {
                 unsafe { <#inner_ty as ::index_type::IndexType>::unchecked_sub_index(self.0, rhs.0) }
             }
