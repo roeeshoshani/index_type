@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::{typed_slice::TypedSlice, IndexType};
+use crate::{IndexType, typed_slice::TypedSlice};
 
 #[doc(hidden)]
 pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {

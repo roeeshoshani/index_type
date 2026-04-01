@@ -1,6 +1,6 @@
 use core::{hint::unreachable_unchecked, ops::RangeBounds};
 
-use crate::{typed_slice::TypedSlice, IndexScalarType, IndexType};
+use crate::{IndexScalarType, IndexType, typed_slice::TypedSlice};
 
 mod private_typed_slice_index {
     pub trait Sealed {}

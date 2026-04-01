@@ -215,11 +215,11 @@
 //! ## Range Iterators
 //!
 //! Standard Rust ranges require the unstable [`Step`](core::iter::Step) trait. This crate provides
-//! [`TypedRangeIterExt`](crate::typed_range_iter::TypedRangeIterExt) for iterating over ranges with custom index types:
+//! [`TypedRangeIterExt`](crate::typed_range::TypedRangeIterExt) for iterating over ranges with custom index types:
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_range_iter::TypedRangeIterExt;
+//! use index_type::typed_range::TypedRangeIterExt;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIdx(u32);
@@ -328,7 +328,7 @@ pub mod macros;
 pub mod typed_array;
 pub mod typed_array_vec;
 pub mod typed_enumerate;
-pub mod typed_range_iter;
+pub mod typed_range;
 pub mod typed_slice;
 #[cfg(feature = "alloc")]
 pub mod typed_vec;

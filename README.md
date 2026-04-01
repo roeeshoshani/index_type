@@ -202,11 +202,11 @@ assert_eq!(std::mem::size_of::<Option<SafeId>>(), 4);
 ### Range Iterators
 
 Standard Rust ranges require the unstable [`Step`](core::iter::Step) trait. This crate provides
-[`TypedRangeIterExt`](crate::typed_range_iter::TypedRangeIterExt) for iterating over ranges with custom index types:
+[`TypedRangeIterExt`](crate::typed_range::TypedRangeIterExt) for iterating over ranges with custom index types:
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_range_iter::TypedRangeIterExt;
+use index_type::typed_range::TypedRangeIterExt;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIdx(u32);
