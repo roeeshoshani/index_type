@@ -15,7 +15,28 @@ fn test_nonzero_index() {
     let mut vec: TypedVec<NonZeroIndex, i32> = TypedVec::new();
     let idx0 = vec.push(100);
     assert_eq!(vec[idx0], 100);
+    assert_eq!(NonZeroIndex::BIAS, 1);
     assert_eq!(idx0.to_raw_index(), 0);
+    assert_eq!(idx0.to_raw_index_biased(), 1);
+}
+
+#[test]
+fn test_derived_index_bias_matches_inner_representation() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct PlainIndex(u32);
+
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct NonZeroIndex(NonZeroU8);
+
+    let plain = PlainIndex::try_from_raw_index(7).unwrap();
+    assert_eq!(PlainIndex::BIAS, 0);
+    assert_eq!(plain.to_raw_index(), 7);
+    assert_eq!(plain.to_raw_index_biased(), 7);
+
+    let nonzero = NonZeroIndex::try_from_raw_index(7).unwrap();
+    assert_eq!(NonZeroIndex::BIAS, 1);
+    assert_eq!(nonzero.to_raw_index(), 7);
+    assert_eq!(nonzero.to_raw_index_biased(), 8);
 }
 
 #[test]

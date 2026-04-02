@@ -20,6 +20,8 @@ macro_rules! impl_for_uint_type {
 
             const MAX_RAW_INDEX: usize = (Self::MAX) as usize;
 
+            const BIAS: usize = 0;
+
             #[inline]
             fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError> {
                 index.try_into().map_err(|_| GenericIndexTooBigError)
@@ -32,6 +34,11 @@ macro_rules! impl_for_uint_type {
 
             #[inline]
             fn to_raw_index(self) -> usize {
+                self as usize
+            }
+
+            #[inline]
+            fn to_raw_index_biased(self) -> usize {
                 self as usize
             }
 
@@ -118,6 +125,8 @@ macro_rules! impl_for_nonzero_uint_type {
 
             const MAX_RAW_INDEX: usize = (<$scalar>::MAX - 1) as usize;
 
+            const BIAS: usize = 1;
+
             #[inline]
             fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError> {
                 let raw = index
@@ -138,6 +147,11 @@ macro_rules! impl_for_nonzero_uint_type {
             fn to_raw_index(self) -> usize {
                 // SAFETY: NonZero uint is at least 1.
                 unsafe { self.get().unchecked_sub(1) as usize }
+            }
+
+            #[inline]
+            fn to_raw_index_biased(self) -> usize {
+                self.get() as usize
             }
 
             #[inline]
