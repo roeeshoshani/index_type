@@ -409,8 +409,9 @@ pub unsafe trait IndexType:
 
     /// The offset between the logical raw index and the underlying integer representation.
     ///
-    /// This is `0` for regular unsigned integer types and `1` for
-    /// [`NonZero`](core::num::NonZero) types.
+    /// This is `0` for regular unsigned integer types and `1` for [`NonZero`](core::num::NonZero) types.
+    ///
+    /// This can also be thought of as the minimum raw index biased value representable by this type.
     const BIAS: usize;
 
     /// Attempts to create an index from a raw `usize` value.
