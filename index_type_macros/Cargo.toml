@@ -1,6 +1,6 @@
 [package]
 name = "index_type_macros"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 description = "Derive macros for index_type crate"
 license = "MIT OR Apache-2.0"
