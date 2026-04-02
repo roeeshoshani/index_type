@@ -430,11 +430,14 @@ pub unsafe trait IndexType:
 
     /// Converts the index to its raw `usize` value in the underlying integer representation.
     ///
-    /// This is equal to `self.to_raw_index() + Self::BIAS`.
+    /// This is equal to `self.to_raw_index() + Self::BIAS`, but is computed in a much more efficient way.
     ///
     /// For regular integer index types, this is identical to [`Self::to_raw_index`].
     /// For [`NonZero`](core::num::NonZero) index types, this returns the actual stored integer
     /// value, which is one greater than the logical raw index.
+    ///
+    /// This operation is very cheap, it is basically a no-op, as it returns the underlying integer value in its existing
+    /// representation and does not require any conversion.
     fn to_raw_index_biased(self) -> usize;
 
     /// Attempts to create an index from a scalar value.
