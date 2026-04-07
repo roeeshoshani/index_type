@@ -419,6 +419,15 @@ pub unsafe trait IndexType:
     /// Returns an error if the value exceeds `MAX_RAW_INDEX`.
     fn try_from_raw_index(index: usize) -> Result<Self, Self::IndexTooBigError>;
 
+    /// Creates an index from a raw `usize` value.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value exceeds `MAX_RAW_INDEX`.
+    fn from_raw_index(index: usize) -> Self {
+        Self::try_from_raw_index(index).unwrap()
+    }
+
     /// Creates an index from a raw `usize` value without bounds checking.
     ///
     /// # Safety
@@ -445,6 +454,15 @@ pub unsafe trait IndexType:
     ///
     /// Returns an error if the value cannot be represented.
     fn try_from_scalar(scalar: Self::Scalar) -> Result<Self, Self::IndexTooBigError>;
+
+    /// Creates an index from a scalar value.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value cannot be represented.
+    fn from_scalar(scalar: Self::Scalar) -> Self {
+        Self::try_from_scalar(scalar).unwrap()
+    }
 
     /// Creates an index from a scalar value without bounds checking.
     ///
@@ -523,6 +541,15 @@ pub unsafe trait IndexScalarType:
     ///
     /// Returns `None` if the value exceeds the maximum representable value.
     fn try_from_usize(value: usize) -> Option<Self>;
+
+    /// Converts a `usize` to this scalar type.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value exceeds the maximum representable value.
+    fn from_usize(value: usize) -> Self {
+        Self::try_from_usize(value).unwrap()
+    }
 
     /// Converts a `usize` to this scalar type without bounds checking.
     ///
