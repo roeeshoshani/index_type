@@ -1,4 +1,4 @@
-use index_type::{IndexType, typed_enumerate::TypedIteratorExt};
+use index_type::{IndexType, enumerate::TypedIteratorExt};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct SmallIndex(u8);

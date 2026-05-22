@@ -17,7 +17,7 @@
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_array::TypedArray;
+//! use index_type::array::TypedArray;
 //!
 //! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct PixelIdx(u8);
@@ -37,9 +37,9 @@ use core::{
 
 use crate::{
     IndexType,
-    typed_enumerate::UncheckedTypedEnumerate,
-    typed_range::{TypedRange, TypedRangeIterExt},
-    typed_slice::TypedSlice,
+    enumerate::UncheckedTypedEnumerate,
+    range::{TypedRange, TypedRangeIterExt},
+    slice::TypedSlice,
 };
 
 /// An array wrapper that uses a custom index type.

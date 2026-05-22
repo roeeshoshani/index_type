@@ -4,9 +4,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use index_type::{
-    IndexType, typed_enumerate::TypedIteratorExt, typed_slice::TypedSlice, typed_vec::TypedVec,
-};
+use index_type::{IndexType, enumerate::TypedIteratorExt, slice::TypedSlice, vec::TypedVec};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -342,7 +340,7 @@ fn test_extend_from_slice() {
 
     let mut data = [3, 4, 5];
     let slice =
-        index_type::typed_slice::TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut data).unwrap();
+        index_type::slice::TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut data).unwrap();
     vec.extend_from_slice(slice);
     assert_eq!(vec.len_usize(), 5);
 }
@@ -358,8 +356,7 @@ fn test_extend_from_slice_overflow_panics_without_mutating_vec() {
     }
 
     let data = [1; 100];
-    let slice =
-        index_type::typed_slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         vec.extend_from_slice(slice);
@@ -384,8 +381,7 @@ fn test_try_extend_from_slice_overflow_leaves_vec_unchanged() {
     }
 
     let data = [1; 100];
-    let slice =
-        index_type::typed_slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
 
     let result = vec.try_extend_from_slice(slice);
     assert!(result.is_err());
@@ -517,7 +513,7 @@ fn test_splice() {
 fn test_leak_preserves_typed_slice_api() {
     let data: TypedVec<MyIndex, i32> = TypedVec::from_vec(vec![10, 20, 30]);
     let cap = data.capacity();
-    let leaked: &'static mut index_type::typed_slice::TypedSlice<MyIndex, i32> = data.leak();
+    let leaked: &'static mut index_type::slice::TypedSlice<MyIndex, i32> = data.leak();
     leaked[MyIndex::ZERO] = 99;
     assert_eq!(leaked[MyIndex::ZERO], 99);
     assert_eq!(leaked.len_usize(), 3);

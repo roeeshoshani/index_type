@@ -8,7 +8,7 @@
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_vec::TypedVec;
+//! use index_type::vec::TypedVec;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct NodeId(u32);
@@ -38,9 +38,9 @@ use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 
 use crate::{
     IndexScalarType, IndexTooBigError, IndexType,
-    typed_enumerate::UncheckedTypedEnumerate,
-    typed_range::{TypedRange, TypedRangeIterExt},
-    typed_slice::TypedSlice,
+    enumerate::UncheckedTypedEnumerate,
+    range::{TypedRange, TypedRangeIterExt},
+    slice::TypedSlice,
     utils::{range_bounds_to_raw, resolve_range_bounds},
 };
 
@@ -64,7 +64,7 @@ fn panic_index_too_big<I: IndexType>(error: I::IndexTooBigError) -> ! {
 ///
 /// ```
 /// use index_type::IndexType;
-/// use index_type::typed_vec::TypedVec;
+/// use index_type::vec::TypedVec;
 ///
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct RowId(u32);
@@ -90,7 +90,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u32);
@@ -114,7 +114,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u32);
@@ -138,7 +138,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u8);
@@ -167,7 +167,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u32);
@@ -296,7 +296,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u8);
@@ -319,7 +319,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u32);
@@ -366,7 +366,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u32);
@@ -913,7 +913,7 @@ impl<I: IndexType, T, const N: usize> TypedVec<I, [T; N]> {
     ///
     /// ```
     /// use index_type::IndexType;
-    /// use index_type::typed_vec::TypedVec;
+    /// use index_type::vec::TypedVec;
     ///
     /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     /// struct Idx(u16);

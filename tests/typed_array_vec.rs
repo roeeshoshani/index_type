@@ -8,9 +8,9 @@ use std::{
 
 use index_type::{
     IndexType,
-    typed_array::TypedArray,
-    typed_array_vec::{CapacityError, TypedArrayVec},
-    typed_slice::TypedSlice,
+    array::TypedArray,
+    array_vec::{CapacityError, TypedArrayVec},
+    slice::TypedSlice,
 };
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

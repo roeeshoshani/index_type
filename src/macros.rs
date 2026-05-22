@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::{IndexType, typed_slice::TypedSlice};
+use crate::{IndexType, slice::TypedSlice};
 
 #[doc(hidden)]
 pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {
@@ -18,7 +18,7 @@ pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {
 #[cfg(feature = "alloc")]
 #[doc(hidden)]
 pub const fn __const_assert_vec_in_bounds<I: IndexType, T, const N: usize>(
-    _: &crate::typed_vec::TypedVec<I, T>,
+    _: &crate::vec::TypedVec<I, T>,
 ) {
     __const_assert_len_in_bounds::<I, N>();
 }
@@ -54,7 +54,7 @@ macro_rules! __count {
 }
 
 #[cfg(feature = "alloc")]
-/// Creates a [`TypedVec`](crate::typed_vec::TypedVec) containing the arguments.
+/// Creates a [`TypedVec`](crate::vec::TypedVec) containing the arguments.
 ///
 /// `typed_vec!` allows `TypedVec` to be defined with the same syntax as the standard library's `vec!` macro.
 ///
@@ -62,7 +62,7 @@ macro_rules! __count {
 ///
 /// ```rust
 /// use index_type::{IndexType, typed_vec};
-/// use index_type::typed_vec::TypedVec;
+/// use index_type::vec::TypedVec;
 ///
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);
@@ -73,11 +73,11 @@ macro_rules! __count {
 #[macro_export]
 macro_rules! typed_vec {
     ($elem:expr; $n:expr) => {{
-        $crate::typed_vec::TypedVec::<_, _>::try_from_vec($crate::alloc::vec![($elem); ($n)]).unwrap()
+        $crate::vec::TypedVec::<_, _>::try_from_vec($crate::alloc::vec![($elem); ($n)]).unwrap()
     }};
     ($($x:expr),* $(,)?) => {{
             // SAFETY: The length is checked at compile time by __const_assert_vec_in_bounds.
-            let res = unsafe { $crate::typed_vec::TypedVec::<_, _>::from_vec_unchecked($crate::alloc::vec![$($x),*]) };
+            let res = unsafe { $crate::vec::TypedVec::<_, _>::from_vec_unchecked($crate::alloc::vec![$($x),*]) };
 
             const __LEN: usize = $crate::__count!($($x),*);
             $crate::macros::__const_assert_vec_in_bounds::<_, _, __LEN>(&res);
@@ -86,7 +86,7 @@ macro_rules! typed_vec {
     }};
 }
 
-/// Creates a [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) containing the arguments.
+/// Creates a [`TypedArrayVec`](crate::array_vec::TypedArrayVec) containing the arguments.
 ///
 /// `typed_array_vec!` allows `TypedArrayVec` to be defined with the same syntax as the standard library's `vec!` macro.
 ///
@@ -94,7 +94,7 @@ macro_rules! typed_vec {
 ///
 /// ```rust
 /// use index_type::{IndexType, typed_array_vec};
-/// use index_type::typed_array_vec::TypedArrayVec;
+/// use index_type::array_vec::TypedArrayVec;
 ///
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);
@@ -105,20 +105,20 @@ macro_rules! typed_vec {
 #[macro_export]
 macro_rules! typed_array_vec {
     ($elem:expr; $n:expr) => {{
-        $crate::typed_array_vec::TypedArrayVec::<_, _, _>::from_iter(core::iter::repeat($elem).take($n))
+        $crate::array_vec::TypedArrayVec::<_, _, _>::from_iter(core::iter::repeat($elem).take($n))
     }};
     ($($x:expr),* $(,)?) => {{
-        $crate::typed_array_vec::TypedArrayVec::from_iter([$($x),*])
+        $crate::array_vec::TypedArrayVec::from_iter([$($x),*])
     }};
 }
 
-/// Creates a [`TypedArray`](crate::typed_array::TypedArray) containing the arguments.
+/// Creates a [`TypedArray`](crate::array::TypedArray) containing the arguments.
 ///
 /// # Usage Example
 ///
 /// ```rust
 /// use index_type::{IndexType, typed_array};
-/// use index_type::typed_array::TypedArray;
+/// use index_type::array::TypedArray;
 ///
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);
@@ -129,14 +129,14 @@ macro_rules! typed_array_vec {
 #[macro_export]
 macro_rules! typed_array {
     ($elem:expr; $n:expr) => {{
-        $crate::typed_array::TypedArray::<_, _, $n>::from_array([$elem; $n])
+        $crate::array::TypedArray::<_, _, $n>::from_array([$elem; $n])
     }};
     ($($x:expr),* $(,)?) => {{
-        $crate::typed_array::TypedArray::from_array([$($x),*])
+        $crate::array::TypedArray::from_array([$($x),*])
     }};
 }
 
-/// Creates a reference to a [`TypedSlice`](crate::typed_slice::TypedSlice) containing the arguments.
+/// Creates a reference to a [`TypedSlice`](crate::slice::TypedSlice) containing the arguments.
 ///
 /// This macro creates a temporary array and returns a reference to it as a `TypedSlice`.
 /// Note that due to how temporary lifetimes work in Rust, the returned reference is only valid
@@ -146,7 +146,7 @@ macro_rules! typed_array {
 ///
 /// ```rust
 /// use index_type::{IndexType, typed_slice};
-/// use index_type::typed_slice::TypedSlice;
+/// use index_type::slice::TypedSlice;
 ///
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);
@@ -158,7 +158,7 @@ macro_rules! typed_array {
 macro_rules! typed_slice {
     ($($x:expr),* $(,)?) => {{
         // SAFETY: The length is checked at compile time by __const_assert_slice_in_bounds.
-        let res = unsafe { $crate::typed_slice::TypedSlice::<_, _>::from_slice_unchecked(&[$($x),*]) };
+        let res = unsafe { $crate::slice::TypedSlice::<_, _>::from_slice_unchecked(&[$($x),*]) };
 
         const __LEN: usize = $crate::__count!($($x),*);
         $crate::macros::__const_assert_slice_in_bounds::<_, _, __LEN>(res);
@@ -167,7 +167,7 @@ macro_rules! typed_slice {
     }};
 }
 
-/// Creates a mutable reference to a [`TypedSlice`](crate::typed_slice::TypedSlice) containing the arguments.
+/// Creates a mutable reference to a [`TypedSlice`](crate::slice::TypedSlice) containing the arguments.
 ///
 /// This macro creates a temporary array and returns a mutable reference to it as a `TypedSlice`.
 /// Note that due to how temporary lifetimes work in Rust, the returned reference is only valid
@@ -183,7 +183,7 @@ macro_rules! typed_slice {
 ///
 /// ```rust
 /// use index_type::{IndexType, typed_slice_mut};
-/// use index_type::typed_slice::TypedSlice;
+/// use index_type::slice::TypedSlice;
 ///
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);

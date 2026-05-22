@@ -15,7 +15,7 @@
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_enumerate::TypedIteratorExt;
+//! use index_type::enumerate::TypedIteratorExt;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct RowIdx(u32);
@@ -210,7 +210,7 @@ impl<I: IndexType, Iter: FusedIterator> FusedIterator for UncheckedTypedEnumerat
 ///
 /// ```
 /// use index_type::IndexType;
-/// use index_type::typed_enumerate::TypedIteratorExt;
+/// use index_type::enumerate::TypedIteratorExt;
 ///
 /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct RowIdx(u32);

@@ -6,7 +6,7 @@
 //!
 //! # No Heap Allocation After Creation
 //!
-//! Unlike [`TypedVec`][crate::typed_vec::TypedVec], `TypedArrayVec` has a fixed capacity determined at compile time. Once created,
+//! Unlike [`TypedVec`][crate::vec::TypedVec], `TypedArrayVec` has a fixed capacity determined at compile time. Once created,
 //! it will never allocate additional memory. Operations that would exceed capacity return errors
 //! or panic.
 //!
@@ -24,7 +24,7 @@
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_array_vec::TypedArrayVec;
+//! use index_type::array_vec::TypedArrayVec;
 //!
 //! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct BufferIdx(u8);
@@ -43,10 +43,10 @@ use core::{
 
 use crate::{
     IndexScalarType, IndexType,
-    typed_array::TypedArray,
-    typed_enumerate::UncheckedTypedEnumerate,
-    typed_range::{TypedRange, TypedRangeIterExt},
-    typed_slice::TypedSlice,
+    array::TypedArray,
+    enumerate::UncheckedTypedEnumerate,
+    range::{TypedRange, TypedRangeIterExt},
+    slice::TypedSlice,
     utils::resolve_range_bounds,
 };
 
@@ -853,10 +853,10 @@ impl<I: IndexType, T, const N: usize> FromIterator<T> for TypedArrayVec<I, T, N>
     }
 }
 
-impl<I: IndexType, T, const N: usize> From<crate::typed_array::TypedArray<I, T, N>>
+impl<I: IndexType, T, const N: usize> From<crate::array::TypedArray<I, T, N>>
     for TypedArrayVec<I, T, N>
 {
-    fn from(array: crate::typed_array::TypedArray<I, T, N>) -> Self {
+    fn from(array: crate::array::TypedArray<I, T, N>) -> Self {
         // Can't use `transmute` here since the types depend on generic, so we use `transmute_copy` and forget the original.
         let storage: TypedArray<I, MaybeUninit<T>, N> =
             unsafe { core::mem::transmute_copy(&array) };
@@ -878,7 +878,7 @@ impl<I: IndexType, T, const N: usize> From<crate::typed_array::TypedArray<I, T, 
 ///
 /// ```
 /// use index_type::IndexType;
-/// use index_type::typed_array_vec::{TypedArrayVec, CapacityError};
+/// use index_type::array_vec::{TypedArrayVec, CapacityError};
 ///
 /// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct Idx(u8);
