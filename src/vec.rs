@@ -383,6 +383,43 @@ impl<I: IndexType, T> TypedVec<I, T> {
         Ok(res)
     }
 
+    /// Attempts to append an element to the back of the vector.
+    ///
+    /// Returns a mutable reference to the appended element, or an error if the length
+    /// would exceed `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::vec::TypedVec;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let mut vec: TypedVec<Idx, i32> = TypedVec::new();
+    /// let item = vec.try_push_mut(42).unwrap();
+    /// assert_eq!(*item, 42);
+    /// ```
+    #[inline]
+    pub fn try_push_mut(&mut self, value: T) -> Result<&mut T, I::IndexTooBigError> {
+        let _new_len = self.len().checked_add_scalar(I::Scalar::ONE)?;
+        Ok(self.raw.push_mut(value))
+    }
+
+    /// Appends an element to the back of the vector.
+    ///
+    /// Returns a mutable reference to the appended element.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the length would exceed `I::MAX_RAW_INDEX`.
+    #[inline]
+    pub fn push_mut(&mut self, value: T) -> &mut T {
+        self.try_push_mut(value)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
+    }
+
     /// Appends an element to the back of the vector.
     ///
     /// Returns the index of the appended element.
@@ -553,6 +590,33 @@ impl<I: IndexType, T> TypedVec<I, T> {
         let _new_potential_len = self.len().checked_add_scalar(I::Scalar::ONE)?;
         self.raw.insert(index.to_raw_index(), element);
         Ok(())
+    }
+
+    /// Attempts to insert an element at `index`, shifting all elements after it to the right.
+    ///
+    /// Returns a mutable reference to the inserted element, or an error if the new length
+    /// would exceed `I::MAX_RAW_INDEX`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index > len`.
+    #[inline]
+    pub fn try_insert_mut(&mut self, index: I, element: T) -> Result<&mut T, I::IndexTooBigError> {
+        let _new_potential_len = self.len().checked_add_scalar(I::Scalar::ONE)?;
+        Ok(self.raw.insert_mut(index.to_raw_index(), element))
+    }
+
+    /// Inserts an element at `index`, shifting all elements after it to the right.
+    ///
+    /// Returns a mutable reference to the inserted element.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index > len` or if the new length would exceed `I::MAX_RAW_INDEX`.
+    #[inline]
+    pub fn insert_mut(&mut self, index: I, element: T) -> &mut T {
+        self.try_insert_mut(index, element)
+            .unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Inserts an element at `index`, shifting all elements after it to the right.
