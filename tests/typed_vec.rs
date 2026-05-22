@@ -979,7 +979,7 @@ fn test_insert_mut_overflow_panic() {
 }
 
 #[test]
-fn test_try_insert_mut_out_of_bounds() {
+fn test_insert_mut_out_of_bounds() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
     vec.push(1);
 
@@ -987,4 +987,45 @@ fn test_try_insert_mut_out_of_bounds() {
         let _ = vec.insert_mut(unsafe { MyIndex::from_raw_index_unchecked(5) }, 3);
     }));
     assert!(res.is_err());
+}
+
+#[test]
+fn test_try_insert_mut_out_of_bounds() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    vec.push(1);
+
+    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _ = vec.try_insert_mut(unsafe { MyIndex::from_raw_index_unchecked(5) }, 3);
+    }));
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_try_push_mut_overflow() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+
+    let result = vec.try_push_mut(255);
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 255);
+}
+
+#[test]
+fn test_try_insert_mut_overflow() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+
+    let result = vec.try_insert_mut(SmallIndex::ZERO, 999);
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 255);
 }
