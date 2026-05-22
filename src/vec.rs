@@ -404,7 +404,8 @@ impl<I: IndexType, T> TypedVec<I, T> {
     #[inline]
     pub fn try_push_mut(&mut self, value: T) -> Result<&mut T, I::IndexTooBigError> {
         let _new_len = self.len().checked_add_scalar(I::Scalar::ONE)?;
-        Ok(self.raw.push_mut(value))
+        self.raw.push(value);
+        Ok(self.raw.last_mut().unwrap())
     }
 
     /// Appends an element to the back of the vector.
@@ -603,7 +604,9 @@ impl<I: IndexType, T> TypedVec<I, T> {
     #[inline]
     pub fn try_insert_mut(&mut self, index: I, element: T) -> Result<&mut T, I::IndexTooBigError> {
         let _new_potential_len = self.len().checked_add_scalar(I::Scalar::ONE)?;
-        Ok(self.raw.insert_mut(index.to_raw_index(), element))
+        let raw_index = index.to_raw_index();
+        self.raw.insert(raw_index, element);
+        Ok(self.raw.get_mut(raw_index).unwrap())
     }
 
     /// Inserts an element at `index`, shifting all elements after it to the right.
