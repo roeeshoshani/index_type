@@ -22,7 +22,7 @@
 //!
 //! With typed indices, cross-contamination becomes a compile error:
 //! ```rust
-//! # use index_type::{IndexType, typed_vec::TypedVec, typed_vec};
+//! # use index_type::{IndexType, vec::TypedVec, typed_vec};
 //! # #[derive(Default, Clone, Copy)]
 //! # struct Node;
 //! # #[derive(Default, Clone, Copy)]
@@ -46,7 +46,7 @@
 //! - **`no_std` Support**: Works in embedded systems and other `no_std` environments
 //! - **Memory Efficiency**: Use smaller integer types (`u8`, `u16`) for indices when collections are bounded
 //! - **Niche Optimization**: Supports [`NonZero`](core::num::NonZero) types so `Option<Index>` has the same size as `Index`
-//! - **Rich Collections**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), [`TypedArray`](crate::typed_array::TypedArray), and [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec)
+//! - **Rich Collections**: Provides [`TypedSlice`](crate::slice::TypedSlice), [`TypedVec`](crate::vec::TypedVec), [`TypedArray`](crate::array::TypedArray), and [`TypedArrayVec`](crate::array_vec::TypedArrayVec)
 //! - **Derive Macros**: Easy to define custom index types with `#[derive(IndexType)]`
 //! - **Range Iterators**: Iterate over ranges using custom index types
 //!
@@ -54,7 +54,7 @@
 //!
 //! ```rust
 //! use index_type::IndexType;
-//! use index_type::typed_vec::TypedVec;
+//! use index_type::vec::TypedVec;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIndex(u32);
@@ -97,11 +97,11 @@
 //!
 //! ### TypedVec
 //!
-//! A growable vector with typed indexing. See [`TypedVec`](crate::typed_vec::TypedVec) for the full API.
+//! A growable vector with typed indexing. See [`TypedVec`](crate::vec::TypedVec) for the full API.
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_vec::TypedVec;
+//! use index_type::vec::TypedVec;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct NodeId(u32);
@@ -117,7 +117,7 @@
 //!
 //! ```
 //! # use index_type::IndexType;
-//! # use index_type::typed_vec::TypedVec;
+//! # use index_type::vec::TypedVec;
 //! # #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! # struct MyIndex(u32);
 //! let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
@@ -127,12 +127,12 @@
 //!
 //! ### TypedSlice
 //!
-//! A slice wrapper with typed indexing. See [`TypedSlice`](crate::typed_slice::TypedSlice) for the full API.
+//! A slice wrapper with typed indexing. See [`TypedSlice`](crate::slice::TypedSlice) for the full API.
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_vec::TypedVec;
-//! use index_type::typed_slice::TypedSlice;
+//! use index_type::vec::TypedVec;
+//! use index_type::slice::TypedSlice;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct RowId(u16);
@@ -147,11 +147,11 @@
 //! ### TypedArray
 //!
 //! A fixed-size array with typed indexing. The array length `N` is checked at compile time
-//! to ensure it fits within the index type's range. See [`TypedArray`](crate::typed_array::TypedArray) for the full API.
+//! to ensure it fits within the index type's range. See [`TypedArray`](crate::array::TypedArray) for the full API.
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_array::TypedArray;
+//! use index_type::array::TypedArray;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct PixelIdx(u8);
@@ -164,11 +164,11 @@
 //! ### TypedArrayVec
 //!
 //! A fixed-capacity vector ideal for embedded systems. It never allocates after creation.
-//! See [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) for the full API.
+//! See [`TypedArrayVec`](crate::array_vec::TypedArrayVec) for the full API.
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_array_vec::TypedArrayVec;
+//! use index_type::array_vec::TypedArrayVec;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct BufferIndex(u8);
@@ -218,11 +218,11 @@
 //! ## Range Iterators
 //!
 //! Standard Rust ranges require the unstable [`Step`](core::iter::Step) trait. This crate provides
-//! [`TypedRangeIterExt`](crate::typed_range::TypedRangeIterExt) for iterating over ranges with custom index types:
+//! [`TypedRangeIterExt`](crate::range::TypedRangeIterExt) for iterating over ranges with custom index types:
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_range::TypedRangeIterExt;
+//! use index_type::range::TypedRangeIterExt;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIdx(u32);
@@ -237,11 +237,11 @@
 //!
 //! ## Typed Enumerate
 //!
-//! Use [`TypedIteratorExt`](crate::typed_enumerate::TypedIteratorExt) to enumerate any iterator with typed indices:
+//! Use [`TypedIteratorExt`](crate::enumerate::TypedIteratorExt) to enumerate any iterator with typed indices:
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_enumerate::TypedIteratorExt;
+//! use index_type::enumerate::TypedIteratorExt;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct RowIdx(u32);
@@ -261,10 +261,10 @@
 //!
 //! ```
 //! use index_type::{typed_vec, typed_array, typed_array_vec, typed_slice, typed_slice_mut, IndexType};
-//! use index_type::typed_vec::TypedVec;
-//! use index_type::typed_array::TypedArray;
-//! use index_type::typed_array_vec::TypedArrayVec;
-//! use index_type::typed_slice::TypedSlice;
+//! use index_type::vec::TypedVec;
+//! use index_type::array::TypedArray;
+//! use index_type::array_vec::TypedArrayVec;
+//! use index_type::slice::TypedSlice;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIndex(u32);
@@ -288,7 +288,7 @@
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_vec::TypedVec;
+//! use index_type::vec::TypedVec;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIndex(u8);  // MAX_RAW_INDEX = 255
@@ -307,7 +307,7 @@
 //! ## no_std Compatibility
 //!
 //! This crate is `no_std` compatible. The `alloc` feature (enabled by default) enables
-//! heap-allocated collections ([`TypedVec`](crate::typed_vec::TypedVec) and related macros).
+//! heap-allocated collections ([`TypedVec`](crate::vec::TypedVec) and related macros).
 //!
 //! For pure `no_std` environments without heap allocation, disable the `alloc` feature:
 //!
@@ -323,19 +323,19 @@ pub use crate::error::GenericIndexTooBigError;
 #[doc(hidden)]
 pub extern crate alloc;
 
+pub mod array;
+pub mod array_vec;
 mod base_index_types;
+pub mod enumerate;
 mod error;
 mod index_scalar_types;
 #[doc(hidden)]
 pub mod macros;
-pub mod typed_array;
-pub mod typed_array_vec;
-pub mod typed_enumerate;
-pub mod typed_range;
-pub mod typed_slice;
-#[cfg(feature = "alloc")]
-pub mod typed_vec;
+pub mod range;
+pub mod slice;
 mod utils;
+#[cfg(feature = "alloc")]
+pub mod vec;
 
 pub use index_type_macros::{IndexTooBigError, IndexType};
 

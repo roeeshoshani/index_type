@@ -1,7 +1,6 @@
 use core::num::{NonZeroU8, NonZeroUsize};
 use index_type::{
-    IndexType, typed_array::TypedArray, typed_array_vec::TypedArrayVec, typed_slice::TypedSlice,
-    typed_vec::TypedVec,
+    IndexType, array::TypedArray, array_vec::TypedArrayVec, slice::TypedSlice, vec::TypedVec,
 };
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

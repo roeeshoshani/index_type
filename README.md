@@ -38,7 +38,7 @@ nodes[node_id]; // OK
 - **`no_std` Support**: Works in embedded systems and other `no_std` environments
 - **Memory Efficiency**: Use smaller integer types (`u8`, `u16`) for indices when collections are bounded
 - **Niche Optimization**: Supports [`NonZero`](core::num::NonZero) types so `Option<Index>` has the same size as `Index`
-- **Rich Collections**: Provides [`TypedSlice`](crate::typed_slice::TypedSlice), [`TypedVec`](crate::typed_vec::TypedVec), [`TypedArray`](crate::typed_array::TypedArray), and [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec)
+- **Rich Collections**: Provides [`TypedSlice`](crate::slice::TypedSlice), [`TypedVec`](crate::vec::TypedVec), [`TypedArray`](crate::array::TypedArray), and [`TypedArrayVec`](crate::array_vec::TypedArrayVec)
 - **Derive Macros**: Easy to define custom index types with `#[derive(IndexType)]`
 - **Range Iterators**: Iterate over ranges using custom index types
 
@@ -46,7 +46,7 @@ nodes[node_id]; // OK
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_vec::TypedVec;
+use index_type::vec::TypedVec;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -89,11 +89,11 @@ struct ItemId(u32);
 
 #### TypedVec
 
-A growable vector with typed indexing. See [`TypedVec`](crate::typed_vec::TypedVec) for the full API.
+A growable vector with typed indexing. See [`TypedVec`](crate::vec::TypedVec) for the full API.
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_vec::TypedVec;
+use index_type::vec::TypedVec;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct NodeId(u32);
@@ -115,12 +115,12 @@ let result = vec.try_push(2);             // Returns Result<(), Error>
 
 #### TypedSlice
 
-A slice wrapper with typed indexing. See [`TypedSlice`](crate::typed_slice::TypedSlice) for the full API.
+A slice wrapper with typed indexing. See [`TypedSlice`](crate::slice::TypedSlice) for the full API.
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_vec::TypedVec;
-use index_type::typed_slice::TypedSlice;
+use index_type::vec::TypedVec;
+use index_type::slice::TypedSlice;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct RowId(u16);
@@ -135,11 +135,11 @@ let first = slice[RowId::ZERO];
 #### TypedArray
 
 A fixed-size array with typed indexing. The array length `N` is checked at compile time
-to ensure it fits within the index type's range. See [`TypedArray`](crate::typed_array::TypedArray) for the full API.
+to ensure it fits within the index type's range. See [`TypedArray`](crate::array::TypedArray) for the full API.
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_array::TypedArray;
+use index_type::array::TypedArray;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct PixelIdx(u8);
@@ -152,11 +152,11 @@ pixels[PixelIdx(1)] = [0, 255, 0];     // Green
 #### TypedArrayVec
 
 A fixed-capacity vector ideal for embedded systems. It never allocates after creation.
-See [`TypedArrayVec`](crate::typed_array_vec::TypedArrayVec) for the full API.
+See [`TypedArrayVec`](crate::array_vec::TypedArrayVec) for the full API.
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_array_vec::TypedArrayVec;
+use index_type::array_vec::TypedArrayVec;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct BufferIndex(u8);
@@ -197,16 +197,19 @@ struct SafeId(NonZeroU32);
 // Option<SafeId> takes only 4 bytes, not 8!
 assert_eq!(std::mem::size_of::<SafeId>(), 4);
 assert_eq!(std::mem::size_of::<Option<SafeId>>(), 4);
+assert_eq!(SafeId::BIAS, 1);
+assert_eq!(SafeId::ZERO.to_raw_index(), 0);
+assert_eq!(SafeId::ZERO.to_raw_index_biased(), 1);
 ```
 
 ### Range Iterators
 
 Standard Rust ranges require the unstable [`Step`](core::iter::Step) trait. This crate provides
-[`TypedRangeIterExt`](crate::typed_range::TypedRangeIterExt) for iterating over ranges with custom index types:
+[`TypedRangeIterExt`](crate::range::TypedRangeIterExt) for iterating over ranges with custom index types:
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_range::TypedRangeIterExt;
+use index_type::range::TypedRangeIterExt;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIdx(u32);
@@ -221,11 +224,11 @@ for idx in (start..end).iter() {
 
 ### Typed Enumerate
 
-Use [`TypedIteratorExt`](crate::typed_enumerate::TypedIteratorExt) to enumerate any iterator with typed indices:
+Use [`TypedIteratorExt`](crate::enumerate::TypedIteratorExt) to enumerate any iterator with typed indices:
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_enumerate::TypedIteratorExt;
+use index_type::enumerate::TypedIteratorExt;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct RowIdx(u32);
@@ -245,10 +248,10 @@ Convenience macros for creating typed collections:
 
 ```rust
 use index_type::{typed_vec, typed_array, typed_array_vec, typed_slice, typed_slice_mut, IndexType};
-use index_type::typed_vec::TypedVec;
-use index_type::typed_array::TypedArray;
-use index_type::typed_array_vec::TypedArrayVec;
-use index_type::typed_slice::TypedSlice;
+use index_type::vec::TypedVec;
+use index_type::array::TypedArray;
+use index_type::array_vec::TypedArrayVec;
+use index_type::slice::TypedSlice;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -272,7 +275,7 @@ Operations that can fail due to index overflow return `Result` types:
 
 ```rust
 use index_type::IndexType;
-use index_type::typed_vec::TypedVec;
+use index_type::vec::TypedVec;
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u8);  // MAX_RAW_INDEX = 255
@@ -291,7 +294,7 @@ assert!(vec.try_push(255).is_err());
 ### no_std Compatibility
 
 This crate is `no_std` compatible. The `alloc` feature (enabled by default) enables
-heap-allocated collections ([`TypedVec`](crate::typed_vec::TypedVec) and related macros).
+heap-allocated collections ([`TypedVec`](crate::vec::TypedVec) and related macros).
 
 For pure `no_std` environments without heap allocation, disable the `alloc` feature:
 

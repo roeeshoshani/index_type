@@ -4,8 +4,8 @@ use core::{
 };
 use index_type::{
     IndexType,
-    typed_enumerate::TypedIteratorExt,
-    typed_range::{TypedRange, TypedRangeFrom, TypedRangeInclusive, TypedRangeIterExt},
+    enumerate::TypedIteratorExt,
+    range::{TypedRange, TypedRangeFrom, TypedRangeInclusive, TypedRangeIterExt},
 };
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

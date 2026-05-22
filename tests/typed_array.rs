@@ -4,7 +4,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use index_type::{IndexType, typed_array::TypedArray, typed_slice::TypedSlice};
+use index_type::{IndexType, array::TypedArray, slice::TypedSlice};
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);

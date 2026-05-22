@@ -1,6 +1,6 @@
 use index_type::{
     IndexType,
-    typed_slice::{GetDisjointMutError, TypedSlice},
+    slice::{GetDisjointMutError, TypedSlice},
 };
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -306,7 +306,7 @@ fn test_get_disjoint_mut_range_out_of_bounds() {
 
 #[test]
 fn test_as_flattened() {
-    use index_type::typed_array::TypedArray;
+    use index_type::array::TypedArray;
     let data: [TypedArray<MyIndex, i32, 2>; 3] = [
         TypedArray::from_array([1, 2]),
         TypedArray::from_array([3, 4]),
@@ -326,7 +326,7 @@ fn test_as_flattened() {
 
 #[test]
 fn test_as_flattened_overflow() {
-    use index_type::typed_array::TypedArray;
+    use index_type::array::TypedArray;
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);
 
@@ -341,7 +341,7 @@ fn test_as_flattened_overflow() {
 
 #[test]
 fn test_as_flattened_mut() {
-    use index_type::typed_array::TypedArray;
+    use index_type::array::TypedArray;
     let mut data: [TypedArray<MyIndex, i32, 2>; 3] = [
         TypedArray::from_array([1, 2]),
         TypedArray::from_array([3, 4]),

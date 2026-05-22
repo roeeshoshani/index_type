@@ -9,7 +9,7 @@
 //!
 //! ```
 //! use index_type::IndexType;
-//! use index_type::typed_range::TypedRangeIterExt;
+//! use index_type::range::TypedRangeIterExt;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIdx(u32);
@@ -32,7 +32,7 @@ use crate::{IndexScalarType, IndexType};
 ///
 /// ```
 /// use index_type::IndexType;
-/// use index_type::typed_range::TypedRangeIterExt;
+/// use index_type::range::TypedRangeIterExt;
 ///
 /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct Idx(u32);
