@@ -171,6 +171,68 @@ fn test_push_panic_overflow() {
 }
 
 #[test]
+fn test_try_push_mut() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    let item = vec.try_push_mut(42).unwrap();
+    assert_eq!(*item, 42);
+    *item = 99;
+    assert_eq!(vec[MyIndex::ZERO], 99);
+}
+
+#[test]
+fn test_push_mut() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    let item = vec.push_mut(42);
+    assert_eq!(*item, 42);
+    *item = 99;
+    assert_eq!(vec[MyIndex::ZERO], 99);
+}
+
+#[test]
+fn test_try_push_mut_overflow() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+    assert_eq!(vec.len_usize(), 255);
+
+    assert!(vec.try_push_mut(255).is_err());
+    assert_eq!(vec.len_usize(), 255);
+}
+
+#[test]
+fn test_push_mut_overflow_panic() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        vec.push_mut(255);
+    }));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_try_push_mut_returns_mutable_reference_to_correct_element_when_multiple_elements_present() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+
+    let item = vec.try_push_mut(4).unwrap();
+    assert_eq!(*item, 4);
+    *item = 40;
+    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(3) }], 40);
+}
+
+#[test]
 fn test_try_append() {
     let mut vec1: TypedVec<MyIndex, i32> = TypedVec::new();
     vec1.push(1);
@@ -270,6 +332,65 @@ fn test_insert_overflow_panic() {
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         vec.insert(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
+    }));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_try_insert_mut() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    vec.push(1);
+    vec.push(3);
+
+    let item = vec
+        .try_insert_mut(unsafe { MyIndex::from_raw_index_unchecked(1) }, 2)
+        .unwrap();
+    assert_eq!(*item, 2);
+    *item = 99;
+    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(1) }], 99);
+    assert_eq!(vec.len_usize(), 3);
+}
+
+#[test]
+fn test_insert_mut() {
+    let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
+    vec.push(1);
+    vec.push(3);
+
+    let item = vec.insert_mut(unsafe { MyIndex::from_raw_index_unchecked(1) }, 2);
+    assert_eq!(*item, 2);
+    *item = 99;
+    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(1) }], 99);
+    assert_eq!(vec.len_usize(), 3);
+}
+
+#[test]
+fn test_try_insert_mut_overflow() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+
+    let result = vec.try_insert_mut(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
+    assert!(result.is_err());
+    assert_eq!(vec.len_usize(), 255);
+}
+
+#[test]
+fn test_insert_mut_overflow_panic() {
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    let mut vec: TypedVec<SmallIndex, i32> = TypedVec::new();
+    for i in 0..255 {
+        vec.push(i);
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        vec.insert_mut(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
     }));
     assert!(result.is_err());
 }
