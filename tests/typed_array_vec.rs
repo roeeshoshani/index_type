@@ -13,6 +13,8 @@ use index_type::{
     slice::TypedSlice,
 };
 
+mod utils;
+
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
 
@@ -507,4 +509,35 @@ fn test_drain_len_and_partial_drop_behavior() {
         assert_eq!(drain.len(), 2);
     }
     assert_eq!(vec.as_slice().as_slice(), &[1, 6]);
+}
+
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use crate::utils::test_serde_roundtrip_and_expect_content;
+
+    use super::*;
+
+    #[test]
+    fn test_roundtrip() {
+        let v: TypedArrayVec<MyIndex, i32, 5> = index_type::typed_array_vec![10, 20, 30];
+        test_serde_roundtrip_and_expect_content(&v, "[10,20,30]");
+    }
+
+    #[test]
+    fn test_empty() {
+        let v: TypedArrayVec<MyIndex, i32, 5> = TypedArrayVec::new();
+        test_serde_roundtrip_and_expect_content(&v, "[]");
+    }
+
+    #[test]
+    fn test_full_capacity() {
+        let v: TypedArrayVec<MyIndex, i32, 3> = index_type::typed_array_vec![1, 2, 3];
+        test_serde_roundtrip_and_expect_content(&v, "[1,2,3]");
+    }
+
+    #[test]
+    fn test_too_many_elements() {
+        let result: Result<TypedArrayVec<MyIndex, i32, 2>, _> = serde_json::from_str("[1,2,3]");
+        assert!(result.is_err());
+    }
 }

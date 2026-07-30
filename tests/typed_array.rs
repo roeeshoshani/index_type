@@ -9,6 +9,8 @@ use index_type::{IndexType, array::TypedArray, slice::TypedSlice};
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
 
+mod utils;
+
 #[test]
 fn test_typed_array_basic() {
     let arr: TypedArray<MyIndex, i32, 3> = TypedArray::try_from_array([1, 2, 3]).unwrap();
@@ -203,4 +205,29 @@ fn test_helper_methods_and_traits() {
     let mut hasher = DefaultHasher::new();
     cloned.hash(&mut hasher);
     assert_ne!(hasher.finish(), 0);
+}
+
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use crate::utils::test_serde_roundtrip_and_expect_content;
+
+    use super::*;
+
+    #[test]
+    fn test_roundtrip() {
+        let v: TypedArray<MyIndex, i32, 3> = index_type::typed_array![10, 20, 30];
+        test_serde_roundtrip_and_expect_content(&v, "[10,20,30]");
+    }
+
+    #[test]
+    fn test_too_many_elements() {
+        let result: Result<TypedArray<MyIndex, i32, 2>, _> = serde_json::from_str("[1,2,3]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_too_few_elements() {
+        let result: Result<TypedArray<MyIndex, i32, 3>, _> = serde_json::from_str("[1,2]");
+        assert!(result.is_err());
+    }
 }

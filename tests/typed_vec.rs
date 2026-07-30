@@ -6,6 +6,8 @@ use std::{
 
 use index_type::{IndexType, enumerate::TypedIteratorExt, slice::TypedSlice, vec::TypedVec};
 
+mod utils;
+
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
 
@@ -1018,4 +1020,16 @@ fn test_into_iter_does_not_require_clone() {
         TypedVec::from_vec(vec![NotClone(1), NotClone(2), NotClone(3)]);
     let collected: Vec<_> = vec.into_iter().map(|v| v.0).collect();
     assert_eq!(collected, vec![1, 2, 3]);
+}
+
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use super::*;
+    use crate::utils::test_serde_roundtrip_and_expect_content;
+
+    #[test]
+    fn test_roundtrip() {
+        let v: TypedVec<MyIndex, i32> = index_type::typed_vec![10, 20, 30];
+        test_serde_roundtrip_and_expect_content(&v, "[10,20,30]");
+    }
 }

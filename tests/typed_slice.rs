@@ -759,3 +759,84 @@ fn test_chunk_split_sort_and_copy_apis() {
     chunks[MyIndex(1)][MyIndex::ZERO] = 9;
     assert_eq!(exact_slice.as_slice(), &[1, 2, 9, 4]);
 }
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use super::*;
+
+    #[test]
+    fn test_typed_slice_serializes_same_as_regular_slice() {
+        fn test_for_index_and_value_types<I: IndexType, T: serde::Serialize>(v: &[T]) {
+            assert_eq!(
+                serde_json::to_string(v).unwrap(),
+                serde_json::to_string(TypedSlice::<I, T>::try_from_slice(v).unwrap()).unwrap()
+            );
+        }
+
+        fn test_for_value_type<T: serde::Serialize>(v: &[T]) {
+            test_for_index_and_value_types::<usize, T>(v);
+            test_for_index_and_value_types::<u16, T>(v);
+            test_for_index_and_value_types::<MyIndex, T>(v);
+        }
+
+        #[derive(serde::Serialize)]
+        struct User {
+            id: u32,
+            name: String,
+            age: u32,
+        }
+
+        test_for_value_type::<u8>(&[52, 62, 98, 42, 25]);
+        test_for_value_type::<u32>(&[258, 125, 34854729, 425598, 102579, 5125]);
+        test_for_value_type::<User>(&[
+            User {
+                id: 0,
+                name: "John".into(),
+                age: 50,
+            },
+            User {
+                id: 1,
+                name: "Mary".into(),
+                age: 60,
+            },
+        ]);
+    }
+
+    #[test]
+    fn test_u8_slice_deserializes_from_json_str() {
+        let json = "\"hello\"";
+        let deserialized: &TypedSlice<MyIndex, u8> = serde_json::from_str(json).unwrap();
+        assert_eq!(deserialized.len_usize(), 5);
+        assert_eq!(deserialized.as_slice(), b"hello");
+    }
+
+    #[test]
+    fn test_u8_slice_deserializes_empty_str() {
+        let json = "\"\"";
+        let deserialized: &TypedSlice<MyIndex, u8> = serde_json::from_str(json).unwrap();
+        assert!(deserialized.is_empty());
+    }
+
+    #[test]
+    fn test_u8_slice_roundtrip_same_as_regular_u8_slice() {
+        let orig: &[u8] = &[1u8, 2, 3, 4, 5];
+        let ours: &TypedSlice<usize, u8> = TypedSlice::try_from_slice(orig).unwrap();
+
+        let json_orig = serde_json::to_string(ours).unwrap();
+        let json_ours = serde_json::to_string(ours).unwrap();
+        assert_eq!(json_orig, json_ours);
+
+        let json = json_orig;
+        assert_eq!(json, "[1,2,3,4,5]");
+
+        // Currently, a full roundtrip of serializing and deserializing `&[u8]` using `serde_json` doesn't work.
+        // Make sure that our type behaves similarly.
+        let orig_deserialized: Result<&[u8], _> = serde_json::from_str(&json);
+        let ours_deserialized: Result<&TypedSlice<usize, u8>, _> = serde_json::from_str(&json);
+
+        assert!(orig_deserialized.is_err());
+        assert!(ours_deserialized.is_err());
+
+        // NOTE: we can't compare the error strings directly as they won't be equal, since the 2 types have different `Visitor::expecting`
+        // implementations.
+    }
+}

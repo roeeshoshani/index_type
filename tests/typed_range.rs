@@ -8,7 +8,10 @@ use index_type::{
     range::{TypedRange, TypedRangeFrom, TypedRangeInclusive, TypedRangeIterExt},
 };
 
+mod utils;
+
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 struct MyIndex(u32);
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -699,5 +702,49 @@ mod edge_case_iteration {
             .iter()
             .fold(0u32, |acc, i| acc + i.0);
         assert_eq!(sum, 10);
+    }
+}
+
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use crate::utils::test_serde_roundtrip;
+
+    use super::*;
+
+    #[test]
+    fn test_typed_range_roundtrip() {
+        test_serde_roundtrip(&TypedRange {
+            start: MyIndex(3),
+            end: MyIndex(10),
+        });
+    }
+
+    #[test]
+    fn test_typed_range_from_roundtrip() {
+        test_serde_roundtrip(&TypedRangeFrom { start: MyIndex(5) });
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_roundtrip() {
+        test_serde_roundtrip(&TypedRangeInclusive::from_raw_lossy(
+            MyIndex(3)..=MyIndex(10),
+        ));
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_roundtrip_loses_exhasuted_info() {
+        let mut range = TypedRangeInclusive::from_raw_lossy(MyIndex(3)..=MyIndex(3));
+        let json = serde_json::to_string(&range).unwrap();
+        let deserialized: TypedRangeInclusive<MyIndex> = serde_json::from_str(&json).unwrap();
+        assert_eq!(range, deserialized);
+
+        assert_eq!(range.next(), Some(MyIndex(3)));
+
+        let json = serde_json::to_string(&range).unwrap();
+        let mut deserialized: TypedRangeInclusive<MyIndex> = serde_json::from_str(&json).unwrap();
+        assert_ne!(range, deserialized);
+
+        assert_eq!(deserialized.next(), Some(MyIndex(3)));
+        assert_eq!(range, deserialized);
     }
 }
