@@ -184,6 +184,22 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
             .unwrap_or_else(|_| panic_insufficient_capacity())
     }
 
+    /// Appends an element to the back of the `TypedArrayVec`, without performing safety checks.
+    ///
+    /// # Safety
+    ///
+    /// The `TypedArrayVec` must have enough space for at least one more element.
+    #[inline]
+    pub unsafe fn push_unchecked(&mut self, element: T) -> I {
+        let idx = self.len;
+        // SAFETY: The capacity is not exceeded as guaranteed by the caller.
+        unsafe {
+            self.storage.get_unchecked_mut(self.len).write(element);
+            self.len = self.len.unchecked_add_scalar(I::Scalar::ONE);
+        }
+        idx
+    }
+
     /// Tries to append an element to the back of the `TypedArrayVec`.
     ///
     /// Returns the index of the inserted element, or an error if the `TypedArrayVec` is full.
@@ -192,13 +208,8 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
         if self.is_full() {
             return Err(CapacityError::new(element));
         }
-        let idx = self.len;
         // SAFETY: The capacity is not exceeded.
-        unsafe {
-            self.storage.get_unchecked_mut(self.len).write(element);
-            self.len = self.len.unchecked_add_scalar(I::Scalar::ONE);
-        }
-        Ok(idx)
+        Ok(unsafe { self.push_unchecked(element) })
     }
 
     /// Appends elements from a `TypedSlice` to the `TypedArrayVec`.
