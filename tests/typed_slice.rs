@@ -14,9 +14,7 @@ fn test_typed_slice_basic() {
     assert_eq!(slice.len_usize(), 5);
     assert_eq!(slice[MyIndex::ZERO], 10);
 
-    let sub_slice = &slice[unsafe { MyIndex::from_raw_index_unchecked(1) }..unsafe {
-        MyIndex::from_raw_index_unchecked(4)
-    }];
+    let sub_slice = &slice[MyIndex::from_raw_index(1)..MyIndex::from_raw_index(4)];
     assert_eq!(sub_slice.len_usize(), 3);
     assert_eq!(sub_slice[MyIndex::ZERO], 20);
 }
@@ -136,9 +134,9 @@ fn test_repeat() {
     let repeated = slice.repeat(3).unwrap();
     assert_eq!(repeated.len_usize(), 6);
     assert_eq!(repeated[MyIndex::ZERO], 1);
-    assert_eq!(repeated[unsafe { MyIndex::from_raw_index_unchecked(1) }], 2);
-    assert_eq!(repeated[unsafe { MyIndex::from_raw_index_unchecked(2) }], 1);
-    assert_eq!(repeated[unsafe { MyIndex::from_raw_index_unchecked(5) }], 2);
+    assert_eq!(repeated[MyIndex::from_raw_index(1)], 2);
+    assert_eq!(repeated[MyIndex::from_raw_index(2)], 1);
+    assert_eq!(repeated[MyIndex::from_raw_index(5)], 2);
 }
 
 #[test]
@@ -170,7 +168,7 @@ fn test_repeat_one() {
     let repeated = slice.repeat(1).unwrap();
     assert_eq!(repeated.len_usize(), 3);
     assert_eq!(repeated[MyIndex::ZERO], 1);
-    assert_eq!(repeated[unsafe { MyIndex::from_raw_index_unchecked(2) }], 3);
+    assert_eq!(repeated[MyIndex::from_raw_index(2)], 3);
 }
 
 #[test]
@@ -186,10 +184,7 @@ fn test_binary_search_not_found() {
     let mut data = [1, 3, 5, 7];
     let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    assert_eq!(
-        slice.binary_search(&4),
-        Err(unsafe { MyIndex::from_raw_index_unchecked(2) })
-    );
+    assert_eq!(slice.binary_search(&4), Err(MyIndex::from_raw_index(2)));
 }
 
 #[test]
@@ -198,7 +193,7 @@ fn test_binary_search_by() {
     let slice: &TypedSlice<MyIndex, (i32, &str)> = TypedSlice::from_slice_mut(&mut data);
 
     let result = slice.binary_search_by(|x| x.0.cmp(&3));
-    assert_eq!(result, Ok(unsafe { MyIndex::from_raw_index_unchecked(1) }));
+    assert_eq!(result, Ok(MyIndex::from_raw_index(1)));
 }
 
 #[test]
@@ -207,7 +202,7 @@ fn test_binary_search_by_key() {
     let slice: &TypedSlice<MyIndex, (i32, &str)> = TypedSlice::from_slice_mut(&mut data);
 
     let result = slice.binary_search_by_key(&3, |x| x.0);
-    assert_eq!(result, Ok(unsafe { MyIndex::from_raw_index_unchecked(1) }));
+    assert_eq!(result, Ok(MyIndex::from_raw_index(1)));
 }
 
 #[test]
@@ -215,8 +210,7 @@ fn test_select_nth_unstable() {
     let mut data = [5, 3, 1, 4, 2];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    let (left, pivot, right) =
-        slice.select_nth_unstable(unsafe { MyIndex::from_raw_index_unchecked(2) });
+    let (left, pivot, right) = slice.select_nth_unstable(MyIndex::from_raw_index(2));
     assert_eq!(pivot, &3);
     assert!(left.iter().all(|&x| x <= 3));
     assert!(right.iter().all(|&x| x >= 3));
@@ -227,7 +221,7 @@ fn test_split_at_checked() {
     let mut data = [1, 2, 3, 4, 5];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    let result = slice.split_at_checked(unsafe { MyIndex::from_raw_index_unchecked(2) });
+    let result = slice.split_at_checked(MyIndex::from_raw_index(2));
     assert!(result.is_some());
     let (left, right) = result.unwrap();
     assert_eq!(left.len_usize(), 2);
@@ -239,7 +233,7 @@ fn test_split_at_checked_out_of_bounds() {
     let mut data = [1, 2, 3, 4, 5];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    let result = slice.split_at_checked(unsafe { MyIndex::from_raw_index_unchecked(10) });
+    let result = slice.split_at_checked(MyIndex::from_raw_index(10));
     assert!(result.is_none());
 }
 
@@ -248,7 +242,7 @@ fn test_split_at_mut_checked() {
     let mut data = [1, 2, 3, 4, 5];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    let result = slice.split_at_mut_checked(unsafe { MyIndex::from_raw_index_unchecked(2) });
+    let result = slice.split_at_mut_checked(MyIndex::from_raw_index(2));
     assert!(result.is_some());
 }
 
@@ -257,9 +251,7 @@ fn test_get_disjoint_mut_index_out_of_bounds() {
     let mut data = [1, 2, 3];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    let result = slice.get_disjoint_mut([MyIndex::ZERO, unsafe {
-        MyIndex::from_raw_index_unchecked(10)
-    }]);
+    let result = slice.get_disjoint_mut([MyIndex::ZERO, MyIndex::from_raw_index(10)]);
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), GetDisjointMutError::IndexOutOfBounds);
 }
@@ -279,10 +271,8 @@ fn test_get_disjoint_mut_range_overlapping() {
     let mut data = [1, 2, 3, 4];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    let range1: std::ops::Range<MyIndex> =
-        MyIndex::ZERO..unsafe { MyIndex::from_raw_index_unchecked(2) };
-    let range2: std::ops::Range<MyIndex> = unsafe { MyIndex::from_raw_index_unchecked(1) }
-        ..unsafe { MyIndex::from_raw_index_unchecked(3) };
+    let range1: std::ops::Range<MyIndex> = MyIndex::ZERO..MyIndex::from_raw_index(2);
+    let range2: std::ops::Range<MyIndex> = MyIndex::from_raw_index(1)..MyIndex::from_raw_index(3);
     let result = slice.get_disjoint_mut([range1, range2]);
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), GetDisjointMutError::OverlappingIndices);
@@ -293,9 +283,7 @@ fn test_get_disjoint_mut_range_out_of_bounds() {
     let mut data = [1, 2, 3, 4];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    let range: std::ops::Range<MyIndex> = unsafe { MyIndex::from_raw_index_unchecked(5) }..unsafe {
-        MyIndex::from_raw_index_unchecked(10)
-    };
+    let range: std::ops::Range<MyIndex> = MyIndex::from_raw_index(5)..MyIndex::from_raw_index(10);
     let result = slice.get_disjoint_mut([range]);
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), GetDisjointMutError::IndexOutOfBounds);
@@ -314,10 +302,7 @@ fn test_as_flattened() {
     let flattened: &TypedSlice<MyIndex, i32> = slice.as_flattened().unwrap();
     assert_eq!(flattened.len_usize(), 6);
     assert_eq!(flattened[MyIndex::ZERO], 1);
-    assert_eq!(
-        flattened[unsafe { MyIndex::from_raw_index_unchecked(5) }],
-        6
-    );
+    assert_eq!(flattened[MyIndex::from_raw_index(5)], 6);
 }
 
 #[test]
@@ -396,7 +381,7 @@ fn test_rotate_left() {
     let mut data = [1, 2, 3, 4, 5];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    slice.rotate_left(unsafe { MyIndex::from_raw_index_unchecked(2) });
+    slice.rotate_left(MyIndex::from_raw_index(2));
     assert_eq!(data, [3, 4, 5, 1, 2]);
 }
 
@@ -405,7 +390,7 @@ fn test_rotate_right() {
     let mut data = [1, 2, 3, 4, 5];
     let slice: &mut TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
-    slice.rotate_right(unsafe { MyIndex::from_raw_index_unchecked(2) });
+    slice.rotate_right(MyIndex::from_raw_index(2));
     assert_eq!(data, [4, 5, 1, 2, 3]);
 }
 

@@ -16,8 +16,8 @@ fn test_typed_array_basic() {
     let arr: TypedArray<MyIndex, i32, 3> = TypedArray::try_from_array([1, 2, 3]).unwrap();
     assert_eq!(arr.len_usize(), 3);
     assert_eq!(arr[MyIndex::ZERO], 1);
-    assert_eq!(arr[unsafe { MyIndex::from_raw_index_unchecked(1) }], 2);
-    assert_eq!(arr[unsafe { MyIndex::from_raw_index_unchecked(2) }], 3);
+    assert_eq!(arr[MyIndex::from_raw_index(1)], 2);
+    assert_eq!(arr[MyIndex::from_raw_index(2)], 3);
 }
 
 #[test]
@@ -160,17 +160,16 @@ fn test_helper_methods_and_traits() {
     assert_eq!(format!("{smaller:?}"), "[1, 2, 3]");
 
     let mut array_from_slice_storage = [7, 8, 9];
-    let typed_slice =
-        TypedSlice::<MyIndex, i32>::from_slice_mut(&mut array_from_slice_storage);
+    let typed_slice = TypedSlice::<MyIndex, i32>::from_slice_mut(&mut array_from_slice_storage);
     let array_ref = <&TypedArray<MyIndex, i32, 3>>::try_from(&*typed_slice).unwrap();
     assert_eq!(array_ref[MyIndex(1)], 8);
     let array_mut = <&mut TypedArray<MyIndex, i32, 3>>::try_from(typed_slice).unwrap();
     array_mut[MyIndex(2)] = 90;
     assert_eq!(array_from_slice_storage, [7, 8, 90]);
 
-    let copied = TypedArray::<MyIndex, i32, 3>::try_from(
-        TypedSlice::<MyIndex, i32>::from_slice(&array_from_slice_storage),
-    )
+    let copied = TypedArray::<MyIndex, i32, 3>::try_from(TypedSlice::<MyIndex, i32>::from_slice(
+        &array_from_slice_storage,
+    ))
     .unwrap();
     assert_eq!(copied.into_array(), [7, 8, 90]);
 
