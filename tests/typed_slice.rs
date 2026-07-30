@@ -763,6 +763,27 @@ fn test_chunk_split_sort_and_copy_apis() {
 mod serde_tests {
     use super::*;
 
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    #[test]
+    fn test_deserialize_index_type_max_capacity_succeeds() {
+        let max_str = "A".repeat(255);
+        let json = serde_json::to_string(&max_str).unwrap();
+        let result: Result<&TypedSlice<SmallIndex, u8>, _> = serde_json::from_str(&json);
+        assert!(result.is_ok());
+        let slice = result.unwrap();
+        assert_eq!(slice.len_usize(), 255);
+    }
+
+    #[test]
+    fn test_deserialize_index_type_overflow_fails() {
+        let overflow_str = "A".repeat(256);
+        let json = serde_json::to_string(&overflow_str).unwrap();
+        let result: Result<&TypedSlice<SmallIndex, u8>, _> = serde_json::from_str(&json);
+        assert!(result.is_err());
+    }
+
     #[test]
     fn test_typed_slice_serializes_same_as_regular_slice() {
         fn test_for_index_and_value_types<I: IndexType, T: serde::Serialize>(v: &[T]) {

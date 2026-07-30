@@ -540,4 +540,16 @@ mod serde_tests {
         let result: Result<TypedArrayVec<MyIndex, i32, 2>, _> = serde_json::from_str("[1,2,3]");
         assert!(result.is_err());
     }
+
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    #[test]
+    fn test_deserialize_index_type_max_capacity_succeeds() {
+        let json = format!("[{}]", vec!["0"; 255].join(","));
+        let result: Result<TypedArrayVec<SmallIndex, i32, 255>, _> = serde_json::from_str(&json);
+        assert!(result.is_ok());
+        let vec = result.unwrap();
+        assert_eq!(vec.len_usize(), 255);
+    }
 }

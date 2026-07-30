@@ -1032,4 +1032,22 @@ mod serde_tests {
         let v: TypedVec<MyIndex, i32> = index_type::typed_vec![10, 20, 30];
         test_serde_roundtrip_and_expect_content(&v, "[10,20,30]");
     }
+
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    #[test]
+    fn test_deserialize_index_type_max_capacity_succeeds() {
+        let json = format!("[{}]", vec!["0"; 255].join(","));
+        let result: Result<TypedVec<SmallIndex, i32>, _> = serde_json::from_str(&json);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len_usize(), 255);
+    }
+
+    #[test]
+    fn test_deserialize_index_type_overflow_fails() {
+        let json = format!("[{}]", vec!["0"; 256].join(","));
+        let result: Result<TypedVec<SmallIndex, i32>, _> = serde_json::from_str(&json);
+        assert!(result.is_err());
+    }
 }
