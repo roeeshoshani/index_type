@@ -66,6 +66,7 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
 /// The range `start..end` contains all values with `start <= x < end`.
 /// It is empty if `start >= end`.
 #[derive(Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TypedRange<I: IndexType> {
     /// The lower bound of the range (inclusive).
     pub start: I,
@@ -255,6 +256,7 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
 ///
 /// This range contains all values with `x >= start`.
 #[derive(Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TypedRangeFrom<I: IndexType> {
     /// The lower bound of the range (inclusive).
     pub start: I,
@@ -349,6 +351,54 @@ pub struct TypedRangeInclusive<I: IndexType> {
     start: I,
     end: I,
     exhausted: bool,
+}
+
+/// A helper struct used to serialize/deserialize the `TypedRangeInclusive` type.
+///
+/// This struct mimic the behaviour of serde's implementation of `Serialize` and `Deserialize` for `RangeInclusive`.
+///
+/// Specifically, they ignore the hidden `exhausted` field when serializing and deserializing the object, probably due to the lack of
+/// a better option. So, i do the same.
+#[cfg(feature = "serde")]
+#[derive(serde::Serialize, serde::Deserialize)]
+struct TypedRangeInclusiveSerde<I: IndexType> {
+    start: I,
+    end: I,
+}
+
+#[cfg(feature = "serde")]
+impl<I: IndexType + serde::Serialize> serde::Serialize for TypedRangeInclusive<I> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serde::Serialize::serialize(
+            &TypedRangeInclusiveSerde {
+                start: self.start,
+                end: self.end,
+            },
+            serializer,
+        )
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, I: IndexType + serde::Deserialize<'de>> serde::Deserialize<'de>
+    for TypedRangeInclusive<I>
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let tmp: TypedRangeInclusiveSerde<I> = serde::Deserialize::deserialize(deserializer)?;
+        Ok(Self {
+            start: tmp.start,
+            end: tmp.end,
+            // NOTE: this is the same behaviour as serde's implementation of `Deserialize` for `RangeInclusive`.
+            // It always initialized `exhausted` to `false`, probably due to the lack of a better option.
+            exhausted: false,
+        })
+    }
 }
 
 impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusive<I> {
