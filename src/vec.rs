@@ -44,10 +44,7 @@ use crate::{
     utils::{range_bounds_to_raw, resolve_range_bounds},
 };
 
-#[cold]
-fn panic_index_too_big<I: IndexType>(error: I::IndexTooBigError) -> ! {
-    panic!("{}", error)
-}
+use crate::utils::panic_index_too_big;
 
 /// A growable vector with typed indexing.
 ///

@@ -35,7 +35,7 @@ use crate::{
     array::TypedArray,
     enumerate::UncheckedTypedEnumerate,
     range::{TypedRange, TypedRangeIterExt},
-    utils::range_bounds_to_raw,
+    utils::{panic_index_too_big, range_bounds_to_raw},
 };
 
 #[cfg(feature = "alloc")]
@@ -142,6 +142,53 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         let _ = I::try_from_raw_index(slice.len())?;
         // SAFETY: The length of the slice is checked to be in bounds for I.
         Ok(unsafe { Self::from_slice_unchecked_mut(slice) })
+    }
+
+    /// Creates a `TypedSlice` from a raw slice.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice's length exceeds `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::slice::TypedSlice;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let slice: &TypedSlice<Idx, i32> = TypedSlice::from_slice(&[1, 2, 3]);
+    /// assert_eq!(slice.len_usize(), 3);
+    /// ```
+    #[inline]
+    pub fn from_slice(slice: &[T]) -> &Self {
+        Self::try_from_slice(slice).unwrap_or_else(|error| panic_index_too_big::<I>(error))
+    }
+
+    /// Creates a mutable `TypedSlice` from a mutable raw slice.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice's length exceeds `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::slice::TypedSlice;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let mut data = [1, 2, 3];
+    /// let slice: &mut TypedSlice<Idx, i32> = TypedSlice::from_slice_mut(&mut data);
+    /// assert_eq!(slice.len_usize(), 3);
+    /// ```
+    #[inline]
+    pub fn from_slice_mut(slice: &mut [T]) -> &mut Self {
+        Self::try_from_slice_mut(slice).unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Creates a `TypedSlice` from raw parts.
