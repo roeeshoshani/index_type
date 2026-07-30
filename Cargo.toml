@@ -15,9 +15,11 @@ members = ["index_type_macros"]
 [features]
 default = ["alloc"]
 alloc = []
+serde = ["dep:serde"]
 
 [dependencies]
 index_type_macros = { path = "index_type_macros", version = "0.4.0" }
+serde = { version = "1.0.229", features = ["derive"], optional = true }
 
 [dev-dependencies]
 trybuild = "1.0"
