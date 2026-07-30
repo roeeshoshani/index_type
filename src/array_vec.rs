@@ -869,6 +869,58 @@ impl<I: IndexType, T, const N: usize> From<crate::array::TypedArray<I, T, N>>
     }
 }
 
+/// An error indicating that some typed array vec object is too short, for example when converting a typed array vec to a typed array.
+#[derive(Debug)]
+pub struct TypedArrayVecTooShortError {
+    expected_len: usize,
+    actual_len: usize,
+}
+impl core::fmt::Display for TypedArrayVecTooShortError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "typed array vec too short: expected {} elements, got only {} elements",
+            self.expected_len, self.actual_len
+        )
+    }
+}
+impl core::error::Error for TypedArrayVecTooShortError {}
+
+impl<I: IndexType, T, const VEC_N: usize, const ARR_N: usize>
+    TryFrom<crate::array_vec::TypedArrayVec<I, T, VEC_N>> for TypedArray<I, T, ARR_N>
+{
+    type Error = TypedArrayVecTooShortError;
+
+    fn try_from(value: TypedArrayVec<I, T, VEC_N>) -> Result<Self, Self::Error> {
+        // perform compile time validation of the lengths
+        struct CheckLengths<const VEC_N: usize, const ARR_N: usize>;
+        impl<const VEC_N: usize, const ARR_N: usize> CheckLengths<VEC_N, ARR_N> {
+            const CHECK_LENGTHS: () = if ARR_N > VEC_N {
+                panic!(
+                    "array length is greater than array vec capacity so conversion will never succeed"
+                );
+            };
+        }
+        const { CheckLengths::<VEC_N, ARR_N>::CHECK_LENGTHS };
+
+        let array_vec_len_usize = value.len_usize();
+        if array_vec_len_usize != ARR_N {
+            return Err(TypedArrayVecTooShortError {
+                expected_len: ARR_N,
+                actual_len: array_vec_len_usize,
+            });
+        }
+
+        // perform the conversion
+        let arr: TypedArray<I, T, ARR_N> = unsafe { core::mem::transmute_copy(&value.storage) };
+
+        // avoid running the destructor of the array vec. the elements are now owned by the arr variable.
+        core::mem::forget(value);
+
+        Ok(arr)
+    }
+}
+
 /// An error returned when an operation would exceed a collection's capacity.
 ///
 /// This error is returned by [`TypedArrayVec::try_push`] and similar methods
