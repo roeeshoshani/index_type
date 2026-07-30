@@ -49,6 +49,74 @@ pub struct TypedArray<I: IndexType, T, const N: usize> {
     phantom: PhantomData<fn(&I)>,
 }
 
+#[cfg(feature = "serde")]
+impl<'de, I: IndexType, T: serde::Deserialize<'de>, const N: usize> serde::Deserialize<'de>
+    for TypedArray<I, T, N>
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor<I: IndexType, T, const N: usize>(
+            core::marker::PhantomData<TypedArray<I, T, N>>,
+        );
+        impl<'de, I: IndexType, T: serde::Deserialize<'de>, const N: usize> serde::de::Visitor<'de>
+            for Visitor<I, T, N>
+        {
+            type Value = TypedArray<I, T, N>;
+
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(formatter, "a sequence of {} elements", N)
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let mut array_vec = crate::array_vec::TypedArrayVec::<I, T, N>::new();
+
+                for _ in 0..N {
+                    let element: T = seq.next_element()?.ok_or_else(|| {
+                        serde::de::Error::invalid_length(array_vec.len_usize(), &self)
+                    })?;
+
+                    // SAFETY: we run at most `N` times, so we are within the capacity limits of the array vec.
+                    unsafe { array_vec.push_unchecked(element) };
+                }
+
+                // SAFETY: at this point, the array vec has `N` elements.
+                let arr = unsafe { TypedArray::<I, T, N>::try_from(array_vec).unwrap_unchecked() };
+
+                // Make sure that the sequence doesn't have excess elements.
+                let extra_element: Option<T> = seq.next_element()?;
+                if extra_element.is_some() {
+                    return Err(serde::de::Error::invalid_length(
+                        N.checked_add(1).unwrap(),
+                        &self,
+                    ));
+                }
+
+                Ok(arr)
+            }
+        }
+        deserializer.deserialize_seq(Visitor::<I, T, N>(core::marker::PhantomData))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<I: IndexType, T: serde::Serialize, const N: usize> serde::Serialize for TypedArray<I, T, N> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(N))?;
+        for item in self {
+            serde::ser::SerializeSeq::serialize_element(&mut seq, item)?;
+        }
+        serde::ser::SerializeSeq::end(seq)
+    }
+}
+
 impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     // A compile time assertion to make sure that the array length `N` fits within the bounds of the index type `I`.
     // Used to emit compile time errors instead of runtime erros when we know at compile time that the array size is too big to fit in

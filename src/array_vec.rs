@@ -540,6 +540,79 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
     }
 }
 
+#[cfg(feature = "serde")]
+impl<'de, I: IndexType, T: serde::Deserialize<'de>, const N: usize> serde::Deserialize<'de>
+    for TypedArrayVec<I, T, N>
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor<I: IndexType, T, const N: usize>(
+            core::marker::PhantomData<TypedArrayVec<I, T, N>>,
+        );
+        impl<'de, I: IndexType, T: serde::Deserialize<'de>, const N: usize> serde::de::Visitor<'de>
+            for Visitor<I, T, N>
+        {
+            type Value = TypedArrayVec<I, T, N>;
+
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(formatter, "a sequence of up to {} elements", N)
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let mut arr = TypedArrayVec::<I, T, N>::new();
+
+                for _ in 0..N {
+                    let maybe_element: Option<T> = seq.next_element()?;
+                    match maybe_element {
+                        Some(element) => {
+                            // SAFETY: we run at most `N` times, so we are within the capacity limits of the array vec.
+                            unsafe { arr.push_unchecked(element) };
+                        }
+                        None => {
+                            // We're done parsing the full sequence
+                            return Ok(arr);
+                        }
+                    }
+                }
+
+                // At this point, we parsed `N` full elements.
+                // Make sure that the sequence doesn't have excess elements.
+                let extra_element: Option<T> = seq.next_element()?;
+                if extra_element.is_some() {
+                    return Err(serde::de::Error::invalid_length(
+                        N.checked_add(1).unwrap(),
+                        &self,
+                    ));
+                }
+
+                Ok(arr)
+            }
+        }
+        deserializer.deserialize_seq(Visitor::<I, T, N>(core::marker::PhantomData))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<I: IndexType, T: serde::Serialize, const N: usize> serde::Serialize
+    for TypedArrayVec<I, T, N>
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(N))?;
+        for item in self {
+            serde::ser::SerializeSeq::serialize_element(&mut seq, item)?;
+        }
+        serde::ser::SerializeSeq::end(seq)
+    }
+}
+
 #[derive(Debug)]
 pub struct Drain<'a, I: IndexType, T, const N: usize> {
     inner: &'a mut TypedArrayVec<I, T, N>,
@@ -903,7 +976,7 @@ impl<I: IndexType, T, const VEC_N: usize, const ARR_N: usize>
     type Error = TypedArrayVecTooShortError;
 
     fn try_from(value: TypedArrayVec<I, T, VEC_N>) -> Result<Self, Self::Error> {
-        // perform compile time validation of the lengths
+        // Perform compile time validation of the lengths
         struct CheckLengths<const VEC_N: usize, const ARR_N: usize>;
         impl<const VEC_N: usize, const ARR_N: usize> CheckLengths<VEC_N, ARR_N> {
             const CHECK_LENGTHS: () = if ARR_N > VEC_N {
@@ -922,10 +995,10 @@ impl<I: IndexType, T, const VEC_N: usize, const ARR_N: usize>
             });
         }
 
-        // perform the conversion
+        // Perform the conversion
         let arr: TypedArray<I, T, ARR_N> = unsafe { core::mem::transmute_copy(&value.storage) };
 
-        // avoid running the destructor of the array vec. the elements are now owned by the arr variable.
+        // Avoid running the destructor of the array vec. the elements are now owned by the arr variable.
         core::mem::forget(value);
 
         Ok(arr)

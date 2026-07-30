@@ -52,6 +52,55 @@ pub struct TypedSlice<I: IndexType, T> {
     raw: [T],
 }
 
+#[cfg(feature = "serde")]
+impl<I: IndexType, T: serde::Serialize> serde::Serialize for TypedSlice<I, T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.raw.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, I: IndexType> serde::Deserialize<'de> for &'de TypedSlice<I, u8> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor<I: IndexType>(core::marker::PhantomData<I>);
+
+        impl<'de, I: IndexType + 'de> serde::de::Visitor<'de> for Visitor<I> {
+            type Value = &'de TypedSlice<I, u8>;
+
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(
+                    formatter,
+                    "a borrowed byte array of up to {} bytes",
+                    I::MAX_RAW_INDEX
+                )
+            }
+
+            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                TypedSlice::try_from_slice(v)
+                    .map_err(|_| serde::de::Error::invalid_length(v.len(), &self))
+            }
+
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                TypedSlice::try_from_slice(v.as_bytes())
+                    .map_err(|_| serde::de::Error::invalid_length(v.len(), &self))
+            }
+        }
+        deserializer.deserialize_bytes(Visitor::<I>(core::marker::PhantomData))
+    }
+}
+
 /// This function is logically unsafe, but is not marked as such so it can be passed as a callback
 /// to `Iterator::map` directly.
 ///
