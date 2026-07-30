@@ -108,8 +108,7 @@ fn test_cast_index_type_mut_upcast() {
     struct SmallIndex(u8);
 
     let mut data = [1, 2, 3, 4, 5];
-    let slice: &mut TypedSlice<SmallIndex, i32> =
-        TypedSlice::from_slice_mut(&mut data);
+    let slice: &mut TypedSlice<SmallIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
     let cast: &mut TypedSlice<MyIndex, i32> = slice.cast_index_type_mut::<MyIndex>().unwrap();
     assert_eq!(cast.len_usize(), 5);
@@ -196,8 +195,7 @@ fn test_binary_search_not_found() {
 #[test]
 fn test_binary_search_by() {
     let mut data = [(1, "a"), (3, "b"), (5, "c")];
-    let slice: &TypedSlice<MyIndex, (i32, &str)> =
-        TypedSlice::from_slice_mut(&mut data);
+    let slice: &TypedSlice<MyIndex, (i32, &str)> = TypedSlice::from_slice_mut(&mut data);
 
     let result = slice.binary_search_by(|x| x.0.cmp(&3));
     assert_eq!(result, Ok(unsafe { MyIndex::from_raw_index_unchecked(1) }));
@@ -206,8 +204,7 @@ fn test_binary_search_by() {
 #[test]
 fn test_binary_search_by_key() {
     let mut data = [(1, "a"), (3, "b"), (5, "c")];
-    let slice: &TypedSlice<MyIndex, (i32, &str)> =
-        TypedSlice::from_slice_mut(&mut data);
+    let slice: &TypedSlice<MyIndex, (i32, &str)> = TypedSlice::from_slice_mut(&mut data);
 
     let result = slice.binary_search_by_key(&3, |x| x.0);
     assert_eq!(result, Ok(unsafe { MyIndex::from_raw_index_unchecked(1) }));
@@ -312,8 +309,7 @@ fn test_as_flattened() {
         TypedArray::from_array([3, 4]),
         TypedArray::from_array([5, 6]),
     ];
-    let slice: &TypedSlice<MyIndex, TypedArray<MyIndex, i32, 2>> =
-        TypedSlice::from_slice(&data);
+    let slice: &TypedSlice<MyIndex, TypedArray<MyIndex, i32, 2>> = TypedSlice::from_slice(&data);
 
     let flattened: &TypedSlice<MyIndex, i32> = slice.as_flattened().unwrap();
     assert_eq!(flattened.len_usize(), 6);
@@ -361,13 +357,11 @@ fn test_starts_with() {
     let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
     let mut prefix = [1, 2];
-    let prefix_slice: &TypedSlice<MyIndex, i32> =
-        TypedSlice::from_slice_mut(&mut prefix);
+    let prefix_slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut prefix);
     assert!(slice.starts_with(prefix_slice));
 
     let mut prefix2 = [2, 3];
-    let prefix_slice2: &TypedSlice<MyIndex, i32> =
-        TypedSlice::from_slice_mut(&mut prefix2);
+    let prefix_slice2: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut prefix2);
     assert!(!slice.starts_with(prefix_slice2));
 }
 
@@ -377,13 +371,11 @@ fn test_ends_with() {
     let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut data);
 
     let mut suffix = [4, 5];
-    let suffix_slice: &TypedSlice<MyIndex, i32> =
-        TypedSlice::from_slice_mut(&mut suffix);
+    let suffix_slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut suffix);
     assert!(slice.ends_with(suffix_slice));
 
     let mut suffix2 = [3, 4];
-    let suffix_slice2: &TypedSlice<MyIndex, i32> =
-        TypedSlice::from_slice_mut(&mut suffix2);
+    let suffix_slice2: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice_mut(&mut suffix2);
     assert!(!slice.ends_with(suffix_slice2));
 }
 
@@ -759,6 +751,43 @@ fn test_chunk_split_sort_and_copy_apis() {
     chunks[MyIndex(1)][MyIndex::ZERO] = 9;
     assert_eq!(exact_slice.as_slice(), &[1, 2, 9, 4]);
 }
+
+#[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct SmallIndex(u8);
+
+#[test]
+fn test_from_slice_basic() {
+    let data = [1, 2, 3];
+    let slice = TypedSlice::<SmallIndex, i32>::from_slice(&data);
+    assert_eq!(slice.len_usize(), 3);
+    assert_eq!(slice[SmallIndex::ZERO], 1);
+    assert_eq!(slice[SmallIndex(2)], 3);
+}
+
+#[test]
+#[should_panic(expected = "small index too big")]
+fn test_from_slice_overflow_panics() {
+    let data: [i32; 256] = [0; 256];
+    TypedSlice::<SmallIndex, i32>::from_slice(&data);
+}
+
+#[test]
+fn test_from_slice_mut_basic() {
+    let mut data = [4, 5, 6, 7];
+    let slice = TypedSlice::<SmallIndex, i32>::from_slice_mut(&mut data);
+    assert_eq!(slice.len_usize(), 4);
+    assert_eq!(slice[SmallIndex::ZERO], 4);
+    slice[SmallIndex(1)] = 99;
+    assert_eq!(data, [4, 99, 6, 7]);
+}
+
+#[test]
+#[should_panic(expected = "small index too big")]
+fn test_from_slice_mut_overflow_panics() {
+    let mut data: [i32; 256] = [0; 256];
+    TypedSlice::<SmallIndex, i32>::from_slice_mut(&mut data);
+}
+
 #[cfg(feature = "serde")]
 mod serde_tests {
     use super::*;
