@@ -178,11 +178,9 @@ mod typed_range {
     }
 
     #[test]
+    #[should_panic(expected = "typed enumerate index overflow")]
     fn test_typed_enumerate_panics_on_overflow() {
-        let result = std::panic::catch_unwind(|| {
-            let _ = (0usize..256).typed_enumerate::<SmallIndex>().count();
-        });
-        assert!(result.is_err());
+        let _ = (0usize..256).typed_enumerate::<SmallIndex>().count();
     }
 }
 
@@ -218,12 +216,10 @@ mod typed_range_from_iter {
     }
 
     #[test]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value")]
     fn test_range_from_nth_panics_on_overflow_like_std() {
         let mut iter = (SmallIndex(250)..).iter();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _ = iter.nth(10);
-        }));
-        assert!(result.is_err());
+        let _ = iter.nth(10);
     }
 
     #[test]

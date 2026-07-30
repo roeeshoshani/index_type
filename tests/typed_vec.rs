@@ -124,13 +124,13 @@ fn test_try_from_vec_max_value() {
 }
 
 #[test]
+#[should_panic(expected = "small index too big")]
 fn test_from_vec_panic() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);
 
     let vec: Vec<_> = (0..256).collect();
-    let result = std::panic::catch_unwind(|| TypedVec::<SmallIndex, i32>::from_vec(vec));
-    assert!(result.is_err());
+    TypedVec::<SmallIndex, i32>::from_vec(vec);
 }
 
 #[test]
@@ -398,15 +398,13 @@ fn test_insert_mut_overflow_panic() {
 }
 
 #[test]
+#[should_panic(expected = "insertion index")]
 fn test_try_insert_out_of_bounds() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
     vec.push(1);
     vec.push(2);
 
-    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        vec.insert(unsafe { MyIndex::from_raw_index_unchecked(5) }, 3);
-    }));
-    assert!(res.is_err());
+    vec.insert(unsafe { MyIndex::from_raw_index_unchecked(5) }, 3);
 }
 
 #[test]
@@ -462,8 +460,7 @@ fn test_extend_from_slice() {
     vec.push(2);
 
     let mut data = [3, 4, 5];
-    let slice =
-        index_type::slice::TypedSlice::<MyIndex, i32>::from_slice_mut(&mut data);
+    let slice = index_type::slice::TypedSlice::<MyIndex, i32>::from_slice_mut(&mut data);
     vec.extend_from_slice(slice);
     assert_eq!(vec.len_usize(), 5);
 }
