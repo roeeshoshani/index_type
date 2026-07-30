@@ -161,7 +161,7 @@ fn test_helper_methods_and_traits() {
 
     let mut array_from_slice_storage = [7, 8, 9];
     let typed_slice =
-        TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut array_from_slice_storage).unwrap();
+        TypedSlice::<MyIndex, i32>::from_slice_mut(&mut array_from_slice_storage);
     let array_ref = <&TypedArray<MyIndex, i32, 3>>::try_from(&*typed_slice).unwrap();
     assert_eq!(array_ref[MyIndex(1)], 8);
     let array_mut = <&mut TypedArray<MyIndex, i32, 3>>::try_from(typed_slice).unwrap();
@@ -169,7 +169,7 @@ fn test_helper_methods_and_traits() {
     assert_eq!(array_from_slice_storage, [7, 8, 90]);
 
     let copied = TypedArray::<MyIndex, i32, 3>::try_from(
-        TypedSlice::<MyIndex, i32>::try_from_slice(&array_from_slice_storage).unwrap(),
+        TypedSlice::<MyIndex, i32>::from_slice(&array_from_slice_storage),
     )
     .unwrap();
     assert_eq!(copied.into_array(), [7, 8, 90]);

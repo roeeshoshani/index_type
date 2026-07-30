@@ -463,7 +463,7 @@ fn test_extend_from_slice() {
 
     let mut data = [3, 4, 5];
     let slice =
-        index_type::slice::TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut data).unwrap();
+        index_type::slice::TypedSlice::<MyIndex, i32>::from_slice_mut(&mut data);
     vec.extend_from_slice(slice);
     assert_eq!(vec.len_usize(), 5);
 }
@@ -479,7 +479,7 @@ fn test_extend_from_slice_overflow_panics_without_mutating_vec() {
     }
 
     let data = [1; 100];
-    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::from_slice(&data);
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         vec.extend_from_slice(slice);
@@ -504,7 +504,7 @@ fn test_try_extend_from_slice_overflow_leaves_vec_unchanged() {
     }
 
     let data = [1; 100];
-    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::from_slice(&data);
 
     let result = vec.try_extend_from_slice(slice);
     assert!(result.is_err());
