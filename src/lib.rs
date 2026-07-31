@@ -353,7 +353,46 @@ mod utils;
 #[cfg(any(feature = "alloc", doc))]
 pub mod vec;
 
-pub use index_type_macros::{IndexTooBigError, IndexType};
+/// Derives the `IndexTooBigError` trait for an empty struct.
+///
+/// # Usage
+///
+/// ```rust
+/// use index_type::IndexTooBigError;
+///
+/// #[derive(IndexTooBigError, Debug)]
+/// #[index_too_big_error(msg = "my custom error message")]
+/// struct MyError;
+/// ```
+///
+/// The `msg` attribute is required and specifies the display message for the error.
+pub use index_type_macros::IndexTooBigError;
+
+/// Derives the `IndexType` trait for a newtype struct around an existing `IndexType` (typically a primitive integer).
+///
+/// # Basic Usage
+///
+/// ```rust
+/// use index_type::IndexType;
+///
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// struct MyIndex(u32);
+/// ```
+///
+/// By default, this will also generate a `MyIndexTooBigError` struct that implements `IndexTooBigError`.
+///
+/// # Advanced Usage
+///
+/// You can specify a custom error type using the `#[index_type(error = ...)]` attribute:
+///
+/// ```rust
+/// use index_type::{IndexType, GenericIndexTooBigError};
+///
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// #[index_type(error = GenericIndexTooBigError)]
+/// struct MyIndex(u32);
+/// ```
+pub use index_type_macros::IndexType;
 
 /// A trait for types that can be used as indices into typed collections.
 ///
