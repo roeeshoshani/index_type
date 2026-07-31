@@ -319,7 +319,7 @@
 
 pub use crate::error::GenericIndexTooBigError;
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 #[doc(hidden)]
 pub extern crate alloc;
 
@@ -334,7 +334,7 @@ pub mod macros;
 pub mod range;
 pub mod slice;
 mod utils;
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 pub mod vec;
 
 pub use index_type_macros::{IndexTooBigError, IndexType};
