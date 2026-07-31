@@ -8,11 +8,11 @@
 ## Build, Test, and Development Commands
 Use Cargo from the repository root:
 
-- `cargo test`: runs integration tests and doctests for the workspace.
-- `cargo miri test`: runs tests under Miri to detect undefined behavior.
+- `cargo test --all-features`: runs integration tests and doctests for the workspace.
+- `cargo miri test --all-features`: runs tests under Miri to detect undefined behavior.
 - `cargo fmt --check`: verifies standard Rust formatting.
 - `cargo clippy --all-targets --all-features`: runs lint checks across library code, tests, and examples.
-- `cargo test --test typed_vec`: runs a focused integration test file while iterating on one area.
+- `cargo test --all-features --test typed_vec`: runs a focused integration test file while iterating on one area.
 
 ## README Generation
 The `README.md` file is generated from the crate documentation in `src/lib.rs` using `cargo readme`. To regenerate it after updating docs, run:
