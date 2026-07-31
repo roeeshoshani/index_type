@@ -953,27 +953,27 @@ impl<I: IndexType, T, const N: usize> From<crate::array::TypedArray<I, T, N>>
     }
 }
 
-/// An error indicating that some typed array vec object is too short, for example when converting a typed array vec to a typed array.
+/// An error indicating that a typed array vec has the wrong length, for example when converting it to a typed array.
 #[derive(Debug)]
-pub struct TypedArrayVecTooShortError {
+pub struct TypedArrayVecLengthMismatchError {
     expected_len: usize,
     actual_len: usize,
 }
-impl core::fmt::Display for TypedArrayVecTooShortError {
+impl core::fmt::Display for TypedArrayVecLengthMismatchError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "typed array vec too short: expected {} elements, got only {} elements",
+            "typed array vec has wrong length: expected {} elements, got {} elements",
             self.expected_len, self.actual_len
         )
     }
 }
-impl core::error::Error for TypedArrayVecTooShortError {}
+impl core::error::Error for TypedArrayVecLengthMismatchError {}
 
 impl<I: IndexType, T, const VEC_N: usize, const ARR_N: usize>
     TryFrom<crate::array_vec::TypedArrayVec<I, T, VEC_N>> for TypedArray<I, T, ARR_N>
 {
-    type Error = TypedArrayVecTooShortError;
+    type Error = TypedArrayVecLengthMismatchError;
 
     fn try_from(value: TypedArrayVec<I, T, VEC_N>) -> Result<Self, Self::Error> {
         // Perform compile time validation of the lengths
@@ -989,7 +989,7 @@ impl<I: IndexType, T, const VEC_N: usize, const ARR_N: usize>
 
         let array_vec_len_usize = value.len_usize();
         if array_vec_len_usize != ARR_N {
-            return Err(TypedArrayVecTooShortError {
+            return Err(TypedArrayVecLengthMismatchError {
                 expected_len: ARR_N,
                 actual_len: array_vec_len_usize,
             });

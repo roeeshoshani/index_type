@@ -553,3 +553,95 @@ mod serde_tests {
         assert_eq!(vec.len_usize(), 255);
     }
 }
+
+#[test]
+fn test_try_from_array_vec_success_exact_capacity() {
+    let vec: TypedArrayVec<MyIndex, i32, 3> = index_type::typed_array_vec![10, 20, 30];
+    let array: TypedArray<MyIndex, i32, 3> = TypedArray::try_from(vec).unwrap();
+    assert_eq!(array.as_slice().as_slice(), &[10, 20, 30]);
+}
+
+#[test]
+fn test_try_from_array_vec_success_larger_capacity() {
+    let vec: TypedArrayVec<MyIndex, i32, 5> = index_type::typed_array_vec![1, 2, 3];
+    let array: TypedArray<MyIndex, i32, 3> = TypedArray::try_from(vec).unwrap();
+    assert_eq!(array.as_slice().as_slice(), &[1, 2, 3]);
+}
+
+#[test]
+fn test_try_from_array_vec_error_too_few_elements() {
+    let vec: TypedArrayVec<MyIndex, i32, 5> = index_type::typed_array_vec![1, 2];
+    let result: Result<TypedArray<MyIndex, i32, 3>, _> = TypedArray::try_from(vec);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_try_from_array_vec_error_too_many_elements() {
+    let vec: TypedArrayVec<MyIndex, i32, 5> = index_type::typed_array_vec![1, 2, 3, 4, 5];
+    let result: Result<TypedArray<MyIndex, i32, 3>, _> = TypedArray::try_from(vec);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_try_from_array_vec_error_message() {
+    let vec: TypedArrayVec<MyIndex, i32, 5> = index_type::typed_array_vec![1, 2];
+    let result: Result<TypedArray<MyIndex, i32, 3>, _> = TypedArray::try_from(vec);
+    let err = result.unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "typed array vec has wrong length: expected 3 elements, got 2 elements"
+    );
+}
+
+#[test]
+fn test_try_from_array_vec_consumes_vec() {
+    let drop_counter = Rc::new(Cell::new(0));
+    let vec: TypedArrayVec<MyIndex, DropCounter<i32>, 4> = {
+        let mut v = TypedArrayVec::new();
+        v.push(DropCounter {
+            value: 10,
+            drop_counter: drop_counter.clone(),
+        });
+        v.push(DropCounter {
+            value: 20,
+            drop_counter: drop_counter.clone(),
+        });
+        v.push(DropCounter {
+            value: 30,
+            drop_counter: drop_counter.clone(),
+        });
+        v
+    };
+    assert_eq!(drop_counter.get(), 0);
+    let array: TypedArray<MyIndex, DropCounter<i32>, 3> =
+        TypedArray::try_from(vec).unwrap();
+    assert_eq!(drop_counter.get(), 0);
+    assert_eq!(array.as_slice().len().to_raw_index(), 3);
+    assert_eq!(array[MyIndex(0)].value, 10);
+    assert_eq!(array[MyIndex(1)].value, 20);
+    assert_eq!(array[MyIndex(2)].value, 30);
+    drop(array);
+    assert_eq!(drop_counter.get(), 3);
+}
+
+#[test]
+fn test_try_from_array_vec_error_drops_elements() {
+    let drop_counter = Rc::new(Cell::new(0));
+    let vec: TypedArrayVec<MyIndex, DropCounter<i32>, 5> = {
+        let mut v = TypedArrayVec::new();
+        v.push(DropCounter {
+            value: 1,
+            drop_counter: drop_counter.clone(),
+        });
+        v.push(DropCounter {
+            value: 2,
+            drop_counter: drop_counter.clone(),
+        });
+        v
+    };
+    assert_eq!(drop_counter.get(), 0);
+    let result: Result<TypedArray<MyIndex, DropCounter<i32>, 3>, _> =
+        TypedArray::try_from(vec);
+    assert!(result.is_err());
+    assert_eq!(drop_counter.get(), 2);
+}
