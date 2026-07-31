@@ -613,8 +613,7 @@ fn test_try_from_array_vec_consumes_vec() {
         v
     };
     assert_eq!(drop_counter.get(), 0);
-    let array: TypedArray<MyIndex, DropCounter<i32>, 3> =
-        TypedArray::try_from(vec).unwrap();
+    let array: TypedArray<MyIndex, DropCounter<i32>, 3> = TypedArray::try_from(vec).unwrap();
     assert_eq!(drop_counter.get(), 0);
     assert_eq!(array.as_slice().len().to_raw_index(), 3);
     assert_eq!(array[MyIndex(0)].value, 10);
@@ -640,8 +639,7 @@ fn test_try_from_array_vec_error_drops_elements() {
         v
     };
     assert_eq!(drop_counter.get(), 0);
-    let result: Result<TypedArray<MyIndex, DropCounter<i32>, 3>, _> =
-        TypedArray::try_from(vec);
+    let result: Result<TypedArray<MyIndex, DropCounter<i32>, 3>, _> = TypedArray::try_from(vec);
     assert!(result.is_err());
     assert_eq!(drop_counter.get(), 2);
 }
