@@ -127,51 +127,6 @@ fn test_cast_index_type_mut_downcast_fails() {
 }
 
 #[test]
-fn test_repeat() {
-    let data = [1, 2];
-    let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice(&data);
-
-    let repeated = slice.repeat(3).unwrap();
-    assert_eq!(repeated.len_usize(), 6);
-    assert_eq!(repeated[MyIndex::ZERO], 1);
-    assert_eq!(repeated[MyIndex::from_raw_index(1)], 2);
-    assert_eq!(repeated[MyIndex::from_raw_index(2)], 1);
-    assert_eq!(repeated[MyIndex::from_raw_index(5)], 2);
-}
-
-#[test]
-fn test_repeat_overflow() {
-    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-    struct SmallIndex(u8);
-
-    let data = [1, 2, 3];
-    let slice: &TypedSlice<SmallIndex, i32> = TypedSlice::from_slice(&data);
-
-    let result = slice.repeat(100);
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_repeat_zero() {
-    let data = [1, 2];
-    let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice(&data);
-
-    let repeated = slice.repeat(0).unwrap();
-    assert!(repeated.is_empty());
-}
-
-#[test]
-fn test_repeat_one() {
-    let data = [1, 2, 3];
-    let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice(&data);
-
-    let repeated = slice.repeat(1).unwrap();
-    assert_eq!(repeated.len_usize(), 3);
-    assert_eq!(repeated[MyIndex::ZERO], 1);
-    assert_eq!(repeated[MyIndex::from_raw_index(2)], 3);
-}
-
-#[test]
 fn test_binary_search_empty() {
     let data: [i32; 0] = [];
     let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice(&data);
@@ -873,5 +828,57 @@ mod serde_tests {
 
         // NOTE: we can't compare the error strings directly as they won't be equal, since the 2 types have different `Visitor::expecting`
         // implementations.
+    }
+}
+
+#[cfg(feature = "alloc")]
+mod alloc_dependent_tests {
+    use index_type::{IndexType, slice::TypedSlice};
+
+    use crate::MyIndex;
+
+    #[test]
+    fn test_repeat() {
+        let data = [1, 2];
+        let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice(&data);
+
+        let repeated = slice.repeat(3).unwrap();
+        assert_eq!(repeated.len_usize(), 6);
+        assert_eq!(repeated[MyIndex::ZERO], 1);
+        assert_eq!(repeated[MyIndex::from_raw_index(1)], 2);
+        assert_eq!(repeated[MyIndex::from_raw_index(2)], 1);
+        assert_eq!(repeated[MyIndex::from_raw_index(5)], 2);
+    }
+
+    #[test]
+    fn test_repeat_overflow() {
+        #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        struct SmallIndex(u8);
+
+        let data = [1, 2, 3];
+        let slice: &TypedSlice<SmallIndex, i32> = TypedSlice::from_slice(&data);
+
+        let result = slice.repeat(100);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_repeat_zero() {
+        let data = [1, 2];
+        let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice(&data);
+
+        let repeated = slice.repeat(0).unwrap();
+        assert!(repeated.is_empty());
+    }
+
+    #[test]
+    fn test_repeat_one() {
+        let data = [1, 2, 3];
+        let slice: &TypedSlice<MyIndex, i32> = TypedSlice::from_slice(&data);
+
+        let repeated = slice.repeat(1).unwrap();
+        assert_eq!(repeated.len_usize(), 3);
+        assert_eq!(repeated[MyIndex::ZERO], 1);
+        assert_eq!(repeated[MyIndex::from_raw_index(2)], 3);
     }
 }

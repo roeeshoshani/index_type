@@ -1274,6 +1274,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .map(unsafe_typed_slice_from_slice_unchecked)
     }
 
+    #[cfg(any(feature = "alloc", doc))]
     #[inline]
     pub fn sort(&mut self)
     where
