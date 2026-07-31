@@ -48,3 +48,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-reedme
       - run: cargo reedme --check
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --all-features --workspace --no-deps
