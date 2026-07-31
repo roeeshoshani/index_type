@@ -15,10 +15,10 @@ Use Cargo from the repository root:
 - `cargo test --all-features --test typed_vec`: runs a focused integration test file while iterating on one area.
 
 ## README Generation
-The `README.md` file is generated from the crate documentation in `src/lib.rs` using `cargo readme`. To regenerate it after updating docs, run:
+The `README.md` file is generated from the crate documentation in `src/lib.rs` using `cargo reedme`. To regenerate it after updating docs, run:
 
 ```
-cargo readme > README.md
+cargo reedme
 ```
 
 Do not edit `README.md` directly; any changes will be overwritten. Update the documentation in `src/lib.rs` instead.
