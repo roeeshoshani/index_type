@@ -8,6 +8,7 @@
 //! # Example
 //!
 //! ```
+//! # #[cfg(feature = "alloc")] {
 //! use index_type::IndexType;
 //! use index_type::vec::TypedVec;
 //! use index_type::slice::TypedSlice;
@@ -20,6 +21,7 @@
 //!
 //! // Safe indexing with custom type
 //! assert_eq!(slice[ColIdx::ZERO], 1.0);
+//! # }
 //! ```
 
 #![allow(clippy::type_complexity)]

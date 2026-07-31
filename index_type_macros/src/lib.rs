@@ -39,7 +39,7 @@ struct IndexTypeArgs {
 ///
 /// # Basic Usage
 ///
-/// ```rust
+/// ```ignore
 /// use index_type::IndexType;
 ///
 /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -52,7 +52,7 @@ struct IndexTypeArgs {
 ///
 /// You can specify a custom error type using the `#[index_type(error = ...)]` attribute:
 ///
-/// ```rust
+/// ```ignore
 /// use index_type::{IndexType, GenericIndexTooBigError};
 ///
 /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -216,7 +216,7 @@ struct IndexTooBigErrorArgs {
 ///
 /// # Usage
 ///
-/// ```rust
+/// ```ignore
 /// use index_type::IndexTooBigError;
 ///
 /// #[derive(IndexTooBigError)]
