@@ -9,6 +9,7 @@
 //!
 //! In standard Rust, a raw `usize` can index any collection. This allows subtle bugs:
 //! ```rust
+//! # #[cfg(feature = "alloc")] {
 //! # #[derive(Default, Clone, Copy)]
 //! # struct Node;
 //! # #[derive(Default, Clone, Copy)]
@@ -18,10 +19,12 @@
 //! let node_index = 3;
 //! nodes[node_index];
 //! edges[node_index]; // compiles just fine!
+//! # }
 //! ```
 //!
 //! With typed indices, cross-contamination becomes a compile error:
 //! ```rust
+//! # #[cfg(feature = "alloc")] {
 //! # use index_type::{IndexType, vec::TypedVec, typed_vec};
 //! # #[derive(Default, Clone, Copy)]
 //! # struct Node;
@@ -38,6 +41,7 @@
 //! let node_id = NodeId(3);
 //! nodes[node_id]; // OK
 //! // edges[node_id]; // COMPILE ERROR: expected EdgeId, found NodeId
+//! # }
 //! ```
 //!
 //! ## Features
@@ -53,6 +57,7 @@
 //! ## Quick Start
 //!
 //! ```rust
+//! # #[cfg(feature = "alloc")] {
 //! use index_type::IndexType;
 //! use index_type::vec::TypedVec;
 //!
@@ -64,6 +69,7 @@
 //!
 //! assert_eq!(vec[idx], 42);
 //! // vec[0usize]; // This won't compile - requires MyIndex type
+//! # }
 //! ```
 //!
 //! ## Defining Index Types
@@ -100,6 +106,7 @@
 //! A growable vector with typed indexing. See [`TypedVec`](crate::vec::TypedVec) for the full API.
 //!
 //! ```
+//! # #[cfg(feature = "alloc")] {
 //! use index_type::IndexType;
 //! use index_type::vec::TypedVec;
 //!
@@ -111,11 +118,13 @@
 //! let id1 = nodes.push("Bob".to_string());
 //!
 //! println!("Node 0: {}", nodes[id0]);
+//! # }
 //! ```
 //!
 //! Operations that can fail due to index overflow have both panicking and fallible variants:
 //!
 //! ```
+//! # #[cfg(feature = "alloc")] {
 //! # use index_type::IndexType;
 //! # use index_type::vec::TypedVec;
 //! # #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -123,6 +132,7 @@
 //! let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
 //! vec.push(1);                              // Panics if index too big
 //! let result = vec.try_push(2);             // Returns Result<(), Error>
+//! # }
 //! ```
 //!
 //! ### TypedSlice
@@ -130,6 +140,7 @@
 //! A slice wrapper with typed indexing. See [`TypedSlice`](crate::slice::TypedSlice) for the full API.
 //!
 //! ```
+//! # #[cfg(feature = "alloc")] {
 //! use index_type::IndexType;
 //! use index_type::vec::TypedVec;
 //! use index_type::slice::TypedSlice;
@@ -142,6 +153,7 @@
 //!
 //! // Safe indexing with custom type
 //! let first = slice[RowId::ZERO];
+//! # }
 //! ```
 //!
 //! ### TypedArray
@@ -260,6 +272,7 @@
 //! Convenience macros for creating typed collections:
 //!
 //! ```
+//! # #[cfg(feature = "alloc")] {
 //! use index_type::{typed_vec, typed_array, typed_array_vec, typed_slice, typed_slice_mut, IndexType};
 //! use index_type::vec::TypedVec;
 //! use index_type::array::TypedArray;
@@ -280,6 +293,7 @@
 //!
 //! // Create a TypedSlice reference
 //! let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
+//! # }
 //! ```
 //!
 //! ## Error Handling
@@ -287,6 +301,7 @@
 //! Operations that can fail due to index overflow return `Result` types:
 //!
 //! ```
+//! # #[cfg(feature = "alloc")] {
 //! use index_type::IndexType;
 //! use index_type::vec::TypedVec;
 //!
@@ -302,6 +317,7 @@
 //!
 //! // This fails gracefully
 //! assert!(vec.try_push(255).is_err());
+//! # }
 //! ```
 //!
 //! ## no_std Compatibility
@@ -319,7 +335,7 @@
 
 pub use crate::error::GenericIndexTooBigError;
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 #[doc(hidden)]
 pub extern crate alloc;
 
@@ -334,10 +350,49 @@ pub mod macros;
 pub mod range;
 pub mod slice;
 mod utils;
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 pub mod vec;
 
-pub use index_type_macros::{IndexTooBigError, IndexType};
+/// Derives the `IndexTooBigError` trait for an empty struct.
+///
+/// # Usage
+///
+/// ```rust
+/// use index_type::IndexTooBigError;
+///
+/// #[derive(IndexTooBigError, Debug)]
+/// #[index_too_big_error(msg = "my custom error message")]
+/// struct MyError;
+/// ```
+///
+/// The `msg` attribute is required and specifies the display message for the error.
+pub use index_type_macros::IndexTooBigError;
+
+/// Derives the `IndexType` trait for a newtype struct around an existing `IndexType` (typically a primitive integer).
+///
+/// # Basic Usage
+///
+/// ```rust
+/// use index_type::IndexType;
+///
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// struct MyIndex(u32);
+/// ```
+///
+/// By default, this will also generate a `MyIndexTooBigError` struct that implements `IndexTooBigError`.
+///
+/// # Advanced Usage
+///
+/// You can specify a custom error type using the `#[index_type(error = ...)]` attribute:
+///
+/// ```rust
+/// use index_type::{IndexType, GenericIndexTooBigError};
+///
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// #[index_type(error = GenericIndexTooBigError)]
+/// struct MyIndex(u32);
+/// ```
+pub use index_type_macros::IndexType;
 
 /// A trait for types that can be used as indices into typed collections.
 ///

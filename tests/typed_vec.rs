@@ -1,3 +1,5 @@
+#![cfg(feature = "alloc")]
+
 use std::{
     borrow::{Borrow, BorrowMut},
     collections::hash_map::DefaultHasher,

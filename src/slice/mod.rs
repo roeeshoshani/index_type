@@ -2,12 +2,13 @@
 //!
 //! This module provides [`TypedSlice`], a wrapper around `[T]` that uses a custom
 //! [`IndexType`] for all indexing operations. `TypedSlice` is the core typed collection
-//! type that [`TypedVec`], [`TypedArrayVec`](crate::array_vec::TypedArrayVec),
+//! type that [`TypedVec`](crate::vec::TypedVec), [`TypedArrayVec`](crate::array_vec::TypedArrayVec),
 //! and [`TypedArray`] are built upon.
 //!
 //! # Example
 //!
 //! ```
+//! # #[cfg(feature = "alloc")] {
 //! use index_type::IndexType;
 //! use index_type::vec::TypedVec;
 //! use index_type::slice::TypedSlice;
@@ -20,6 +21,7 @@
 //!
 //! // Safe indexing with custom type
 //! assert_eq!(slice[ColIdx::ZERO], 1.0);
+//! # }
 //! ```
 
 #![allow(clippy::type_complexity)]
@@ -37,9 +39,6 @@ use crate::{
     range::{TypedRange, TypedRangeIterExt},
     utils::{panic_index_too_big, range_bounds_to_raw},
 };
-
-#[cfg(feature = "alloc")]
-use crate::{IndexTooBigError, vec::TypedVec};
 
 mod index;
 
@@ -1239,16 +1238,16 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .map(unsafe_typed_slice_from_slice_unchecked_mut)
     }
 
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "alloc", doc))]
     #[inline]
-    pub fn repeat(&self, n: usize) -> Result<TypedVec<I, T>, I::IndexTooBigError>
+    pub fn repeat(&self, n: usize) -> Result<crate::vec::TypedVec<I, T>, I::IndexTooBigError>
     where
         T: Copy,
     {
-        let _final_len = self
-            .len()
-            .checked_mul_scalar(I::Scalar::try_from_usize(n).ok_or(I::IndexTooBigError::new())?)?;
-        Ok(unsafe { TypedVec::from_vec_unchecked(self.raw.repeat(n)) })
+        let _final_len = self.len().checked_mul_scalar(
+            I::Scalar::try_from_usize(n).ok_or(crate::IndexTooBigError::new())?,
+        )?;
+        Ok(unsafe { crate::vec::TypedVec::from_vec_unchecked(self.raw.repeat(n)) })
     }
 
     #[inline]
@@ -1277,6 +1276,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
             .map(unsafe_typed_slice_from_slice_unchecked)
     }
 
+    #[cfg(any(feature = "alloc", doc))]
     #[inline]
     pub fn sort(&mut self)
     where
@@ -1285,7 +1285,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         self.raw.sort();
     }
 
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "alloc", doc))]
     #[inline]
     pub fn sort_by<F>(&mut self, compare: F)
     where
@@ -1294,7 +1294,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         self.raw.sort_by(compare);
     }
 
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "alloc", doc))]
     #[inline]
     pub fn sort_by_key<K, F>(&mut self, f: F)
     where
@@ -1304,7 +1304,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         self.raw.sort_by_key(f);
     }
 
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "alloc", doc))]
     #[inline]
     pub fn sort_by_cached_key<K, F>(&mut self, f: F)
     where
@@ -1338,13 +1338,13 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         raw.split_off_last_mut()
     }
 
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "alloc", doc))]
     #[inline]
-    pub fn to_vec(&self) -> TypedVec<I, T>
+    pub fn to_vec(&self) -> crate::vec::TypedVec<I, T>
     where
         T: Clone,
     {
-        unsafe { TypedVec::from_vec_unchecked(self.raw.to_vec()) }
+        unsafe { crate::vec::TypedVec::from_vec_unchecked(self.raw.to_vec()) }
     }
 }
 

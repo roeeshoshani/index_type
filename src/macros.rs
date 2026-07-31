@@ -15,7 +15,7 @@ pub const fn __const_assert_len_in_bounds<I: IndexType, const N: usize>() {
     const { AssertLenInBounds::<I, N>::OK };
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 #[doc(hidden)]
 pub const fn __const_assert_vec_in_bounds<I: IndexType, T, const N: usize>(
     _: &crate::vec::TypedVec<I, T>,
@@ -53,7 +53,7 @@ macro_rules! __count {
     };
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 /// Creates a [`TypedVec`](crate::vec::TypedVec) containing the arguments.
 ///
 /// `typed_vec!` allows `TypedVec` to be defined with the same syntax as the standard library's `vec!` macro.
