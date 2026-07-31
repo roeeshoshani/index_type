@@ -6,6 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  CARGO_ALL_FEATURES_VERSION: "1.12.0"
+  CARGO_REEDME_VERSION: "0.6.1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -14,48 +25,63 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install cargo-all-features
-      - run: cargo all-features check --workspace --all-targets
+
+      - run: cargo install --locked cargo-all-features@$CARGO_ALL_FEATURES_VERSION
+      - run: cargo all-features check --all-targets
 
   tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install cargo-all-features
-      - run: cargo all-features test --workspace
+
+      - run: cargo install --locked cargo-all-features@$CARGO_ALL_FEATURES_VERSION
+      - run: cargo all-features test
 
   miri:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - run: rustup +nightly component add miri
-      - run: cargo install cargo-all-features
-      - run: cargo +nightly all-features miri test --workspace
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+
+      - run: cargo +nightly install --locked cargo-all-features@$CARGO_ALL_FEATURES_VERSION
+      - run: cargo +nightly miri setup
+      - run: cargo +nightly all-features miri test
 
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
       - run: cargo fmt --all --check
 
   clippy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install cargo-all-features
-      - run: cargo all-features clippy --workspace --all-targets -- -Dclippy::all
 
-  reedme:
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - run: cargo install --locked cargo-all-features@$CARGO_ALL_FEATURES_VERSION
+      - run: cargo all-features clippy --all-targets -- -D warnings
+
+  readme:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install cargo-reedme
-      - run: cargo reedme --check
+      - uses: dtolnay/rust-toolchain@nightly
+
+      - run: cargo +nightly install --locked cargo-reedme@$CARGO_REEDME_VERSION
+      - run: cargo +nightly reedme --check
 
   doc:
     runs-on: ubuntu-latest
@@ -64,5 +90,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install cargo-all-features
-      - run: cargo all-features doc --workspace --no-deps
+
+      - run: cargo install --locked cargo-all-features@$CARGO_ALL_FEATURES_VERSION
+      - run: cargo all-features doc --no-deps
