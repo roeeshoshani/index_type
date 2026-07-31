@@ -11,6 +11,12 @@ pub fn range_bounds_to_raw<I: IndexType, R: RangeBounds<I>>(r: &R) -> (Bound<usi
     )
 }
 
+#[cold]
+#[inline(never)]
+pub(crate) fn panic_index_too_big<I: IndexType>(error: I::IndexTooBigError) -> ! {
+    panic!("{}", error)
+}
+
 pub fn resolve_range_bounds<I: IndexType, R: RangeBounds<I>>(r: &R, length: I) -> Range<I> {
     let start = match r.start_bound() {
         core::ops::Bound::Included(i) => *i,

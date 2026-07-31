@@ -82,11 +82,14 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
         None => {
             let vis = &derive_input.vis;
             let err_ty_ident = format_ident!("{}TooBigError", derive_input.ident);
-            let err_msg = derive_input
-                .ident
-                .to_string()
-                .to_title_case()
-                .to_lowercase();
+            let err_msg = format!(
+                "{} too big",
+                derive_input
+                    .ident
+                    .to_string()
+                    .to_title_case()
+                    .to_lowercase()
+            );
             let docs = format!(
                 "The error type returned when trying to create an index of type {} with a value that is too big to fit in it",
                 derive_input.ident

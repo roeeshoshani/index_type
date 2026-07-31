@@ -35,7 +35,7 @@ use crate::{
     array::TypedArray,
     enumerate::UncheckedTypedEnumerate,
     range::{TypedRange, TypedRangeIterExt},
-    utils::range_bounds_to_raw,
+    utils::{panic_index_too_big, range_bounds_to_raw},
 };
 
 #[cfg(feature = "alloc")]
@@ -50,6 +50,55 @@ pub use index::TypedSliceIndex;
 pub struct TypedSlice<I: IndexType, T> {
     phantom: PhantomData<fn(&I)>,
     raw: [T],
+}
+
+#[cfg(feature = "serde")]
+impl<I: IndexType, T: serde::Serialize> serde::Serialize for TypedSlice<I, T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.raw.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, I: IndexType> serde::Deserialize<'de> for &'de TypedSlice<I, u8> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor<I: IndexType>(core::marker::PhantomData<I>);
+
+        impl<'de, I: IndexType + 'de> serde::de::Visitor<'de> for Visitor<I> {
+            type Value = &'de TypedSlice<I, u8>;
+
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(
+                    formatter,
+                    "a borrowed byte array of up to {} bytes",
+                    I::MAX_RAW_INDEX
+                )
+            }
+
+            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                TypedSlice::try_from_slice(v)
+                    .map_err(|_| serde::de::Error::invalid_length(v.len(), &self))
+            }
+
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                TypedSlice::try_from_slice(v.as_bytes())
+                    .map_err(|_| serde::de::Error::invalid_length(v.len(), &self))
+            }
+        }
+        deserializer.deserialize_bytes(Visitor::<I>(core::marker::PhantomData))
+    }
 }
 
 /// This function is logically unsafe, but is not marked as such so it can be passed as a callback
@@ -93,6 +142,53 @@ impl<I: IndexType, T> TypedSlice<I, T> {
         let _ = I::try_from_raw_index(slice.len())?;
         // SAFETY: The length of the slice is checked to be in bounds for I.
         Ok(unsafe { Self::from_slice_unchecked_mut(slice) })
+    }
+
+    /// Creates a `TypedSlice` from a raw slice.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice's length exceeds `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::slice::TypedSlice;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let slice: &TypedSlice<Idx, i32> = TypedSlice::from_slice(&[1, 2, 3]);
+    /// assert_eq!(slice.len_usize(), 3);
+    /// ```
+    #[inline]
+    pub fn from_slice(slice: &[T]) -> &Self {
+        Self::try_from_slice(slice).unwrap_or_else(|error| panic_index_too_big::<I>(error))
+    }
+
+    /// Creates a mutable `TypedSlice` from a mutable raw slice.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice's length exceeds `I::MAX_RAW_INDEX`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use index_type::IndexType;
+    /// use index_type::slice::TypedSlice;
+    ///
+    /// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    /// struct Idx(u32);
+    ///
+    /// let mut data = [1, 2, 3];
+    /// let slice: &mut TypedSlice<Idx, i32> = TypedSlice::from_slice_mut(&mut data);
+    /// assert_eq!(slice.len_usize(), 3);
+    /// ```
+    #[inline]
+    pub fn from_slice_mut(slice: &mut [T]) -> &mut Self {
+        Self::try_from_slice_mut(slice).unwrap_or_else(|error| panic_index_too_big::<I>(error))
     }
 
     /// Creates a `TypedSlice` from raw parts.

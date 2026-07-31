@@ -44,10 +44,7 @@ use crate::{
     utils::{range_bounds_to_raw, resolve_range_bounds},
 };
 
-#[cold]
-fn panic_index_too_big<I: IndexType>(error: I::IndexTooBigError) -> ! {
-    panic!("{}", error)
-}
+use crate::utils::panic_index_too_big;
 
 /// A growable vector with typed indexing.
 ///
@@ -79,6 +76,56 @@ fn panic_index_too_big<I: IndexType>(error: I::IndexTooBigError) -> ! {
 pub struct TypedVec<I: IndexType, T> {
     raw: Vec<T>,
     phantom: PhantomData<fn(&I)>,
+}
+
+#[cfg(feature = "serde")]
+impl<I: IndexType, T: serde::Serialize> serde::Serialize for TypedVec<I, T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.raw.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, I: IndexType, T: serde::Deserialize<'de>> serde::Deserialize<'de> for TypedVec<I, T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor<I: IndexType, T>(core::marker::PhantomData<TypedVec<I, T>>);
+        impl<'de, I: IndexType, T: serde::Deserialize<'de>> serde::de::Visitor<'de> for Visitor<I, T> {
+            type Value = TypedVec<I, T>;
+
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(
+                    formatter,
+                    "a sequence of up to {} elements",
+                    I::MAX_RAW_INDEX
+                )
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let mut res = TypedVec::<I, T>::new();
+
+                while let Some(element) = seq.next_element()? {
+                    if res.try_push(element).is_err() {
+                        return Err(serde::de::Error::invalid_length(
+                            res.len_usize().checked_add(1).unwrap(),
+                            &self,
+                        ));
+                    }
+                }
+
+                Ok(res)
+            }
+        }
+        deserializer.deserialize_seq(Visitor::<I, T>(core::marker::PhantomData))
+    }
 }
 
 impl<I: IndexType, T> TypedVec<I, T> {

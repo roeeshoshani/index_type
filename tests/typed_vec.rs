@@ -6,6 +6,8 @@ use std::{
 
 use index_type::{IndexType, enumerate::TypedIteratorExt, slice::TypedSlice, vec::TypedVec};
 
+mod utils;
+
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
 
@@ -122,13 +124,13 @@ fn test_try_from_vec_max_value() {
 }
 
 #[test]
+#[should_panic(expected = "small index too big")]
 fn test_from_vec_panic() {
     #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     struct SmallIndex(u8);
 
     let vec: Vec<_> = (0..256).collect();
-    let result = std::panic::catch_unwind(|| TypedVec::<SmallIndex, i32>::from_vec(vec));
-    assert!(result.is_err());
+    TypedVec::<SmallIndex, i32>::from_vec(vec);
 }
 
 #[test]
@@ -229,7 +231,7 @@ fn test_try_push_mut_returns_mutable_reference_to_correct_element_when_multiple_
     let item = vec.try_push_mut(4).unwrap();
     assert_eq!(*item, 4);
     *item = 40;
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(3) }], 40);
+    assert_eq!(vec[MyIndex::from_raw_index(3)], 40);
 }
 
 #[test]
@@ -246,7 +248,7 @@ fn test_try_append() {
     vec1.try_append(&mut vec2).unwrap();
     assert_eq!(vec1.len_usize(), 5);
     assert_eq!(vec1[MyIndex::ZERO], 1);
-    assert_eq!(vec1[unsafe { MyIndex::from_raw_index_unchecked(4) }], 5);
+    assert_eq!(vec1[MyIndex::from_raw_index(4)], 5);
     assert!(vec2.is_empty());
 }
 
@@ -297,12 +299,11 @@ fn test_try_insert() {
     vec.push(1);
     vec.push(3);
 
-    vec.try_insert(unsafe { MyIndex::from_raw_index_unchecked(1) }, 2)
-        .unwrap();
+    vec.try_insert(MyIndex::from_raw_index(1), 2).unwrap();
     assert_eq!(vec.len_usize(), 3);
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(0) }], 1);
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(1) }], 2);
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 3);
+    assert_eq!(vec[MyIndex::from_raw_index(0)], 1);
+    assert_eq!(vec[MyIndex::from_raw_index(1)], 2);
+    assert_eq!(vec[MyIndex::from_raw_index(2)], 3);
 }
 
 #[test]
@@ -315,7 +316,7 @@ fn test_try_insert_overflow() {
         vec.push(i);
     }
 
-    let result = vec.try_insert(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
+    let result = vec.try_insert(SmallIndex::from_raw_index(255), 999);
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 255);
 }
@@ -331,7 +332,7 @@ fn test_insert_overflow_panic() {
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        vec.insert(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
+        vec.insert(SmallIndex::from_raw_index(255), 999);
     }));
     assert!(result.is_err());
 }
@@ -342,12 +343,10 @@ fn test_try_insert_mut() {
     vec.push(1);
     vec.push(3);
 
-    let item = vec
-        .try_insert_mut(unsafe { MyIndex::from_raw_index_unchecked(1) }, 2)
-        .unwrap();
+    let item = vec.try_insert_mut(MyIndex::from_raw_index(1), 2).unwrap();
     assert_eq!(*item, 2);
     *item = 99;
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(1) }], 99);
+    assert_eq!(vec[MyIndex::from_raw_index(1)], 99);
     assert_eq!(vec.len_usize(), 3);
 }
 
@@ -357,10 +356,10 @@ fn test_insert_mut() {
     vec.push(1);
     vec.push(3);
 
-    let item = vec.insert_mut(unsafe { MyIndex::from_raw_index_unchecked(1) }, 2);
+    let item = vec.insert_mut(MyIndex::from_raw_index(1), 2);
     assert_eq!(*item, 2);
     *item = 99;
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(1) }], 99);
+    assert_eq!(vec[MyIndex::from_raw_index(1)], 99);
     assert_eq!(vec.len_usize(), 3);
 }
 
@@ -374,7 +373,7 @@ fn test_try_insert_mut_overflow() {
         vec.push(i);
     }
 
-    let result = vec.try_insert_mut(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
+    let result = vec.try_insert_mut(SmallIndex::from_raw_index(255), 999);
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 255);
 }
@@ -390,21 +389,19 @@ fn test_insert_mut_overflow_panic() {
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        vec.insert_mut(unsafe { SmallIndex::from_raw_index_unchecked(255) }, 999);
+        vec.insert_mut(SmallIndex::from_raw_index(255), 999);
     }));
     assert!(result.is_err());
 }
 
 #[test]
+#[should_panic(expected = "insertion index")]
 fn test_try_insert_out_of_bounds() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
     vec.push(1);
     vec.push(2);
 
-    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        vec.insert(unsafe { MyIndex::from_raw_index_unchecked(5) }, 3);
-    }));
-    assert!(res.is_err());
+    vec.insert(MyIndex::from_raw_index(5), 3);
 }
 
 #[test]
@@ -431,10 +428,7 @@ fn test_try_extend_overflow() {
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 200);
     assert_eq!(vec[SmallIndex::ZERO], 0);
-    assert_eq!(
-        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
-        199
-    );
+    assert_eq!(vec[SmallIndex::from_raw_index(199)], 199);
 }
 
 #[test]
@@ -460,8 +454,7 @@ fn test_extend_from_slice() {
     vec.push(2);
 
     let mut data = [3, 4, 5];
-    let slice =
-        index_type::slice::TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut data).unwrap();
+    let slice = index_type::slice::TypedSlice::<MyIndex, i32>::from_slice_mut(&mut data);
     vec.extend_from_slice(slice);
     assert_eq!(vec.len_usize(), 5);
 }
@@ -477,7 +470,7 @@ fn test_extend_from_slice_overflow_panics_without_mutating_vec() {
     }
 
     let data = [1; 100];
-    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::from_slice(&data);
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         vec.extend_from_slice(slice);
@@ -485,10 +478,7 @@ fn test_extend_from_slice_overflow_panics_without_mutating_vec() {
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 200);
     assert_eq!(vec[SmallIndex::ZERO], 0);
-    assert_eq!(
-        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
-        199
-    );
+    assert_eq!(vec[SmallIndex::from_raw_index(199)], 199);
 }
 
 #[test]
@@ -502,16 +492,13 @@ fn test_try_extend_from_slice_overflow_leaves_vec_unchanged() {
     }
 
     let data = [1; 100];
-    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::try_from_slice(&data).unwrap();
+    let slice = index_type::slice::TypedSlice::<SmallIndex, i32>::from_slice(&data);
 
     let result = vec.try_extend_from_slice(slice);
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 200);
     assert_eq!(vec[SmallIndex::ZERO], 0);
-    assert_eq!(
-        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
-        199
-    );
+    assert_eq!(vec[SmallIndex::from_raw_index(199)], 199);
 }
 
 #[test]
@@ -524,14 +511,8 @@ fn test_try_into_flattened() {
     let flattened: TypedVec<MyIndex, i32> = vec.try_into_flattened().unwrap();
     assert_eq!(flattened.len_usize(), 6);
     assert_eq!(flattened[MyIndex::ZERO], 1);
-    assert_eq!(
-        flattened[unsafe { MyIndex::from_raw_index_unchecked(1) }],
-        2
-    );
-    assert_eq!(
-        flattened[unsafe { MyIndex::from_raw_index_unchecked(2) }],
-        3
-    );
+    assert_eq!(flattened[MyIndex::from_raw_index(1)], 2);
+    assert_eq!(flattened[MyIndex::from_raw_index(2)], 3);
 }
 
 #[test]
@@ -573,7 +554,7 @@ fn test_split_off() {
     vec.push(4);
     vec.push(5);
 
-    let rest = vec.split_off(unsafe { MyIndex::from_raw_index_unchecked(2) });
+    let rest = vec.split_off(MyIndex::from_raw_index(2));
     assert_eq!(vec.len_usize(), 2);
     assert_eq!(rest.len_usize(), 3);
     assert_eq!(vec[MyIndex::ZERO], 1);
@@ -589,10 +570,10 @@ fn test_truncate() {
     vec.push(4);
     vec.push(5);
 
-    vec.truncate(unsafe { MyIndex::from_raw_index_unchecked(3) });
+    vec.truncate(MyIndex::from_raw_index(3));
     assert_eq!(vec.len_usize(), 3);
     assert_eq!(vec[MyIndex::ZERO], 1);
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 3);
+    assert_eq!(vec[MyIndex::from_raw_index(2)], 3);
 }
 
 #[test]
@@ -605,7 +586,7 @@ fn test_drain() {
     vec.push(5);
 
     let drain: Vec<i32> = vec
-        .drain(MyIndex::ZERO..unsafe { MyIndex::from_raw_index_unchecked(2) })
+        .drain(MyIndex::ZERO..MyIndex::from_raw_index(2))
         .collect();
     assert_eq!(drain, vec![1, 2]);
     assert_eq!(vec.len_usize(), 3);
@@ -620,10 +601,7 @@ fn test_splice() {
     vec.push(3);
 
     let removed: Vec<i32> = vec
-        .splice(
-            MyIndex::ZERO..unsafe { MyIndex::from_raw_index_unchecked(1) },
-            vec![10, 20],
-        )
+        .splice(MyIndex::ZERO..MyIndex::from_raw_index(1), vec![10, 20])
         .collect();
     assert_eq!(removed, vec![1]);
     assert_eq!(vec.len_usize(), 4);
@@ -813,17 +791,12 @@ fn test_extend_from_within_overflow_panics_without_mutating_vec() {
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        vec.extend_from_within(
-            SmallIndex::ZERO..unsafe { SmallIndex::from_raw_index_unchecked(100) },
-        );
+        vec.extend_from_within(SmallIndex::ZERO..SmallIndex::from_raw_index(100));
     }));
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 200);
     assert_eq!(vec[SmallIndex::ZERO], 0);
-    assert_eq!(
-        vec[unsafe { SmallIndex::from_raw_index_unchecked(199) }],
-        199
-    );
+    assert_eq!(vec[SmallIndex::from_raw_index(199)], 199);
 }
 
 #[test]
@@ -837,19 +810,12 @@ fn test_extend_from_within_inclusive_single_element_overflow_panics_without_muta
     }
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        vec.extend_from_within(
-            unsafe { SmallIndex::from_raw_index_unchecked(254) }..=unsafe {
-                SmallIndex::from_raw_index_unchecked(254)
-            },
-        );
+        vec.extend_from_within(SmallIndex::from_raw_index(254)..=SmallIndex::from_raw_index(254));
     }));
     assert!(result.is_err());
     assert_eq!(vec.len_usize(), 255);
     assert_eq!(vec[SmallIndex::ZERO], 0);
-    assert_eq!(
-        vec[unsafe { SmallIndex::from_raw_index_unchecked(254) }],
-        254
-    );
+    assert_eq!(vec[SmallIndex::from_raw_index(254)], 254);
 }
 
 #[test]
@@ -865,7 +831,7 @@ fn test_splice_overflow_panics_without_exceeding_index_bounds() {
     let replacement = 0..100;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let _ = vec.splice(
-            SmallIndex::ZERO..unsafe { SmallIndex::from_raw_index_unchecked(10) },
+            SmallIndex::ZERO..SmallIndex::from_raw_index(10),
             replacement,
         );
     }));
@@ -885,9 +851,7 @@ fn test_splice_inclusive_single_element_overflow_panics_without_exceeding_index_
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let _ = vec.splice(
-            unsafe { SmallIndex::from_raw_index_unchecked(254) }..=unsafe {
-                SmallIndex::from_raw_index_unchecked(254)
-            },
+            SmallIndex::from_raw_index(254)..=SmallIndex::from_raw_index(254),
             [999, 1000],
         );
     }));
@@ -901,10 +865,10 @@ fn test_resize() {
     vec.push(1);
     vec.push(2);
 
-    vec.resize(unsafe { MyIndex::from_raw_index_unchecked(4) }, 9);
+    vec.resize(MyIndex::from_raw_index(4), 9);
     assert_eq!(vec.len_usize(), 4);
     assert_eq!(vec[MyIndex::ZERO], 1);
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(3) }], 9);
+    assert_eq!(vec[MyIndex::from_raw_index(3)], 9);
 }
 
 #[test]
@@ -912,10 +876,10 @@ fn test_resize_with() {
     let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
     vec.push(1);
 
-    vec.resize_with(unsafe { MyIndex::from_raw_index_unchecked(3) }, || 99);
+    vec.resize_with(MyIndex::from_raw_index(3), || 99);
     assert_eq!(vec.len_usize(), 3);
     assert_eq!(vec[MyIndex::ZERO], 1);
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 99);
+    assert_eq!(vec[MyIndex::from_raw_index(2)], 99);
 }
 
 #[test]
@@ -924,10 +888,10 @@ fn test_len() {
     assert_eq!(vec.len(), MyIndex::ZERO);
 
     vec.push(1);
-    assert_eq!(vec.len(), unsafe { MyIndex::from_raw_index_unchecked(1) });
+    assert_eq!(vec.len(), MyIndex::from_raw_index(1));
 
     vec.push(2);
-    assert_eq!(vec.len(), unsafe { MyIndex::from_raw_index_unchecked(2) });
+    assert_eq!(vec.len(), MyIndex::from_raw_index(2));
 }
 
 #[test]
@@ -940,7 +904,7 @@ fn test_try_from_raw_parts() {
 #[test]
 fn test_from_raw_parts() {
     let (ptr, len, cap) = vec![1, 2, 3, 4, 5].into_raw_parts();
-    let len = unsafe { MyIndex::from_raw_index_unchecked(len) };
+    let len = MyIndex::from_raw_index(len);
     let vec = unsafe { TypedVec::<MyIndex, i32>::from_raw_parts(ptr, len, cap) };
     assert_eq!(vec.len(), len);
 }
@@ -1018,4 +982,34 @@ fn test_into_iter_does_not_require_clone() {
         TypedVec::from_vec(vec![NotClone(1), NotClone(2), NotClone(3)]);
     let collected: Vec<_> = vec.into_iter().map(|v| v.0).collect();
     assert_eq!(collected, vec![1, 2, 3]);
+}
+
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use super::*;
+    use crate::utils::test_serde_roundtrip_and_expect_content;
+
+    #[test]
+    fn test_roundtrip() {
+        let v: TypedVec<MyIndex, i32> = index_type::typed_vec![10, 20, 30];
+        test_serde_roundtrip_and_expect_content(&v, "[10,20,30]");
+    }
+
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    #[test]
+    fn test_deserialize_index_type_max_capacity_succeeds() {
+        let json = format!("[{}]", vec!["0"; 255].join(","));
+        let result: Result<TypedVec<SmallIndex, i32>, _> = serde_json::from_str(&json);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len_usize(), 255);
+    }
+
+    #[test]
+    fn test_deserialize_index_type_overflow_fails() {
+        let json = format!("[{}]", vec!["0"; 256].join(","));
+        let result: Result<TypedVec<SmallIndex, i32>, _> = serde_json::from_str(&json);
+        assert!(result.is_err());
+    }
 }

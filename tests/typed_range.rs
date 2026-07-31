@@ -8,7 +8,10 @@ use index_type::{
     range::{TypedRange, TypedRangeFrom, TypedRangeInclusive, TypedRangeIterExt},
 };
 
+mod utils;
+
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 struct MyIndex(u32);
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -175,11 +178,9 @@ mod typed_range {
     }
 
     #[test]
+    #[should_panic(expected = "typed enumerate index overflow")]
     fn test_typed_enumerate_panics_on_overflow() {
-        let result = std::panic::catch_unwind(|| {
-            let _ = (0usize..256).typed_enumerate::<SmallIndex>().count();
-        });
-        assert!(result.is_err());
+        let _ = (0usize..256).typed_enumerate::<SmallIndex>().count();
     }
 }
 
@@ -215,12 +216,10 @@ mod typed_range_from_iter {
     }
 
     #[test]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value")]
     fn test_range_from_nth_panics_on_overflow_like_std() {
         let mut iter = (SmallIndex(250)..).iter();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _ = iter.nth(10);
-        }));
-        assert!(result.is_err());
+        let _ = iter.nth(10);
     }
 
     #[test]
@@ -699,5 +698,49 @@ mod edge_case_iteration {
             .iter()
             .fold(0u32, |acc, i| acc + i.0);
         assert_eq!(sum, 10);
+    }
+}
+
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use crate::utils::test_serde_roundtrip;
+
+    use super::*;
+
+    #[test]
+    fn test_typed_range_roundtrip() {
+        test_serde_roundtrip(&TypedRange {
+            start: MyIndex(3),
+            end: MyIndex(10),
+        });
+    }
+
+    #[test]
+    fn test_typed_range_from_roundtrip() {
+        test_serde_roundtrip(&TypedRangeFrom { start: MyIndex(5) });
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_roundtrip() {
+        test_serde_roundtrip(&TypedRangeInclusive::from_raw_lossy(
+            MyIndex(3)..=MyIndex(10),
+        ));
+    }
+
+    #[test]
+    fn test_typed_range_inclusive_roundtrip_loses_exhasuted_info() {
+        let mut range = TypedRangeInclusive::from_raw_lossy(MyIndex(3)..=MyIndex(3));
+        let json = serde_json::to_string(&range).unwrap();
+        let deserialized: TypedRangeInclusive<MyIndex> = serde_json::from_str(&json).unwrap();
+        assert_eq!(range, deserialized);
+
+        assert_eq!(range.next(), Some(MyIndex(3)));
+
+        let json = serde_json::to_string(&range).unwrap();
+        let mut deserialized: TypedRangeInclusive<MyIndex> = serde_json::from_str(&json).unwrap();
+        assert_ne!(range, deserialized);
+
+        assert_eq!(deserialized.next(), Some(MyIndex(3)));
+        assert_eq!(range, deserialized);
     }
 }

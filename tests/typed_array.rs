@@ -9,13 +9,15 @@ use index_type::{IndexType, array::TypedArray, slice::TypedSlice};
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
 
+mod utils;
+
 #[test]
 fn test_typed_array_basic() {
     let arr: TypedArray<MyIndex, i32, 3> = TypedArray::try_from_array([1, 2, 3]).unwrap();
     assert_eq!(arr.len_usize(), 3);
     assert_eq!(arr[MyIndex::ZERO], 1);
-    assert_eq!(arr[unsafe { MyIndex::from_raw_index_unchecked(1) }], 2);
-    assert_eq!(arr[unsafe { MyIndex::from_raw_index_unchecked(2) }], 3);
+    assert_eq!(arr[MyIndex::from_raw_index(1)], 2);
+    assert_eq!(arr[MyIndex::from_raw_index(2)], 3);
 }
 
 #[test]
@@ -158,17 +160,16 @@ fn test_helper_methods_and_traits() {
     assert_eq!(format!("{smaller:?}"), "[1, 2, 3]");
 
     let mut array_from_slice_storage = [7, 8, 9];
-    let typed_slice =
-        TypedSlice::<MyIndex, i32>::try_from_slice_mut(&mut array_from_slice_storage).unwrap();
+    let typed_slice = TypedSlice::<MyIndex, i32>::from_slice_mut(&mut array_from_slice_storage);
     let array_ref = <&TypedArray<MyIndex, i32, 3>>::try_from(&*typed_slice).unwrap();
     assert_eq!(array_ref[MyIndex(1)], 8);
     let array_mut = <&mut TypedArray<MyIndex, i32, 3>>::try_from(typed_slice).unwrap();
     array_mut[MyIndex(2)] = 90;
     assert_eq!(array_from_slice_storage, [7, 8, 90]);
 
-    let copied = TypedArray::<MyIndex, i32, 3>::try_from(
-        TypedSlice::<MyIndex, i32>::try_from_slice(&array_from_slice_storage).unwrap(),
-    )
+    let copied = TypedArray::<MyIndex, i32, 3>::try_from(TypedSlice::<MyIndex, i32>::from_slice(
+        &array_from_slice_storage,
+    ))
     .unwrap();
     assert_eq!(copied.into_array(), [7, 8, 90]);
 
@@ -203,4 +204,41 @@ fn test_helper_methods_and_traits() {
     let mut hasher = DefaultHasher::new();
     cloned.hash(&mut hasher);
     assert_ne!(hasher.finish(), 0);
+}
+
+#[cfg(feature = "serde")]
+mod serde_tests {
+    use crate::utils::test_serde_roundtrip_and_expect_content;
+
+    use super::*;
+
+    #[test]
+    fn test_roundtrip() {
+        let v: TypedArray<MyIndex, i32, 3> = index_type::typed_array![10, 20, 30];
+        test_serde_roundtrip_and_expect_content(&v, "[10,20,30]");
+    }
+
+    #[test]
+    fn test_too_many_elements() {
+        let result: Result<TypedArray<MyIndex, i32, 2>, _> = serde_json::from_str("[1,2,3]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_too_few_elements() {
+        let result: Result<TypedArray<MyIndex, i32, 3>, _> = serde_json::from_str("[1,2]");
+        assert!(result.is_err());
+    }
+
+    #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    struct SmallIndex(u8);
+
+    #[test]
+    fn test_deserialize_index_type_max_capacity_succeeds() {
+        let json = format!("[{}]", vec!["0"; 255].join(","));
+        let result: Result<TypedArray<SmallIndex, i32, 255>, _> = serde_json::from_str(&json);
+        assert!(result.is_ok());
+        let arr = result.unwrap();
+        assert_eq!(arr.len_usize(), 255);
+    }
 }

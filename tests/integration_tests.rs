@@ -46,14 +46,8 @@ fn test_binary_search() {
     vec.push(30);
     vec.push(40);
 
-    assert_eq!(
-        vec.binary_search(&20),
-        Ok(unsafe { MyIndex::from_raw_index_unchecked(1) })
-    );
-    assert_eq!(
-        vec.binary_search(&25),
-        Err(unsafe { MyIndex::from_raw_index_unchecked(2) })
-    );
+    assert_eq!(vec.binary_search(&20), Ok(MyIndex::from_raw_index(1)));
+    assert_eq!(vec.binary_search(&25), Err(MyIndex::from_raw_index(2)));
 }
 
 #[test]
@@ -64,15 +58,13 @@ fn test_get_disjoint_mut() {
     vec.push(30);
 
     let [a, b] = vec
-        .get_disjoint_mut([MyIndex::ZERO, unsafe {
-            MyIndex::from_raw_index_unchecked(2)
-        }])
+        .get_disjoint_mut([MyIndex::ZERO, MyIndex::from_raw_index(2)])
         .unwrap();
     *a += 1;
     *b += 1;
 
     assert_eq!(vec[MyIndex::ZERO], 11);
-    assert_eq!(vec[unsafe { MyIndex::from_raw_index_unchecked(2) }], 31);
+    assert_eq!(vec[MyIndex::from_raw_index(2)], 31);
 
     // Overlapping indices should fail
     assert!(
