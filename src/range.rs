@@ -20,7 +20,7 @@
 //! }
 //! ```
 
-use core::{hint::unreachable_unchecked, iter::FusedIterator, ops::RangeBounds};
+use core::iter::FusedIterator;
 
 use crate::{IndexScalarType, IndexType};
 
@@ -76,10 +76,7 @@ pub struct TypedRange<I: IndexType> {
 
 impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRange<I> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.start.fmt(fmt)?;
-        write!(fmt, "..")?;
-        self.end.fmt(fmt)?;
-        Ok(())
+        write!(fmt, "{:?}..{:?}", self.start, self.end)
     }
 }
 
@@ -264,9 +261,7 @@ pub struct TypedRangeFrom<I: IndexType> {
 
 impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeFrom<I> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.start.fmt(fmt)?;
-        write!(fmt, "..")?;
-        Ok(())
+        write!(fmt, "{:?}..", self.start)
     }
 }
 
@@ -280,6 +275,12 @@ impl<I: IndexType> TypedRangeFrom<I> {
     /// Converts a raw range into a typed range.
     pub const fn from_raw(value: core::ops::RangeFrom<I>) -> Self {
         Self { start: value.start }
+    }
+}
+
+impl<I: IndexType> From<core::ops::RangeFrom<I>> for TypedRangeFrom<I> {
+    fn from(value: core::ops::RangeFrom<I>) -> Self {
+        Self::from_raw(value)
     }
 }
 
@@ -327,85 +328,116 @@ impl<I: IndexType> Iterator for TypedRangeFrom<I> {
 impl<I: IndexType> FusedIterator for TypedRangeFrom<I> {}
 
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeInclusive<I> {
-    type Iter = TypedRangeInclusive<I>;
+    type Iter = TypedRangeInclusiveIter<I>;
 
     #[inline]
     fn iter(self) -> Self::Iter {
-        TypedRangeInclusive::from_raw_lossy(self)
+        TypedRangeInclusive::from_raw(self).iter()
     }
 }
 
-/// A range bounded inclusively below and above (`start..=end`) which supports iteration using custom index types.
+/// A range bounded inclusively below and above (`start..=end`).
 ///
-/// The `RangeInclusive` `start..=end` contains all values with `x >= start`
-/// and `x <= end`. It is empty unless `start <= end`.
+/// The range `start..=end` contains all values with `start <= x <= end`.
+/// It is empty if `start > end`.
 ///
-/// This iterator is [fused], but the specific values of `start` and `end` after
-/// iteration has finished are **unspecified** other than that [`.is_empty()`]
-/// will return `true` once no more values will be produced.
-///
-/// [fused]: FusedIterator
-/// [`.is_empty()`]: TypedRangeInclusive::is_empty
+/// Unlike [`TypedRangeInclusiveIter`], this type is a range rather than an
+/// iterator. Use [`TypedRangeInclusive::iter`] to iterate over it.
 #[derive(Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TypedRangeInclusive<I: IndexType> {
+    /// The lower bound of the range (inclusive).
+    pub start: I,
+    /// The upper bound of the range (inclusive).
+    pub end: I,
+}
+
+impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusive<I> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(fmt, "{:?}..={:?}", self.start, self.end)
+    }
+}
+
+impl<I: IndexType> TypedRangeInclusive<I> {
+    /// Converts this range into a raw range.
+    #[inline]
+    pub const fn into_raw(self) -> core::ops::RangeInclusive<I> {
+        self.start..=self.end
+    }
+
+    /// Converts a raw range into a typed range.
+    ///
+    /// The standard library does not specify the values of the bounds of a
+    /// `RangeInclusive` after it has been exhausted. Consequently, if
+    /// `range` is exhausted, the value returned by this function is
+    /// unspecified and depends on the internal implementation of
+    /// [`RangeInclusive`](core::ops::RangeInclusive) in the version of Rust
+    /// being used. This function does not preserve or provide any guarantees
+    /// about the exhausted state of the raw range.
+    #[inline]
+    pub const fn from_raw(range: core::ops::RangeInclusive<I>) -> Self {
+        Self {
+            start: *range.start(),
+            end: *range.end(),
+        }
+    }
+
+    /// Creates an iterator over this range.
+    ///
+    /// Note that unlike the other range types (e.g [`TypedRange`]), the inclusive range type itself is not an iterator, and iteration
+    /// over it is provided using a separate helper type: [`TypedRangeInclusiveIter`]. This separation is done since iterating over an
+    /// inclusive range requires storing extra state other than the start and end indices due to overflow related problems. This extra
+    /// state does not belong in the core [`TypedRangeInclusive`] type, and is instead used only in the iterator type
+    /// [`TypedRangeInclusiveIter`].
+    #[inline]
+    pub const fn iter(self) -> TypedRangeInclusiveIter<I> {
+        TypedRangeInclusiveIter {
+            start: self.start,
+            end: self.end,
+            exhausted: false,
+        }
+    }
+
+    /// Returns `true` if the range contains no elements.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.start > self.end
+    }
+
+    /// Tries to compute the number of elements remaining in the iterator, returning `None` in case the resulting length overflows `usize`.
+    #[inline]
+    pub fn try_len(&self) -> Option<usize> {
+        let Some(diff) = self.end.checked_sub_index(self.start) else {
+            return Some(0);
+        };
+        diff.to_usize().checked_add(1)
+    }
+
+    /// Returns the number of elements in the range.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.try_len()
+            .expect("inclusive range length overflowed usize")
+    }
+}
+
+impl<I: IndexType> From<core::ops::RangeInclusive<I>> for TypedRangeInclusive<I> {
+    fn from(value: core::ops::RangeInclusive<I>) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+/// An iterator over a [`TypedRangeInclusive`].
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct TypedRangeInclusiveIter<I: IndexType> {
     start: I,
     end: I,
     exhausted: bool,
 }
 
-/// A helper struct used to serialize/deserialize the `TypedRangeInclusive` type.
-///
-/// This struct mimic the behaviour of serde's implementation of `Serialize` and `Deserialize` for `RangeInclusive`.
-///
-/// Specifically, they ignore the hidden `exhausted` field when serializing and deserializing the object, probably due to the lack of
-/// a better option. So, i do the same.
-#[cfg(feature = "serde")]
-#[derive(serde::Serialize, serde::Deserialize)]
-struct TypedRangeInclusiveSerde<I: IndexType> {
-    start: I,
-    end: I,
-}
-
-#[cfg(feature = "serde")]
-impl<I: IndexType + serde::Serialize> serde::Serialize for TypedRangeInclusive<I> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serde::Serialize::serialize(
-            &TypedRangeInclusiveSerde {
-                start: self.start,
-                end: self.end,
-            },
-            serializer,
-        )
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de, I: IndexType + serde::Deserialize<'de>> serde::Deserialize<'de>
-    for TypedRangeInclusive<I>
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let tmp: TypedRangeInclusiveSerde<I> = serde::Deserialize::deserialize(deserializer)?;
-        Ok(Self {
-            start: tmp.start,
-            end: tmp.end,
-            // NOTE: this is the same behaviour as serde's implementation of `Deserialize` for `RangeInclusive`.
-            // It always initialized `exhausted` to `false`, probably due to the lack of a better option.
-            exhausted: false,
-        })
-    }
-}
-
-impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusive<I> {
+impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusiveIter<I> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.start.fmt(fmt)?;
-        write!(fmt, "..=")?;
-        self.end.fmt(fmt)?;
+        write!(fmt, "{:?}..={:?}", self.start, self.end)?;
         if self.exhausted {
             write!(fmt, " (exhausted)")?;
         }
@@ -413,134 +445,76 @@ impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusive<I
     }
 }
 
-impl<I: IndexType> TypedRangeInclusive<I> {
-    /// Converts this range into a raw range.
+impl<I: IndexType> TypedRangeInclusiveIter<I> {
+    /// Returns the starting index of the iterator.
     ///
-    /// Note that in the case of [`TypedRangeInclusive`], unlike the other typed range types, this is a lossy conversion.
-    /// The lost information is the value of the internal `exhausted` field of [`RangeInclusive`](core::ops::RangeInclusive) which can't
-    /// be copied over since there is no way to set it if the `Idx` type does not implement the unstable `Step` trait, and we can't use
-    /// the `Step` trait in trait bounds (e.g `I: Step`) as it is unstable.
+    /// The returned value is unspecified if the iterator is exhausted.
     #[inline]
-    pub const fn into_raw(self) -> core::ops::RangeInclusive<I> {
-        self.start..=self.end
-    }
-
-    /// Converts a raw range into a typed range, with potential loss of information about the `exhausted` state of the raw range.
-    ///
-    /// Getting a [`RangeInclusive`](core::ops::RangeInclusive) object into `exhausted` state when the index type `I` does not
-    /// implement the unstable `Step` trait is currently not possible using stable rust, since the range can't possibly be iterated.
-    ///
-    /// All types other than standard rust integers (e.g u32, usize), for example user defined types or non zero integer types, do not
-    /// implement the `Step` trait. So, for all such types, using this function will not actually cause any loss of information.
-    ///
-    /// Additionally, if you are certain that your range is not exhausted, for example since it is a freshly constructed
-    /// range (e.g `0..=5`), then you can safely use this function.
-    ///
-    /// If keeping the value of the `exhausted` state of the iterator is important to you, or if you are unsure whether you need it or
-    /// not and you are ok with running a couple more opcodes, use [`from_raw`](TypedRangeInclusive::from_raw) instead.
-    #[inline]
-    pub const fn from_raw_lossy(range: core::ops::RangeInclusive<I>) -> Self {
-        let start = *range.start();
-        let end = *range.end();
-        Self {
-            start,
-            end,
-            exhausted: false,
-        }
-    }
-
-    /// Converts a raw range into a typed range.
-    pub fn from_raw(range: core::ops::RangeInclusive<I>) -> Self {
-        // this special code is used to handle the quirks of `RangeInclusive` related to the `exhausted` field.
-        // see `RangeInclusive::into_slice_range`. the `end_bound` function can be used as a "side channel" to get the value of the
-        // `exhausted` field which is not exposed directly in any public API.
-        match range.end_bound() {
-            core::ops::Bound::Excluded(i) => Self {
-                start: *range.start(),
-                end: *i,
-                exhausted: true,
-            },
-            core::ops::Bound::Included(i) => {
-                let start = *range.start();
-                let end = *i;
-                Self {
-                    start,
-                    end,
-                    exhausted: false,
-                }
-            }
-            core::ops::Bound::Unbounded => unsafe { unreachable_unchecked() },
-        }
-    }
-
-    /// Returns the starting index of the range.
-    #[inline]
-    pub fn start(&self) -> I {
+    pub const fn start(&self) -> I {
         self.start
     }
 
-    /// Returns the ending index of the range.
+    /// Returns the ending index of the iterator.
+    ///
+    /// The returned value is unspecified if the iterator is exhausted.
     #[inline]
-    pub fn end(&self) -> I {
+    pub const fn end(&self) -> I {
         self.end
     }
 
-    /// Exhausts this iterator by pointing the start to the end and setting the exhausted flag.
-    fn exhasut_from_start(&mut self) {
-        self.start = self.end;
-        self.exhausted = true;
-    }
-
-    /// Exhausts this iterator by pointing the end to the start and setting the exhausted flag.
-    fn exhasut_from_end(&mut self) {
-        self.end = self.start;
-        self.exhausted = true;
-    }
-
-    /// Returns `true` if the range contains no elements, or if the iterator has been exhausted.
+    /// Returns `true` if the iterator contains no elements or has overflowed.
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.exhausted || (self.start > self.end)
+        self.exhausted || self.start > self.end
     }
 
-    /// Returns the number of elements in the range.
-    ///
-    /// Returns 0 if the iterator is exhausted.
+    /// Tries to compute the number of elements remaining in the iterator, returning `None` in case the resulting length overflows `usize`.
     #[inline]
-    pub fn len(&self) -> usize {
+    pub fn try_len(&self) -> Option<usize> {
         if self.exhausted {
-            return 0;
+            return Some(0);
         }
         let Some(diff) = self.end.checked_sub_index(self.start) else {
-            return 0;
+            return Some(0);
         };
-        unsafe { diff.unchecked_add_scalar(I::Scalar::ONE) }.to_usize()
+        diff.to_usize().checked_add(1)
+    }
+
+    /// Returns the number of elements remaining in the iterator.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.try_len()
+            .expect("inclusive range length overflowed usize")
     }
 }
 
-impl<I: IndexType> Iterator for TypedRangeInclusive<I> {
+impl<I: IndexType> Iterator for TypedRangeInclusiveIter<I> {
     type Item = I;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if TypedRangeInclusive::is_empty(self) {
+        if TypedRangeInclusiveIter::is_empty(self) {
             return None;
         }
-
-        if self.start == self.end {
-            self.exhausted = true;
-            Some(self.start)
-        } else {
-            let res = self.start;
-            self.start = unsafe { res.unchecked_add_scalar(I::Scalar::ONE) };
-            Some(res)
+        let res = self.start;
+        match self.start.checked_add_scalar(I::Scalar::ONE) {
+            Ok(start_plus_1) => self.start = start_plus_1,
+            Err(_) => self.exhausted = true,
         }
+        Some(res)
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.len();
-        (len, Some(len))
+        match self.try_len() {
+            Some(len) => (len, Some(len)),
+            None => {
+                // The length is too big to fit in a `usize`.
+                // Return a best effort size hint.
+                // The upper bound can't really be expressed using `usize`, so we return `None` instead.
+                (usize::MAX, None)
+            }
+        }
     }
 
     #[inline]
@@ -550,39 +524,44 @@ impl<I: IndexType> Iterator for TypedRangeInclusive<I> {
 
     #[inline]
     fn nth(&mut self, n: usize) -> Option<I> {
-        if TypedRangeInclusive::is_empty(self) {
+        if TypedRangeInclusiveIter::is_empty(self) {
             return None;
         }
 
         let Some(offset) = I::Scalar::try_from_usize(n) else {
-            self.exhasut_from_start();
+            self.exhausted = true;
             return None;
         };
 
         let Ok(res) = self.start.checked_add_scalar(offset) else {
-            self.exhasut_from_start();
+            self.exhausted = true;
             return None;
         };
 
         if res > self.end {
-            self.exhasut_from_start();
-            None
-        } else if res == self.end {
-            self.exhasut_from_start();
-            Some(res)
-        } else {
-            self.start = unsafe { res.unchecked_add_scalar(I::Scalar::ONE) };
-            Some(res)
+            self.exhausted = true;
+            return None;
         }
+
+        match res.checked_add_scalar(I::Scalar::ONE) {
+            Ok(res_plus_1) => {
+                self.start = res_plus_1;
+            }
+            Err(_) => {
+                self.exhausted = true;
+            }
+        }
+
+        Some(res)
     }
 
     #[inline]
-    fn last(mut self) -> Option<I> {
+    fn last(mut self) -> Option<Self::Item> {
         self.next_back()
     }
 
     #[inline]
-    fn min(mut self) -> Option<I>
+    fn min(mut self) -> Option<Self::Item>
     where
         I: Ord,
     {
@@ -590,7 +569,7 @@ impl<I: IndexType> Iterator for TypedRangeInclusive<I> {
     }
 
     #[inline]
-    fn max(mut self) -> Option<I>
+    fn max(mut self) -> Option<Self::Item>
     where
         I: Ord,
     {
@@ -603,56 +582,63 @@ impl<I: IndexType> Iterator for TypedRangeInclusive<I> {
     }
 }
 
-impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusive<I> {
+impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusiveIter<I> {
     #[inline]
     fn next_back(&mut self) -> Option<I> {
-        if TypedRangeInclusive::is_empty(self) {
+        if TypedRangeInclusiveIter::is_empty(self) {
             return None;
         }
-
-        if self.end == self.start {
-            self.exhausted = true;
-            Some(self.end)
-        } else {
-            let res = self.end;
-            self.end = unsafe { res.unchecked_sub_scalar(I::Scalar::ONE) };
-            Some(res)
-        }
+        let res = self.end;
+        match self.end.checked_sub_scalar(I::Scalar::ONE) {
+            Some(end_minus_1) => {
+                self.end = end_minus_1;
+            }
+            None => {
+                self.exhausted = true;
+            }
+        };
+        Some(res)
     }
 
     #[inline]
     fn nth_back(&mut self, n: usize) -> Option<I> {
-        if TypedRangeInclusive::is_empty(self) {
+        if TypedRangeInclusiveIter::is_empty(self) {
             return None;
         }
 
         let Some(offset) = I::Scalar::try_from_usize(n) else {
-            self.exhasut_from_end();
+            self.exhausted = true;
             return None;
         };
 
         let Some(res) = self.end.checked_sub_scalar(offset) else {
-            self.exhasut_from_end();
+            self.exhausted = true;
             return None;
         };
 
         if res < self.start {
-            self.exhasut_from_end();
-            None
-        } else if res == self.start {
-            self.exhasut_from_end();
-            Some(res)
-        } else {
-            self.end = unsafe { res.unchecked_sub_scalar(I::Scalar::ONE) };
-            Some(res)
+            self.exhausted = true;
+            return None;
         }
+
+        match res.checked_sub_scalar(I::Scalar::ONE) {
+            Some(res_minus_1) => {
+                self.end = res_minus_1;
+            }
+            None => {
+                self.exhausted = true;
+            }
+        }
+
+        Some(res)
     }
 }
 
-impl<I: IndexType> ExactSizeIterator for TypedRangeInclusive<I> {
+impl<I: IndexType> ExactSizeIterator for TypedRangeInclusiveIter<I> {
+    #[inline]
     fn len(&self) -> usize {
-        self.len()
+        TypedRangeInclusiveIter::len(self)
     }
 }
 
-impl<I: IndexType> FusedIterator for TypedRangeInclusive<I> {}
+impl<I: IndexType> FusedIterator for TypedRangeInclusiveIter<I> {}

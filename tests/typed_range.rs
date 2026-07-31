@@ -303,8 +303,8 @@ mod raw_conversions {
     #[test]
     fn test_typed_range_inclusive_from_raw_and_into_raw_preserve_non_empty_bounds() {
         let range = TypedRangeInclusive::from_raw(MyIndex(2)..=MyIndex(5));
-        assert_eq!(range.start(), MyIndex(2));
-        assert_eq!(range.end(), MyIndex(5));
+        assert_eq!(range.start, MyIndex(2));
+        assert_eq!(range.end, MyIndex(5));
         assert!(!range.is_empty());
 
         let raw = range.into_raw();
@@ -317,8 +317,8 @@ mod raw_conversions {
     #[test]
     fn test_typed_range_inclusive_from_raw_preserves_empty_non_exhausted_bounds() {
         let range = TypedRangeInclusive::from_raw(MyIndex(5)..=MyIndex(3));
-        assert_eq!(range.start(), MyIndex(5));
-        assert_eq!(range.end(), MyIndex(3));
+        assert_eq!(range.start, MyIndex(5));
+        assert_eq!(range.end, MyIndex(3));
         assert!(range.is_empty());
 
         let raw = range.into_raw();
@@ -329,76 +329,43 @@ mod raw_conversions {
     }
 
     #[test]
-    fn test_typed_range_inclusive_from_raw_preserves_exhausted_std_range_state() {
-        let mut raw = 2usize..=4usize;
-        assert_eq!(raw.by_ref().collect::<Vec<_>>(), vec![2, 3, 4]);
-        assert_eq!(raw.start(), &4);
-        assert_eq!(raw.end(), &4);
-        assert_eq!(raw.end_bound(), Bound::Excluded(&4));
-        assert!(raw.is_empty());
-
-        let mut range = TypedRangeInclusive::from_raw(raw);
-        assert_eq!(range.start(), 4);
-        assert_eq!(range.end(), 4);
-        assert!(range.is_empty());
-        assert_eq!(range.len(), 0);
-        assert_eq!(range.next(), None);
+    fn test_typed_range_inclusive_from_raw_exhausted_does_not_panic() {
+        let mut raw = 2usize..=2usize;
+        let _ = raw.next();
+        let _ = TypedRangeInclusive::from_raw(raw);
     }
 
     #[test]
-    fn test_typed_range_inclusive_from_raw_lossy_drops_exhausted_std_range_state() {
-        let mut raw = 2usize..=4usize;
-        let _ = raw.by_ref().count();
-        assert_eq!(raw.start(), &4);
-        assert_eq!(raw.end(), &4);
-        assert_eq!(raw.end_bound(), Bound::Excluded(&4));
-        assert!(raw.is_empty());
+    fn test_typed_range_inclusive_iter_accessors_update_during_iteration() {
+        let mut iter = TypedRangeInclusive::from_raw(MyIndex(2)..=MyIndex(5)).iter();
 
-        let mut range = TypedRangeInclusive::from_raw_lossy(raw);
-        assert_eq!(range.start(), 4);
-        assert_eq!(range.end(), 4);
-        assert!(!range.is_empty());
-        assert_eq!(range.len(), 1);
-        assert_eq!(range.next(), Some(4));
-        assert!(range.is_empty());
-        assert_eq!(range.next(), None);
+        assert_eq!(iter.next(), Some(MyIndex(2)));
+        assert_eq!(iter.start(), MyIndex(3));
+        assert_eq!(iter.next(), Some(MyIndex(3)));
+        assert_eq!(iter.next_back(), Some(MyIndex(5)));
+        assert_eq!(iter.end(), MyIndex(4));
+        assert_eq!(iter.next_back(), Some(MyIndex(4)));
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
-    fn test_typed_range_inclusive_into_raw_is_lossy_for_exhausted_ranges() {
-        let mut raw = 3usize..=3usize;
-        assert_eq!(raw.next(), Some(3));
-        assert_eq!(raw.start(), &3);
-        assert_eq!(raw.end(), &3);
-        assert_eq!(raw.end_bound(), Bound::Excluded(&3));
-        assert!(raw.is_empty());
+    fn test_typed_range_inclusive_iter_exhaustion() {
+        let mut iter = (SmallIndex(3)..=SmallIndex(3)).iter();
+        assert_eq!(iter.next(), Some(SmallIndex(3)));
+        assert!(iter.is_empty());
+        assert_eq!(iter.next(), None);
+        assert!(iter.is_empty());
+        assert_eq!(iter.next(), None);
+        assert!(iter.is_empty());
 
-        let range = TypedRangeInclusive::from_raw(raw);
-        assert!(range.is_empty());
-        assert_eq!(range.start(), 3);
-        assert_eq!(range.end(), 3);
-
-        let raw_roundtrip = range.into_raw();
-        assert_eq!(raw_roundtrip.start(), &3);
-        assert_eq!(raw_roundtrip.end(), &3);
-        assert_eq!(raw_roundtrip.end_bound(), Bound::Included(&3));
-        assert!(!raw_roundtrip.is_empty());
-        assert_eq!(raw_roundtrip.collect::<Vec<_>>(), vec![3]);
-    }
-
-    #[test]
-    fn test_typed_range_inclusive_accessors_update_during_iteration() {
-        let mut range = TypedRangeInclusive::from_raw(MyIndex(2)..=MyIndex(5));
-
-        assert_eq!(range.next(), Some(MyIndex(2)));
-        assert_eq!(range.start(), MyIndex(3));
-        assert_eq!(range.end(), MyIndex(5));
-        assert!(!range.is_empty());
-
-        assert_eq!(range.next_back(), Some(MyIndex(5)));
-        assert_eq!(range.start(), MyIndex(3));
-        assert_eq!(range.end(), MyIndex(4));
-        assert!(!range.is_empty());
+        let mut iter = (SmallIndex(254)..=SmallIndex(255)).iter();
+        assert_eq!(iter.next(), Some(SmallIndex(254)));
+        assert_eq!(iter.next(), Some(SmallIndex(255)));
+        assert!(iter.is_empty());
+        assert_eq!(iter.next(), None);
+        assert!(iter.is_empty());
+        assert_eq!(iter.next(), None);
+        assert!(iter.is_empty());
     }
 }
 
@@ -722,25 +689,9 @@ mod serde_tests {
 
     #[test]
     fn test_typed_range_inclusive_roundtrip() {
-        test_serde_roundtrip(&TypedRangeInclusive::from_raw_lossy(
-            MyIndex(3)..=MyIndex(10),
-        ));
-    }
-
-    #[test]
-    fn test_typed_range_inclusive_roundtrip_loses_exhasuted_info() {
-        let mut range = TypedRangeInclusive::from_raw_lossy(MyIndex(3)..=MyIndex(3));
-        let json = serde_json::to_string(&range).unwrap();
-        let deserialized: TypedRangeInclusive<MyIndex> = serde_json::from_str(&json).unwrap();
-        assert_eq!(range, deserialized);
-
-        assert_eq!(range.next(), Some(MyIndex(3)));
-
-        let json = serde_json::to_string(&range).unwrap();
-        let mut deserialized: TypedRangeInclusive<MyIndex> = serde_json::from_str(&json).unwrap();
-        assert_ne!(range, deserialized);
-
-        assert_eq!(deserialized.next(), Some(MyIndex(3)));
-        assert_eq!(range, deserialized);
+        test_serde_roundtrip(&TypedRangeInclusive {
+            start: MyIndex(3),
+            end: MyIndex(10),
+        });
     }
 }
