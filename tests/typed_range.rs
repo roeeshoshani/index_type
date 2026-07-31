@@ -668,6 +668,275 @@ mod edge_case_iteration {
     }
 }
 
+mod overflow_edge_cases {
+    use super::*;
+
+    #[test]
+    fn test_typed_range_nth_gets_last_element() {
+        // There are 5 elements: 0, 1, 2, 3, 4. nth(4) skips 4 and yields the last.
+        let mut iter = (SmallIndex(0)..SmallIndex(5)).iter();
+        assert_eq!(iter.nth(4), Some(SmallIndex(4)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_typed_range_nth_back_gets_first_element() {
+        // There are 5 elements: 0, 1, 2, 3, 4. nth_back(4) skips 4 from the back and yields the first.
+        let mut iter = (SmallIndex(0)..SmallIndex(5)).iter();
+        assert_eq!(iter.nth_back(4), Some(SmallIndex(0)));
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn test_typed_range_nth_overflow_scalar_type() {
+        // SmallIndex 250..255 has elements 250, 251, 252, 253, 254.
+        // nth(5) would skip all 5 and return None (no overflow, just past the end).
+        let mut iter = (SmallIndex(250)..SmallIndex(255)).iter();
+        assert_eq!(iter.nth(5), None);
+        assert_eq!(iter.next(), None);
+
+        // nth(6) causes checked_add_scalar(250, 6) to overflow u8.
+        let mut iter = (SmallIndex(250)..SmallIndex(255)).iter();
+        assert_eq!(iter.nth(6), None);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_typed_range_nth_back_underflow_scalar_type() {
+        // SmallIndex 0..5 has elements 0, 1, 2, 3, 4.
+        // nth_back(5) would skip all 5 from the back and return None.
+        let mut iter = (SmallIndex(0)..SmallIndex(5)).iter();
+        assert_eq!(iter.nth_back(5), None);
+        assert_eq!(iter.next_back(), None);
+
+        // nth_back(6) causes checked_sub_scalar(5, 6) to underflow.
+        let mut iter = (SmallIndex(0)..SmallIndex(5)).iter();
+        assert_eq!(iter.nth_back(6), None);
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn test_typed_range_size_hint_empty() {
+        let iter = (SmallIndex(5)..SmallIndex(3)).iter();
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+
+        let iter = (SmallIndex(5)..SmallIndex(5)).iter();
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_typed_range_nth_after_nth_back_exhausts() {
+        let mut iter = (SmallIndex(0)..SmallIndex(5)).iter();
+        // Exhaust from the back.
+        let _ = iter.nth_back(4);
+        assert_eq!(iter.nth(0), None);
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_typed_range_nth_back_after_nth_exhausts() {
+        let mut iter = (SmallIndex(0)..SmallIndex(5)).iter();
+        // Exhaust from the front.
+        let _ = iter.nth(4);
+        assert_eq!(iter.nth_back(0), None);
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_typed_range_from_nth_at_max_boundary() {
+        // SmallIndex(254).. yields 254, 255, then panics on overflow.
+        let mut iter = (SmallIndex(254)..).iter();
+        // nth(0) gives the current start (254) and advances to 255.
+        assert_eq!(iter.nth(0), Some(SmallIndex(254)));
+        // next() gives 255 and tries to advance past u8::MAX, which panics.
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = iter.next();
+        }));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_typed_range_from_nth_overflow_panics() {
+        let mut iter = (SmallIndex(254)..).iter();
+        // nth(1) skips 254 and tries to yield 255, but the +1 past it overflows.
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = iter.nth(1);
+        }));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_inclusive_nth_overflow_at_max() {
+        // SmallIndex(254)..=SmallIndex(255) has elements 254, 255.
+        // nth(1) skips 254 and yields 255, but the +1 after it overflows.
+        let mut iter = (SmallIndex(254)..=SmallIndex(255)).iter();
+        assert_eq!(iter.nth(1), Some(SmallIndex(255)));
+        assert!(iter.is_empty());
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_inclusive_nth_back_overflow_at_min() {
+        // SmallIndex(0)..=SmallIndex(1) has elements 0, 1.
+        // nth_back(1) skips 1 and yields 0, but the -1 after it underflows.
+        let mut iter = (SmallIndex(0)..=SmallIndex(1)).iter();
+        assert_eq!(iter.nth_back(1), Some(SmallIndex(0)));
+        assert!(iter.is_empty());
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn test_inclusive_nth_gets_last_element() {
+        // SmallIndex(0)..=SmallIndex(4) has 5 elements.
+        // nth(4) skips 0, 1, 2, 3 and yields 4.
+        let mut iter = (SmallIndex(0)..=SmallIndex(4)).iter();
+        assert_eq!(iter.nth(4), Some(SmallIndex(4)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_inclusive_nth_back_gets_first_element() {
+        // SmallIndex(0)..=SmallIndex(4) has 5 elements.
+        // nth_back(4) skips 4, 3, 2, 1 from the back and yields 0.
+        let mut iter = (SmallIndex(0)..=SmallIndex(4)).iter();
+        assert_eq!(iter.nth_back(4), Some(SmallIndex(0)));
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_inclusive_nth_zero_on_empty() {
+        let mut iter = (SmallIndex(5)..=SmallIndex(3)).iter();
+        assert_eq!(iter.nth(0), None);
+
+        let mut iter = (SmallIndex(5)..=SmallIndex(4)).iter();
+        assert_eq!(iter.nth(0), None);
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_inclusive_nth_back_zero_on_empty() {
+        let mut iter = (SmallIndex(5)..=SmallIndex(3)).iter();
+        assert_eq!(iter.nth_back(0), None);
+
+        let mut iter = (SmallIndex(5)..=SmallIndex(4)).iter();
+        assert_eq!(iter.nth_back(0), None);
+    }
+
+    #[test]
+    fn test_inclusive_size_hint_empty() {
+        let iter = (SmallIndex(5)..=SmallIndex(3)).iter();
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+
+        let iter = (SmallIndex(5)..=SmallIndex(4)).iter();
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+    }
+
+    #[test]
+    fn test_inclusive_size_hint_after_partial_iteration() {
+        let mut iter = (SmallIndex(0)..=SmallIndex(4)).iter();
+        assert_eq!(iter.size_hint(), (5, Some(5)));
+        let _ = iter.next();
+        assert_eq!(iter.size_hint(), (4, Some(4)));
+        let _ = iter.next_back();
+        assert_eq!(iter.size_hint(), (3, Some(3)));
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_inclusive_nth_after_nth_back_exhausts() {
+        let mut iter = (SmallIndex(0)..=SmallIndex(4)).iter();
+        // Exhaust from the back.
+        let _ = iter.nth_back(4);
+        assert_eq!(iter.nth(0), None);
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_inclusive_nth_back_after_nth_exhausts() {
+        let mut iter = (SmallIndex(0)..=SmallIndex(4)).iter();
+        // Exhaust from the front.
+        let _ = iter.nth(4);
+        assert_eq!(iter.nth_back(0), None);
+    }
+
+    #[test]
+    fn test_inclusive_next_back_overflow_at_min() {
+        // SmallIndex(0)..=SmallIndex(0) has one element.
+        let mut iter = (SmallIndex(0)..=SmallIndex(0)).iter();
+        assert_eq!(iter.next_back(), Some(SmallIndex(0)));
+        // The -1 underflows, setting exhausted = true.
+        assert!(iter.is_empty());
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn test_inclusive_mixed_iteration_across_the_whole_range() {
+        let mut iter = (SmallIndex(0)..=SmallIndex(5)).iter();
+        // Collect from both ends.
+        assert_eq!(iter.next(), Some(SmallIndex(0)));
+        assert_eq!(iter.next_back(), Some(SmallIndex(5)));
+        assert_eq!(iter.next(), Some(SmallIndex(1)));
+        assert_eq!(iter.next_back(), Some(SmallIndex(4)));
+        assert_eq!(iter.next(), Some(SmallIndex(2)));
+        assert_eq!(iter.next_back(), Some(SmallIndex(3)));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn test_inclusive_nth_with_n_equals_range_length_minus_one() {
+        // SmallIndex(0)..=SmallIndex(4) has 5 elements.
+        // nth(3) skips 0, 1, 2, yields 3, leaving 4.
+        let mut iter = (SmallIndex(0)..=SmallIndex(4)).iter();
+        assert_eq!(iter.nth(3), Some(SmallIndex(3)));
+        assert_eq!(iter.next(), Some(SmallIndex(4)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_inclusive_nth_back_overflow_at_max() {
+        // SmallIndex(255)..=SmallIndex(255) has one element.
+        // nth_back(0) yields 255, then the -1 underflows.
+        let mut iter = (SmallIndex(255)..=SmallIndex(255)).iter();
+        assert_eq!(iter.nth_back(0), Some(SmallIndex(255)));
+        assert!(iter.is_empty());
+
+        // SmallIndex(254)..=SmallIndex(255) has two elements.
+        // nth_back(1) skips 255, yields 254, then the -1 underflows.
+        let mut iter = (SmallIndex(254)..=SmallIndex(255)).iter();
+        assert_eq!(iter.nth_back(1), Some(SmallIndex(254)));
+        assert!(iter.is_empty());
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_inclusive_nth_exhaust_after_backward_exhaustion() {
+        let mut iter = (SmallIndex(0)..=SmallIndex(5)).iter();
+        // Exhaust from the front.
+        assert_eq!(iter.nth(5), Some(SmallIndex(5)));
+        assert!(iter.is_empty());
+        // nth should still return None.
+        assert_eq!(iter.nth(0), None);
+        assert_eq!(iter.nth(1), None);
+        assert_eq!(iter.nth(100), None);
+    }
+
+    #[test]
+    #[allow(clippy::iter_nth_zero)]
+    fn test_inclusive_nth_back_exhaust_after_forward_exhaustion() {
+        let mut iter = (SmallIndex(0)..=SmallIndex(5)).iter();
+        // Exhaust from the front.
+        assert_eq!(iter.nth(5), Some(SmallIndex(5)));
+        assert!(iter.is_empty());
+        // nth_back should still return None.
+        assert_eq!(iter.nth_back(0), None);
+        assert_eq!(iter.nth_back(1), None);
+        assert_eq!(iter.nth_back(100), None);
+    }
+}
+
 #[cfg(feature = "serde")]
 mod serde_tests {
     use crate::utils::test_serde_roundtrip;
