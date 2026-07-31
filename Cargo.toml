@@ -1,6 +1,6 @@
 [package]
 name = "index_type"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 description = "Type-safe newtype indices for Rust"
 readme = "README.md"
@@ -18,7 +18,7 @@ alloc = []
 serde = ["dep:serde"]
 
 [dependencies]
-index_type_macros = { path = "index_type_macros", version = "0.5.0" }
+index_type_macros = { path = "index_type_macros", version = "0.6.0" }
 serde = { version = "1.0.229", default-features = false, features = ["derive"], optional = true }
 
 [dev-dependencies]
