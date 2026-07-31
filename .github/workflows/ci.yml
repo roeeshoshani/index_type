@@ -7,6 +7,16 @@ on:
     branches: [main]
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check --workspace --all-targets --all-features
+      - run: cargo check --workspace --all-targets --no-default-features
+
   tests:
     runs-on: ubuntu-latest
     steps:
