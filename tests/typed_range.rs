@@ -898,13 +898,11 @@ mod overflow_edge_cases {
     #[test]
     fn test_inclusive_nth_back_overflow_at_max() {
         // SmallIndex(255)..=SmallIndex(255) has one element.
-        // nth_back(0) yields 255, then the -1 underflows.
         let mut iter = (SmallIndex(255)..=SmallIndex(255)).iter();
         assert_eq!(iter.nth_back(0), Some(SmallIndex(255)));
         assert!(iter.is_empty());
 
         // SmallIndex(254)..=SmallIndex(255) has two elements.
-        // nth_back(1) skips 255, yields 254, then the -1 underflows.
         let mut iter = (SmallIndex(254)..=SmallIndex(255)).iter();
         assert_eq!(iter.nth_back(1), Some(SmallIndex(254)));
         assert!(iter.is_empty());
