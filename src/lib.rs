@@ -1,6 +1,6 @@
 #![no_std]
 //! A Rust library providing **strongly typed indices** for collections and everything else needed for working with them in an
-//! ergonimic manner.
+//! ergonomic manner.
 //!
 //! ## What are typed indices?
 //!
@@ -293,7 +293,7 @@
 //! The reason for this is that the built in range types only implement the [`Iterator`] trait if the value type `T` implements the
 //! unstable [`Step`](core::iter::Step) trait, which you cannot implement for your own types in stable rust.
 //!
-//! Being able to iterate over ranges of index type is important for making the experience of working with typed indices feel seemless
+//! Being able to iterate over ranges of index type is important for making the experience of working with typed indices feel seamless
 //! and as smooth as using regular index types.
 //!
 //! This crate provides [`TypedRangeIterExt`](crate::range::TypedRangeIterExt) for iterating over ranges with custom index types:
