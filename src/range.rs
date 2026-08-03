@@ -64,35 +64,32 @@ pub trait TypedRangeIterExt<I: IndexType> {
 }
 
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
-    type Iter = TypedRange<I>;
+    type Iter = TypedRangeIter<I>;
 
     #[inline]
     fn iter(self) -> Self::Iter {
-        TypedRange::from_raw(self)
+        TypedRangeIter::from_raw(self)
     }
 }
 
-/// A (half-open) range bounded inclusively below and exclusively above (`start..end`) which supports iteration using custom index types.
-///
-/// The range `start..end` contains all values with `start <= x < end`.
-/// It is empty if `start >= end`.
+/// An adapter for [`Range`](core::ops::Range) which allows iteration even with custom index types.
 #[derive(Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct TypedRange<I: IndexType> {
+pub struct TypedRangeIter<I: IndexType> {
     /// The lower bound of the range (inclusive).
     pub start: I,
     /// The upper bound of the range (exclusive).
     pub end: I,
 }
 
-impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRange<I> {
+impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeIter<I> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(fmt, "{:?}..{:?}", self.start, self.end)
     }
 }
 
-impl<I: IndexType> TypedRange<I> {
-    /// Converts this range into a raw range.
+impl<I: IndexType> TypedRangeIter<I> {
+    /// Converts this typed range into a raw range.
     #[inline]
     pub const fn into_raw(self) -> core::ops::Range<I> {
         self.start..self.end
@@ -125,13 +122,13 @@ impl<I: IndexType> TypedRange<I> {
     }
 }
 
-impl<I: IndexType> From<core::ops::Range<I>> for TypedRange<I> {
+impl<I: IndexType> From<core::ops::Range<I>> for TypedRangeIter<I> {
     fn from(value: core::ops::Range<I>) -> Self {
         Self::from_raw(value)
     }
 }
 
-impl<I: IndexType> Iterator for TypedRange<I> {
+impl<I: IndexType> Iterator for TypedRangeIter<I> {
     type Item = I;
 
     #[inline]
@@ -204,7 +201,7 @@ impl<I: IndexType> Iterator for TypedRange<I> {
     }
 }
 
-impl<I: IndexType> DoubleEndedIterator for TypedRange<I> {
+impl<I: IndexType> DoubleEndedIterator for TypedRangeIter<I> {
     #[inline]
     fn next_back(&mut self) -> Option<I> {
         if self.start >= self.end {
@@ -242,42 +239,40 @@ impl<I: IndexType> DoubleEndedIterator for TypedRange<I> {
     }
 }
 
-impl<I: IndexType> ExactSizeIterator for TypedRange<I> {
+impl<I: IndexType> ExactSizeIterator for TypedRangeIter<I> {
     #[inline]
     fn len(&self) -> usize {
         self.len()
     }
 }
 
-impl<I: IndexType> FusedIterator for TypedRange<I> {}
+impl<I: IndexType> FusedIterator for TypedRangeIter<I> {}
 
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
-    type Iter = TypedRangeFrom<I>;
+    type Iter = TypedRangeFromIter<I>;
 
     #[inline]
     fn iter(self) -> Self::Iter {
-        TypedRangeFrom::from_raw(self)
+        TypedRangeFromIter::from_raw(self)
     }
 }
 
-/// A range only bounded inclusively below (`start..`) which supports iteration using custom index types.
-///
-/// This range contains all values with `x >= start`.
+/// An adapter for [`RangeFrom`](core::ops::RangeFrom) which allows iteration even with custom index types.
 #[derive(Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct TypedRangeFrom<I: IndexType> {
+pub struct TypedRangeFromIter<I: IndexType> {
     /// The lower bound of the range (inclusive).
     pub start: I,
 }
 
-impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeFrom<I> {
+impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeFromIter<I> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(fmt, "{:?}..", self.start)
     }
 }
 
-impl<I: IndexType> TypedRangeFrom<I> {
-    /// Converts this range into a raw range.
+impl<I: IndexType> TypedRangeFromIter<I> {
+    /// Converts this typed range into a raw range.
     #[inline]
     pub const fn into_raw(self) -> core::ops::RangeFrom<I> {
         self.start..
@@ -289,13 +284,13 @@ impl<I: IndexType> TypedRangeFrom<I> {
     }
 }
 
-impl<I: IndexType> From<core::ops::RangeFrom<I>> for TypedRangeFrom<I> {
+impl<I: IndexType> From<core::ops::RangeFrom<I>> for TypedRangeFromIter<I> {
     fn from(value: core::ops::RangeFrom<I>) -> Self {
         Self::from_raw(value)
     }
 }
 
-impl<I: IndexType> Iterator for TypedRangeFrom<I> {
+impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
     type Item = I;
 
     #[inline]
@@ -336,41 +331,38 @@ impl<I: IndexType> Iterator for TypedRangeFrom<I> {
     }
 }
 
-impl<I: IndexType> FusedIterator for TypedRangeFrom<I> {}
+impl<I: IndexType> FusedIterator for TypedRangeFromIter<I> {}
 
 impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeInclusive<I> {
     type Iter = TypedRangeInclusiveIter<I>;
 
     #[inline]
     fn iter(self) -> Self::Iter {
-        TypedRangeInclusive::from_raw(self).iter()
+        TypedRangeInclusiveIter::from_raw(self)
     }
 }
 
-/// A range bounded inclusively below and above (`start..=end`).
-///
-/// The range `start..=end` contains all values with `start <= x <= end`.
-/// It is empty if `start > end`.
-///
-/// Unlike [`TypedRangeInclusiveIter`], this type is a range rather than an
-/// iterator. Use [`TypedRangeInclusive::iter`] to iterate over it.
+/// An adapter for [`RangeInclusive`](core::ops::RangeInclusive) which allows iteration even with custom index types.
 #[derive(Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct TypedRangeInclusive<I: IndexType> {
-    /// The lower bound of the range (inclusive).
-    pub start: I,
-    /// The upper bound of the range (inclusive).
-    pub end: I,
+pub struct TypedRangeInclusiveIter<I: IndexType> {
+    start: I,
+    end: I,
+    exhausted: bool,
 }
 
-impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusive<I> {
+impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusiveIter<I> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(fmt, "{:?}..={:?}", self.start, self.end)
+        write!(fmt, "{:?}..={:?}", self.start, self.end)?;
+        if self.exhausted {
+            write!(fmt, " (exhausted)")?;
+        }
+        Ok(())
     }
 }
 
-impl<I: IndexType> TypedRangeInclusive<I> {
-    /// Converts this range into a raw range.
+impl<I: IndexType> TypedRangeInclusiveIter<I> {
+    /// Converts this typed range into a raw range.
     #[inline]
     pub const fn into_raw(self) -> core::ops::RangeInclusive<I> {
         self.start..=self.end
@@ -390,73 +382,10 @@ impl<I: IndexType> TypedRangeInclusive<I> {
         Self {
             start: *range.start(),
             end: *range.end(),
-        }
-    }
-
-    /// Creates an iterator over this range.
-    ///
-    /// Note that unlike the other range types (e.g [`TypedRange`]), the inclusive range type itself is not an iterator, and iteration
-    /// over it is provided using a separate helper type: [`TypedRangeInclusiveIter`]. This separation is done since iterating over an
-    /// inclusive range requires storing extra state other than the start and end indices due to overflow related problems. This extra
-    /// state does not belong in the core [`TypedRangeInclusive`] type, and is instead used only in the iterator type
-    /// [`TypedRangeInclusiveIter`].
-    #[inline]
-    pub const fn iter(self) -> TypedRangeInclusiveIter<I> {
-        TypedRangeInclusiveIter {
-            start: self.start,
-            end: self.end,
             exhausted: false,
         }
     }
 
-    /// Returns `true` if the range contains no elements.
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.start > self.end
-    }
-
-    /// Tries to compute the number of elements remaining in the iterator, returning `None` in case the resulting length overflows `usize`.
-    #[inline]
-    pub fn try_len(&self) -> Option<usize> {
-        let Some(diff) = self.end.checked_sub_index(self.start) else {
-            return Some(0);
-        };
-        diff.to_usize().checked_add(1)
-    }
-
-    /// Returns the number of elements in the range.
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.try_len()
-            .expect("inclusive range length overflowed usize")
-    }
-}
-
-impl<I: IndexType> From<core::ops::RangeInclusive<I>> for TypedRangeInclusive<I> {
-    fn from(value: core::ops::RangeInclusive<I>) -> Self {
-        Self::from_raw(value)
-    }
-}
-
-/// An iterator over a [`TypedRangeInclusive`].
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct TypedRangeInclusiveIter<I: IndexType> {
-    start: I,
-    end: I,
-    exhausted: bool,
-}
-
-impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusiveIter<I> {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(fmt, "{:?}..={:?}", self.start, self.end)?;
-        if self.exhausted {
-            write!(fmt, " (exhausted)")?;
-        }
-        Ok(())
-    }
-}
-
-impl<I: IndexType> TypedRangeInclusiveIter<I> {
     /// Returns the starting index of the iterator.
     ///
     /// The returned value is unspecified if the iterator is exhausted.
@@ -496,6 +425,12 @@ impl<I: IndexType> TypedRangeInclusiveIter<I> {
     pub fn len(&self) -> usize {
         self.try_len()
             .expect("inclusive range length overflowed usize")
+    }
+}
+
+impl<I: IndexType> From<core::ops::RangeInclusive<I>> for TypedRangeInclusiveIter<I> {
+    fn from(value: core::ops::RangeInclusive<I>) -> Self {
+        Self::from_raw(value)
     }
 }
 

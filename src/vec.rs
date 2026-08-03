@@ -38,7 +38,7 @@ use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 use crate::{
     IndexScalarType, IndexTooBigError, IndexType,
     enumerate::UncheckedTypedEnumerate,
-    range::{TypedRange, TypedRangeIterExt},
+    range::{TypedRangeIter, TypedRangeIterExt},
     slice::TypedSlice,
     utils::{range_bounds_to_raw, resolve_range_bounds},
 };
@@ -376,7 +376,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// }
     /// ```
     #[inline]
-    pub fn indices(&self) -> TypedRange<I> {
+    pub fn indices(&self) -> TypedRangeIter<I> {
         (I::ZERO..self.len()).iter()
     }
 

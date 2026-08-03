@@ -5,7 +5,7 @@ use core::{
 use index_type::{
     IndexType,
     enumerate::TypedIteratorExt,
-    range::{TypedRange, TypedRangeFrom, TypedRangeInclusive, TypedRangeIterExt},
+    range::{TypedRangeFromIter, TypedRangeInclusiveIter, TypedRangeIter, TypedRangeIterExt},
 };
 
 mod utils;
@@ -246,7 +246,7 @@ mod raw_conversions {
 
     #[test]
     fn test_typed_range_from_raw_and_into_raw_preserve_bounds() {
-        let range = TypedRange::from_raw(MyIndex(2)..MyIndex(5));
+        let range = TypedRangeIter::from_raw(MyIndex(2)..MyIndex(5));
         assert_eq!(range.start, MyIndex(2));
         assert_eq!(range.end, MyIndex(5));
 
@@ -257,7 +257,7 @@ mod raw_conversions {
 
     #[test]
     fn test_typed_range_from_raw_preserves_empty_bounds() {
-        let range = TypedRange::from_raw(MyIndex(5)..MyIndex(3));
+        let range = TypedRangeIter::from_raw(MyIndex(5)..MyIndex(3));
         assert_eq!(range.start, MyIndex(5));
         assert_eq!(range.end, MyIndex(3));
         assert!(range.is_empty());
@@ -269,7 +269,7 @@ mod raw_conversions {
 
     #[test]
     fn test_typed_range_fields_update_during_iteration() {
-        let mut range = TypedRange::from_raw(MyIndex(2)..MyIndex(5));
+        let mut range = TypedRangeIter::from_raw(MyIndex(2)..MyIndex(5));
 
         assert_eq!(range.next(), Some(MyIndex(2)));
         assert_eq!(range.start, MyIndex(3));
@@ -282,7 +282,7 @@ mod raw_conversions {
 
     #[test]
     fn test_typed_range_from_from_raw_and_into_raw_preserve_start() {
-        let range = TypedRangeFrom::from_raw(MyIndex(7)..);
+        let range = TypedRangeFromIter::from_raw(MyIndex(7)..);
         assert_eq!(range.start, MyIndex(7));
 
         let raw = range.into_raw();
@@ -291,7 +291,7 @@ mod raw_conversions {
 
     #[test]
     fn test_typed_range_from_field_updates_during_iteration() {
-        let mut range = TypedRangeFrom::from_raw(MyIndex(7)..);
+        let mut range = TypedRangeFromIter::from_raw(MyIndex(7)..);
 
         assert_eq!(range.next(), Some(MyIndex(7)));
         assert_eq!(range.start, MyIndex(8));
@@ -302,9 +302,9 @@ mod raw_conversions {
 
     #[test]
     fn test_typed_range_inclusive_from_raw_and_into_raw_preserve_non_empty_bounds() {
-        let range = TypedRangeInclusive::from_raw(MyIndex(2)..=MyIndex(5));
-        assert_eq!(range.start, MyIndex(2));
-        assert_eq!(range.end, MyIndex(5));
+        let range = TypedRangeInclusiveIter::from_raw(MyIndex(2)..=MyIndex(5));
+        assert_eq!(range.start(), MyIndex(2));
+        assert_eq!(range.end(), MyIndex(5));
         assert!(!range.is_empty());
 
         let raw = range.into_raw();
@@ -316,9 +316,9 @@ mod raw_conversions {
 
     #[test]
     fn test_typed_range_inclusive_from_raw_preserves_empty_non_exhausted_bounds() {
-        let range = TypedRangeInclusive::from_raw(MyIndex(5)..=MyIndex(3));
-        assert_eq!(range.start, MyIndex(5));
-        assert_eq!(range.end, MyIndex(3));
+        let range = TypedRangeInclusiveIter::from_raw(MyIndex(5)..=MyIndex(3));
+        assert_eq!(range.start(), MyIndex(5));
+        assert_eq!(range.end(), MyIndex(3));
         assert!(range.is_empty());
 
         let raw = range.into_raw();
@@ -332,12 +332,12 @@ mod raw_conversions {
     fn test_typed_range_inclusive_from_raw_exhausted_does_not_panic() {
         let mut raw = 2usize..=2usize;
         let _ = raw.next();
-        let _ = TypedRangeInclusive::from_raw(raw);
+        let _ = TypedRangeInclusiveIter::from_raw(raw);
     }
 
     #[test]
-    fn test_typed_range_inclusive_iter_accessors_update_during_iteration() {
-        let mut iter = TypedRangeInclusive::from_raw(MyIndex(2)..=MyIndex(5)).iter();
+    fn test_typed_range_inclusive_accessors_update_during_iteration() {
+        let mut iter = TypedRangeInclusiveIter::from_raw(MyIndex(2)..=MyIndex(5));
 
         assert_eq!(iter.next(), Some(MyIndex(2)));
         assert_eq!(iter.start(), MyIndex(3));
@@ -349,7 +349,7 @@ mod raw_conversions {
     }
 
     #[test]
-    fn test_typed_range_inclusive_iter_exhaustion() {
+    fn test_typed_range_inclusive_exhaustion() {
         let mut iter = (SmallIndex(3)..=SmallIndex(3)).iter();
         assert_eq!(iter.next(), Some(SmallIndex(3)));
         assert!(iter.is_empty());
@@ -945,7 +945,7 @@ mod serde_tests {
 
     #[test]
     fn test_typed_range_roundtrip() {
-        test_serde_roundtrip(&TypedRange {
+        test_serde_roundtrip(&TypedRangeIter {
             start: MyIndex(3),
             end: MyIndex(10),
         });
@@ -953,14 +953,11 @@ mod serde_tests {
 
     #[test]
     fn test_typed_range_from_roundtrip() {
-        test_serde_roundtrip(&TypedRangeFrom { start: MyIndex(5) });
+        test_serde_roundtrip(&TypedRangeFromIter { start: MyIndex(5) });
     }
 
     #[test]
     fn test_typed_range_inclusive_roundtrip() {
-        test_serde_roundtrip(&TypedRangeInclusive {
-            start: MyIndex(3),
-            end: MyIndex(10),
-        });
+        test_serde_roundtrip(&TypedRangeInclusiveIter::from_raw(MyIndex(3)..=MyIndex(10)));
     }
 }

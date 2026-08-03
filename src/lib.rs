@@ -396,8 +396,7 @@
 //! ## `serde` Support
 //!
 //! This crate has a `serde` feature flag which implements `Serialize` and `Deserialize` for all of the relevant types exported by this
-//! crate. This includes for example the main collection types (e.g [`TypedVec`](crate::vec::TypedVec)), and the typed range types
-//! (e.g [`TypedRange`](crate::range::TypedRange)).
+//! crate. This includes for example the main collection types (e.g [`TypedVec`](crate::vec::TypedVec)).
 
 pub use crate::error::GenericIndexTooBigError;
 

@@ -345,7 +345,6 @@ index_type = { version = "...", default-features = false }
 ## `serde` Support
 
 This crate has a `serde` feature flag which implements `Serialize` and `Deserialize` for all of the relevant types exported by this
-crate. This includes for example the main collection types (e.g [`TypedVec`](https://docs.rs/index_type/latest/index_type/vec/struct.TypedVec.html)), and the typed range types
-(e.g [`TypedRange`](https://docs.rs/index_type/latest/index_type/range/struct.TypedRange.html)).
+crate. This includes for example the main collection types (e.g [`TypedVec`](https://docs.rs/index_type/latest/index_type/vec/struct.TypedVec.html)).
 
 <!-- cargo-reedme: end -->

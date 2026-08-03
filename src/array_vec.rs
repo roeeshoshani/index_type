@@ -39,7 +39,7 @@ use crate::{
     IndexScalarType, IndexType,
     array::TypedArray,
     enumerate::UncheckedTypedEnumerate,
-    range::{TypedRange, TypedRangeIterExt},
+    range::{TypedRangeIter, TypedRangeIterExt},
     slice::TypedSlice,
     utils::resolve_range_bounds,
 };
@@ -84,7 +84,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Returns an iterator over the valid indices of this vector.
     #[inline]
-    pub fn indices(&self) -> TypedRange<I> {
+    pub fn indices(&self) -> TypedRangeIter<I> {
         (I::ZERO..self.len()).iter()
     }
 

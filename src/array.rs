@@ -28,7 +28,7 @@ use core::{
 use crate::{
     IndexType,
     enumerate::UncheckedTypedEnumerate,
-    range::{TypedRange, TypedRangeIterExt},
+    range::{TypedRangeIter, TypedRangeIterExt},
     slice::TypedSlice,
 };
 
@@ -130,7 +130,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
 
     /// Returns an iterator over the valid indices of this array.
     #[inline]
-    pub fn indices(&self) -> TypedRange<I> {
+    pub fn indices(&self) -> TypedRangeIter<I> {
         (I::ZERO..self.len()).iter()
     }
 

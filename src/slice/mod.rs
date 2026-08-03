@@ -45,7 +45,7 @@ use crate::{
     IndexScalarType, IndexType,
     array::TypedArray,
     enumerate::UncheckedTypedEnumerate,
-    range::{TypedRange, TypedRangeIterExt},
+    range::{TypedRangeIter, TypedRangeIterExt},
     utils::{panic_index_too_big, range_bounds_to_raw},
 };
 
@@ -568,7 +568,7 @@ impl<I: IndexType, T> TypedSlice<I, T> {
 
     /// Returns an iterator over the valid indices of this slice.
     #[inline]
-    pub fn indices(&self) -> TypedRange<I> {
+    pub fn indices(&self) -> TypedRangeIter<I> {
         (I::ZERO..self.len()).iter()
     }
 
