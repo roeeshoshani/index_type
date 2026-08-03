@@ -241,7 +241,7 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeIter<I> {
 impl<I: IndexType> ExactSizeIterator for TypedRangeIter<I> {
     #[inline]
     fn len(&self) -> usize {
-        self.len()
+        TypedRangeIter::len(self)
     }
 }
 
