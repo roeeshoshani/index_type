@@ -360,6 +360,8 @@ impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusiveIt
 
 impl<I: IndexType> TypedRangeInclusiveIter<I> {
     /// Converts this typed range into a raw range.
+    ///
+    /// If this iterator is currently exhausted, the returned value is unspecified.
     #[inline]
     pub const fn into_raw(self) -> core::ops::RangeInclusive<I> {
         self.start..=self.end
