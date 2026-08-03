@@ -8,10 +8,7 @@ use index_type::{
     range::{TypedRangeFromIter, TypedRangeInclusiveIter, TypedRangeIter, TypedRangeIterExt},
 };
 
-mod utils;
-
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 struct MyIndex(u32);
 
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
