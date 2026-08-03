@@ -115,7 +115,7 @@ impl<I: IndexType> TypedRangeIter<I> {
             .to_usize()
     }
 
-    /// Returns `true` if the range contains no elements.
+    /// Returns `true` if the iterator contains no elements.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.start >= self.end
@@ -402,7 +402,7 @@ impl<I: IndexType> TypedRangeInclusiveIter<I> {
         self.end
     }
 
-    /// Returns `true` if the iterator contains no elements or has overflowed.
+    /// Returns `true` if the iterator contains no elements.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.exhausted || self.start > self.end
