@@ -1,29 +1,38 @@
 //! A dynamically sized slice with typed indexing.
 //!
 //! This module provides [`TypedSlice`], a wrapper around `[T]` that uses a custom
-//! [`IndexType`] for all indexing operations. `TypedSlice` is the core typed collection
-//! type that [`TypedVec`](crate::vec::TypedVec), [`TypedArrayVec`](crate::array_vec::TypedArrayVec),
-//! and [`TypedArray`] are built upon.
+//! [`IndexType`] for all indexing operations.
+//!
+//! Note that [`TypedSlice`] is a DST (dynamically sized type) which directly contains a `[T]` field.
+//! So, to represent `&[u8]` for example, use `&TypedSlice<I, u8>`, where `I` is your custom index type.
+//! For mutable slices, use `&mut TypedSlice<I, T>`.
 //!
 //! # Example
 //!
 //! ```
 //! # #[cfg(feature = "alloc")] {
-//! use index_type::IndexType;
-//! use index_type::vec::TypedVec;
-//! use index_type::slice::TypedSlice;
-//!
+//! # use index_type::IndexType;
+//! # use index_type::vec::TypedVec;
+//! # use index_type::typed_vec;
+//! # use index_type::slice::TypedSlice;
 //! #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-//! struct ColIdx(u16);
+//! struct ItemId(u16);
 //!
-//! let vec: TypedVec<ColIdx, f64> = TypedVec::from_vec(vec![1.0, 2.0, 3.0]);
-//! let slice: &TypedSlice<ColIdx, f64> = vec.as_slice();
+//! #[derive(Debug, PartialEq, Eq)]
+//! struct Item(u32);
+//!
+//! let vec: TypedVec<ItemId, Item> = typed_vec![Item(1), Item(2), Item(3)];
+//! let slice: &TypedSlice<ItemId, Item> = vec.as_slice();
 //!
 //! // Safe indexing with custom type
-//! assert_eq!(slice[ColIdx::ZERO], 1.0);
+//! assert_eq!(slice[ItemId::ZERO], Item(1));
 //! # }
 //! ```
 
+// Required for the complex return types of the methods of `TypedSlice` that return an iterator, where we wrap stdlib's iterator
+// with a mapping function, and the return type is the fully qualified `Map<OrigIter, MapFn>` type.
+//
+// This is used to avoid the boilerplate of defining a type alias for each of these methods that have a complex return type.
 #![allow(clippy::type_complexity)]
 
 use core::{

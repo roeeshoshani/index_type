@@ -1,14 +1,25 @@
 //! Extension traits and iterators for iterating over ranges with custom index types.
 //!
-//! The standard library's range types ([`core::ops::Range`], [`core::ops::RangeFrom`], [`core::ops::RangeInclusive`]) cannot be directly
-//! iterated over with custom index types because they require the [`core::iter::Step`] trait, which is
-//! currently unstable. This module provides extension traits that convert range types into
-//! iterator types that work with any [`IndexType`].
+//! Currently, in stable rust, you cannot iterate over a range of values of a custom type:
+//! ```compile_fail
+//! struct MyIdx(u32);
+//!
+//! // There is nothing you can do to make this code work in stable rust
+//! for i in MyIdx(0)..MyIdx(20) {}
+//! ```
+//!
+//! The reason for this is that the built in range types only implement the [`Iterator`] trait if the value type `T` implements the
+//! unstable [`Step`](core::iter::Step) trait, which you cannot implement for your own types in stable rust.
+//!
+//! Being able to iterate over ranges of index type is important for making the experience of working with typed indices feel seemless
+//! and as smooth as using regular index types.
+//!
+//! This module provides extension traits that convert range types into iterator types that work with any [`IndexType`].
 //!
 //! # Example
 //!
 //! ```
-//! use index_type::IndexType;
+//! # use index_type::IndexType;
 //! use index_type::range::TypedRangeIterExt;
 //!
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
