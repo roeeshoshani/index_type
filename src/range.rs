@@ -74,7 +74,6 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::Range<I> {
 
 /// An adapter for [`Range`](core::ops::Range) which allows iteration even with custom index types.
 #[derive(Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TypedRangeIter<I: IndexType> {
     /// The lower bound of the range (inclusive).
     pub start: I,
@@ -259,7 +258,6 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeFrom<I> {
 
 /// An adapter for [`RangeFrom`](core::ops::RangeFrom) which allows iteration even with custom index types.
 #[derive(Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TypedRangeFromIter<I: IndexType> {
     /// The lower bound of the range (inclusive).
     pub start: I,
@@ -344,7 +342,6 @@ impl<I: IndexType> TypedRangeIterExt<I> for core::ops::RangeInclusive<I> {
 
 /// An adapter for [`RangeInclusive`](core::ops::RangeInclusive) which allows iteration even with custom index types.
 #[derive(Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TypedRangeInclusiveIter<I: IndexType> {
     start: I,
     end: I,

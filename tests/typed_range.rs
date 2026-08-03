@@ -934,28 +934,3 @@ mod overflow_edge_cases {
         assert_eq!(iter.nth_back(100), None);
     }
 }
-
-#[cfg(feature = "serde")]
-mod serde_tests {
-    use crate::utils::test_serde_roundtrip;
-
-    use super::*;
-
-    #[test]
-    fn test_typed_range_roundtrip() {
-        test_serde_roundtrip(&TypedRangeIter {
-            start: MyIndex(3),
-            end: MyIndex(10),
-        });
-    }
-
-    #[test]
-    fn test_typed_range_from_roundtrip() {
-        test_serde_roundtrip(&TypedRangeFromIter { start: MyIndex(5) });
-    }
-
-    #[test]
-    fn test_typed_range_inclusive_roundtrip() {
-        test_serde_roundtrip(&TypedRangeInclusiveIter::from_raw(MyIndex(3)..=MyIndex(10)));
-    }
-}
