@@ -88,13 +88,13 @@ impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeIter<I> {
 }
 
 impl<I: IndexType> TypedRangeIter<I> {
-    /// Converts this typed range into a raw range.
+    /// Converts this typed range iterator into a raw range.
     #[inline]
     pub const fn into_raw(self) -> core::ops::Range<I> {
         self.start..self.end
     }
 
-    /// Converts a raw range into a typed range.
+    /// Converts a raw range into a typed range iterator.
     #[inline]
     pub const fn from_raw(value: core::ops::Range<I>) -> Self {
         Self {
@@ -103,7 +103,7 @@ impl<I: IndexType> TypedRangeIter<I> {
         }
     }
 
-    /// Returns the number of elements in the range.
+    /// Returns the number of elements remaining in the iterator.
     ///
     /// Returns 0 if `start >= end`.
     #[inline]
@@ -270,13 +270,13 @@ impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeFromIter<I>
 }
 
 impl<I: IndexType> TypedRangeFromIter<I> {
-    /// Converts this typed range into a raw range.
+    /// Converts this typed range iterator into a raw range.
     #[inline]
     pub const fn into_raw(self) -> core::ops::RangeFrom<I> {
         self.start..
     }
 
-    /// Converts a raw range into a typed range.
+    /// Converts a raw range into a typed range iterator.
     pub const fn from_raw(value: core::ops::RangeFrom<I>) -> Self {
         Self { start: value.start }
     }
@@ -371,7 +371,7 @@ impl<I: IndexType + core::fmt::Debug> core::fmt::Debug for TypedRangeInclusiveIt
 }
 
 impl<I: IndexType> TypedRangeInclusiveIter<I> {
-    /// Converts this typed range into a raw range.
+    /// Converts this typed range iterator into a raw range.
     ///
     /// If this iterator is currently exhausted, the returned value is unspecified.
     #[inline]
@@ -379,7 +379,7 @@ impl<I: IndexType> TypedRangeInclusiveIter<I> {
         self.start..=self.end
     }
 
-    /// Converts a raw range into a typed range.
+    /// Converts a raw range into a typed range iterator.
     ///
     /// The standard library does not specify the values of the bounds of a
     /// `RangeInclusive` after it has been exhausted. Consequently, if

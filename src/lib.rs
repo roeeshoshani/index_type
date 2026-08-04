@@ -96,38 +96,6 @@
 //! struct ItemId(u32);
 //! ```
 //!
-//! ## Complex Indexing
-//!
-//! This crate also supports complex forms of indexing when using custom index types, for example, slicing a range with a custom
-//! index type:
-//! ```
-//! # #[cfg(feature = "alloc")] {
-//! # use index_type::IndexType;
-//! # use index_type::typed_vec;
-//! # use index_type::vec::TypedVec;
-//! # use index_type::slice::TypedSlice;
-//! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-//! struct ItemId(usize);
-//!
-//! #[derive(Debug, PartialEq, Eq)]
-//! struct Item(u32);
-//!
-//! let values: TypedVec<ItemId, Item> = typed_vec![
-//!     Item(45), Item(54), Item(32), Item(19), Item(78)
-//! ];
-//!
-//! let some_values: &TypedSlice<ItemId, Item> = &values[ItemId(1)..ItemId(4)];
-//! assert_eq!(some_values.as_slice(), &[Item(54), Item(32), Item(19)]);
-//!
-//! // Can even perform more complex types of slicing
-//! let other_values: &TypedSlice<ItemId, Item> = &values[..ItemId(3)];
-//! assert_eq!(other_values.as_slice(), &[Item(45), Item(54), Item(32)]);
-//!
-//! let other_values_2: &TypedSlice<ItemId, Item> = &values[ItemId(3)..];
-//! assert_eq!(other_values_2.as_slice(), &[Item(19), Item(78)]);
-//! # }
-//! ```
-//!
 //! ## Typed Collections
 //!
 //! ### TypedVec
@@ -203,8 +171,9 @@
 //!
 //! // An index-typed version of `[Value; 3]`, with index type `ValueIdx`
 //! let mut values: TypedArray<ValueIdx, Value, 3> = TypedArray::from_array([Value(3), Value(7), Value(5)]);
-//! values[ValueIdx::ZERO] = Value(7);
+//! values[ValueIdx::ZERO] = Value(20);
 //! values[ValueIdx(1)] = Value(32);
+//! assert_eq!(values[ValueIdx(0)], Value(20));
 //! assert_eq!(values[ValueIdx(2)], Value(5));
 //! ```
 //!
@@ -225,16 +194,49 @@
 //!
 //! A `TypedArrayVec<u8, u8, 3>` is only 4 bytes (3 bytes for data + 1 byte for length).
 //!
+//! ## Complex Indexing
+//!
+//! This crate also supports complex forms of indexing when using custom index types, for example, slicing a range with a custom
+//! index type:
+//! ```
+//! # #[cfg(feature = "alloc")] {
+//! # use index_type::IndexType;
+//! # use index_type::typed_vec;
+//! # use index_type::vec::TypedVec;
+//! # use index_type::slice::TypedSlice;
+//! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+//! struct ItemId(usize);
+//!
+//! #[derive(Debug, PartialEq, Eq)]
+//! struct Item(u32);
+//!
+//! let values: TypedVec<ItemId, Item> = typed_vec![
+//!     Item(45), Item(54), Item(32), Item(19), Item(78)
+//! ];
+//!
+//! let some_values: &TypedSlice<ItemId, Item> = &values[ItemId(1)..ItemId(4)];
+//! assert_eq!(some_values.as_slice(), &[Item(54), Item(32), Item(19)]);
+//!
+//! // Can even perform more complex types of slicing
+//! let other_values: &TypedSlice<ItemId, Item> = &values[..ItemId(3)];
+//! assert_eq!(other_values.as_slice(), &[Item(45), Item(54), Item(32)]);
+//!
+//! let other_values_2: &TypedSlice<ItemId, Item> = &values[ItemId(3)..];
+//! assert_eq!(other_values_2.as_slice(), &[Item(19), Item(78)]);
+//! # }
+//! ```
+//!
 //! ## Memory-Efficient Indices
 //!
-//! Using smaller integer types reduces memory when storing many indices. Useful when you know that the size of the collection is bounded.
+//! Using smaller integer types reduces memory when storing many indices.
+//! This is useful when you know that the size of the collection is bounded.
 //!
 //! For example, if you are implementing a graph using an adjacency list, and you know that the graph will be reasonably small, you can use
 //! 32-bit integers as indices instead of `usize`, which on 64-bit machines is half the size:
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::{IndexType, vec::TypedVec};
-//! // We know that the graph will never have more than 2^32 elements, so we can use `u32` as the index type.
+//! // We know that the graph will never have more than `2^32 - 1` nodes, so we can use `u32` as the index type.
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct NodeId(u32);
 //!
@@ -262,8 +264,8 @@
 //! struct SafeId(NonZeroU32);
 //!
 //! // Option<SafeId> takes only 4 bytes, not 8!
-//! assert_eq!(std::mem::size_of::<SafeId>(), 4);
-//! assert_eq!(std::mem::size_of::<Option<SafeId>>(), 4);
+//! assert_eq!(size_of::<SafeId>(), 4);
+//! assert_eq!(size_of::<Option<SafeId>>(), 4);
 //! ```
 //!
 //! And indexing into a collection with non-zero indices is of course as seamless as using any other integer type as the index type:
@@ -278,7 +280,6 @@
 //! let arr: TypedArray<MyId, i32, 4> = typed_array![7, 12, 19, 22];
 //! assert_eq!(arr[MyId::from_raw_index(2)], 19);
 //! ```
-//!
 //!
 //! ## Range Iterators
 //!
@@ -380,7 +381,6 @@
 //! assert!(res.is_err());
 //! # }
 //! ```
-//!
 //!
 //! ## no_std Compatibility
 //!
