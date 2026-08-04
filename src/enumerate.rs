@@ -68,12 +68,11 @@ impl<I: IndexType, Iter: Iterator> Iterator for TypedEnumerate<I, Iter> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        let item = self.iter.next()?;
         let idx = self.next_index;
-        let next_index = idx
+        self.next_index = idx
             .checked_add_scalar(I::Scalar::ONE)
             .unwrap_or_else(|_| panic_typed_enumerate_overflow());
-        let item = self.iter.next()?;
-        self.next_index = next_index;
         Some((idx, item))
     }
 
