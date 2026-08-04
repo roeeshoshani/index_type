@@ -261,7 +261,7 @@ assert_eq!(arr[MyId::from_raw_index(2)], 19);
 
 Currently, in stable Rust, you cannot iterate over a range of values of a custom type:
 
-```compile_fail,E0277
+```rust,compile_fail,E0277
 struct MyIdx(u32);
 
 // There is nothing you can do to make this code work in stable Rust
