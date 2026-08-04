@@ -157,7 +157,7 @@
 //! # struct MyIndex(u32);
 //! let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
 //!
-//! // This will panic on index overflow (e.g if the vector already contains (2^32 - 1) elements before calling `push`)
+//! // This will panic on index overflow (e.g. if the vector already contains (2^32 - 1) elements before calling `push`)
 //! let idx = vec.push(1);
 //!
 //! // This will gracefully return an error in case of index overflow
@@ -396,7 +396,7 @@
 //! ## `serde` Support
 //!
 //! This crate has a `serde` feature flag which implements `Serialize` and `Deserialize` for all of the relevant types exported by this
-//! crate. This includes for example the main collection types (e.g [`TypedVec`](crate::vec::TypedVec)).
+//! crate. This includes for example the main collection types (e.g. [`TypedVec`](crate::vec::TypedVec)).
 
 pub use crate::error::GenericIndexTooBigError;
 

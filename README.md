@@ -139,7 +139,7 @@ Operations that can fail due to index overflow have both panicking and fallible 
 ```rust
 let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
 
-// This will panic on index overflow (e.g if the vector already contains (2^32 - 1) elements before calling `push`)
+// This will panic on index overflow (e.g. if the vector already contains (2^32 - 1) elements before calling `push`)
 let idx = vec.push(1);
 
 // This will gracefully return an error in case of index overflow
@@ -345,6 +345,6 @@ index_type = { version = "...", default-features = false }
 ## `serde` Support
 
 This crate has a `serde` feature flag which implements `Serialize` and `Deserialize` for all of the relevant types exported by this
-crate. This includes for example the main collection types (e.g [`TypedVec`](https://docs.rs/index_type/latest/index_type/vec/struct.TypedVec.html)).
+crate. This includes for example the main collection types (e.g. [`TypedVec`](https://docs.rs/index_type/latest/index_type/vec/struct.TypedVec.html)).
 
 <!-- cargo-reedme: end -->

@@ -11,7 +11,7 @@ mod private_typed_slice_index {
 /// This trait is analogous to the [`core::slice::SliceIndex`] trait from the standard library.
 /// It enables using various index types to access elements or slices of a `TypedSlice`.
 ///
-/// Implemented for example for single index types (`I: IndexType`) and range types (e.g `MyIndex(5)..=MyIndex(7)`).
+/// Implemented for example for single index types (`I: IndexType`) and range types (e.g. `MyIndex(5)..=MyIndex(7)`).
 ///
 /// # Safety
 ///

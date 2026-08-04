@@ -43,7 +43,7 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
     let Some(field) = as_newtype_struct(&derive_input) else {
         return quote_spanned! {
             proc_macro2::Span::call_site() => {
-                compile_error!("only structs with a single unnamed field are supported (e.g `struct Foo(u32);`)")
+                compile_error!("only structs with a single unnamed field are supported (e.g. `struct Foo(u32);`)")
             };
         }
         .into();
@@ -198,7 +198,7 @@ pub fn derive_index_too_big_error(
 
     if !is_empty_struct(&derive_input) {
         return quote_spanned! {
-            proc_macro2::Span::call_site() => compile_error!("only empty structs are supported (e.g `struct Foo;`)");
+            proc_macro2::Span::call_site() => compile_error!("only empty structs are supported (e.g. `struct Foo;`)");
         }
         .into();
     }
