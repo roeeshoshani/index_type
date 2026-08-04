@@ -593,11 +593,4 @@ impl<I: IndexType> DoubleEndedIterator for TypedRangeInclusiveIter<I> {
     }
 }
 
-impl<I: IndexType> ExactSizeIterator for TypedRangeInclusiveIter<I> {
-    #[inline]
-    fn len(&self) -> usize {
-        TypedRangeInclusiveIter::len(self)
-    }
-}
-
 impl<I: IndexType> FusedIterator for TypedRangeInclusiveIter<I> {}
