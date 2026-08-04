@@ -290,8 +290,9 @@ impl<I: IndexType> From<core::ops::RangeFrom<I>> for TypedRangeFromIter<I> {
 
 #[cold]
 #[inline(never)]
-fn panic_range_from_index_type_overflow() -> ! {
-    panic!("range from index type overflow")
+#[track_caller]
+fn panic_range_from_index_overflow() -> ! {
+    panic!("range-from index overflow")
 }
 
 impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
@@ -302,7 +303,7 @@ impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
         let res = self.start;
         self.start = res
             .checked_add_scalar(I::Scalar::ONE)
-            .unwrap_or_else(|_| panic_range_from_index_type_overflow());
+            .unwrap_or_else(|_| panic_range_from_index_overflow());
         Some(res)
     }
 
@@ -316,14 +317,13 @@ impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
         let res = self
             .start
             .checked_add_scalar(
-                I::Scalar::try_from_usize(n)
-                    .unwrap_or_else(|| panic_range_from_index_type_overflow()),
+                I::Scalar::try_from_usize(n).unwrap_or_else(|| panic_range_from_index_overflow()),
             )
-            .unwrap_or_else(|_| panic_range_from_index_type_overflow());
+            .unwrap_or_else(|_| panic_range_from_index_overflow());
 
         self.start = res
             .checked_add_scalar(I::Scalar::ONE)
-            .unwrap_or_else(|_| panic_range_from_index_type_overflow());
+            .unwrap_or_else(|_| panic_range_from_index_overflow());
 
         Some(res)
     }

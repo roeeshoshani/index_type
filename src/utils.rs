@@ -13,6 +13,7 @@ pub fn range_bounds_to_raw<I: IndexType, R: RangeBounds<I>>(r: &R) -> (Bound<usi
 
 #[cold]
 #[inline(never)]
+#[track_caller]
 pub(crate) fn panic_index_too_big<I: IndexType>(error: I::IndexTooBigError) -> ! {
     panic!("{}", error)
 }

@@ -45,6 +45,8 @@ use crate::{
 };
 
 #[cold]
+#[inline(never)]
+#[track_caller]
 fn panic_insufficient_capacity() -> ! {
     panic!("insufficient capacity")
 }

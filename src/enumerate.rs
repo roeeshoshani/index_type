@@ -35,6 +35,7 @@ use crate::{IndexScalarType, IndexType};
 
 #[cold]
 #[inline(never)]
+#[track_caller]
 fn panic_typed_enumerate_overflow() -> ! {
     panic!("typed enumerate index overflow")
 }
