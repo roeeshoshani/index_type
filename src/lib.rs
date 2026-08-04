@@ -375,7 +375,7 @@
 //!     vec.try_push(i).unwrap();
 //! }
 //!
-//! // At this point, the length of the vec exceeds the index type, so this fails gracefully.
+//! // At this point, pushing will cause the length of the vec to exceed the index type, so this fails gracefully.
 //! let res: Result<MyIndex, MyIndexTooBigError> = vec.try_push(255);
 //! assert!(res.is_err());
 //! # }
