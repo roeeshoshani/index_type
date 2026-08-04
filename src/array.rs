@@ -1,17 +1,7 @@
 //! A fixed-size array with typed indexing.
 //!
 //! This module provides [`TypedArray`], a wrapper around `[T; N]` that uses a custom
-//! [`IndexType`] for all indexing operations. Unlike [`TypedSlice`],
-//! `TypedArray` has a fixed size known at compile time.
-//!
-//! # Compile-Time Bounds Checking
-//!
-//! `TypedArray` performs compile-time checks to ensure that the array length `N`
-//! fits within the bounds of the index type `I`. If `N > I::MAX_RAW_INDEX`, the
-//! code will not compile.
-//!
-//! This makes `TypedArray` ideal for scenarios where you need maximum performance
-//! and want to catch index errors at compile time rather than runtime.
+//! [`IndexType`] for all indexing operations.
 //!
 //! # Example
 //!
@@ -38,7 +28,7 @@ use core::{
 use crate::{
     IndexType,
     enumerate::UncheckedTypedEnumerate,
-    range::{TypedRange, TypedRangeIterExt},
+    range::{TypedRangeIter, TypedRangeIterExt},
     slice::TypedSlice,
 };
 
@@ -119,7 +109,7 @@ impl<I: IndexType, T: serde::Serialize, const N: usize> serde::Serialize for Typ
 
 impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     // A compile time assertion to make sure that the array length `N` fits within the bounds of the index type `I`.
-    // Used to emit compile time errors instead of runtime erros when we know at compile time that the array size is too big to fit in
+    // Used to emit compile time errors instead of runtime errors when we know at compile time that the array size is too big to fit in
     // the index type `I`.
     const _ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS: () = if N > I::MAX_RAW_INDEX {
         panic!("array length is not in bounds of the index type");
@@ -140,7 +130,7 @@ impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
 
     /// Returns an iterator over the valid indices of this array.
     #[inline]
-    pub fn indices(&self) -> TypedRange<I> {
+    pub fn indices(&self) -> TypedRangeIter<I> {
         (I::ZERO..self.len()).iter()
     }
 

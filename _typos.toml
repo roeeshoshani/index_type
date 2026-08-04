@@ -1,0 +1,17 @@
+# Configuration for the `typos` spell checker, which runs as part of CI.
+#
+# See https://github.com/crate-ci/typos for the full list of available options.
+#
+# This file is intentionally empty. It exists so that when `typos` reports a false positive on an
+# identifier or word which is intentionally spelled that way, there is an obvious place to allow it
+# instead of having to disable the check entirely.
+#
+# Note that `README.md` is generated from the crate level docs in `src/lib.rs` by `cargo reedme`, so
+# a typo reported there should always be fixed in `src/lib.rs` and not in `README.md` itself.
+
+[default]
+# Identifiers (variable/type/function names) that should not be reported as typos.
+extend-identifiers = {}
+
+# Whole words that should not be reported as typos.
+extend-words = {}

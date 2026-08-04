@@ -1,19 +1,10 @@
 //! A fixed-capacity vector with typed indexing.
 //!
-//! This module provides [`TypedArrayVec`], a vector with a fixed maximum capacity that uses a
-//! custom [`IndexType`] for both indexing and storing the length. This is ideal for embedded
-//! systems or scenarios where you need predictable memory usage.
+//! This module provides [`TypedArrayVec`], a vector with a fixed maximum capacity which uses a custom [`IndexType`] both for
+//! indexing and for storing the length.
 //!
-//! # No Heap Allocation After Creation
-//!
-//! Unlike [`TypedVec`][crate::vec::TypedVec], `TypedArrayVec` has a fixed capacity determined at compile time. Once created,
-//! it will never allocate additional memory. Operations that would exceed capacity return errors
-//! or panic.
-//!
-//! # Compile-Time Capacity Check
-//!
-//! The capacity `N` is checked at compile time to ensure it fits within the index type `I`'s
-//! representable range.
+//! [`TypedArrayVec`] aims to be an index-typed version of the `ArrayVec` type provided by the `arrayvec` crate. As expected from an
+//! `ArrayVec`-like data structure, its storage is an inline fixed-size array, so it never performs any heap allocation.
 //!
 //! # Memory Efficiency
 //!
@@ -45,12 +36,14 @@ use crate::{
     IndexScalarType, IndexType,
     array::TypedArray,
     enumerate::UncheckedTypedEnumerate,
-    range::{TypedRange, TypedRangeIterExt},
+    range::{TypedRangeIter, TypedRangeIterExt},
     slice::TypedSlice,
     utils::resolve_range_bounds,
 };
 
 #[cold]
+#[inline(never)]
+#[track_caller]
 fn panic_insufficient_capacity() -> ! {
     panic!("insufficient capacity")
 }
@@ -90,7 +83,7 @@ impl<I: IndexType, T, const N: usize> TypedArrayVec<I, T, N> {
 
     /// Returns an iterator over the valid indices of this vector.
     #[inline]
-    pub fn indices(&self) -> TypedRange<I> {
+    pub fn indices(&self) -> TypedRangeIter<I> {
         (I::ZERO..self.len()).iter()
     }
 

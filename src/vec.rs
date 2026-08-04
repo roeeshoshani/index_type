@@ -1,8 +1,7 @@
 //! A growable vector with typed indexing.
 //!
 //! This module provides [`TypedVec`], a wrapper around [`alloc::vec::Vec`] that uses a custom
-//! [`IndexType`] for all indexing operations. This provides compile-time guarantees that
-//! indices from one `TypedVec` cannot be accidentally used with another.
+//! [`IndexType`] for all indexing operations.
 //!
 //! # Example
 //!
@@ -23,7 +22,7 @@
 //!
 //! # Capacity and Growth
 //!
-//! `TypedVec` has the same growth behavior as [`Vec`]. Operations that would cause the length
+//! [`TypedVec`] has the same growth behavior as [`Vec`]. Operations that would cause the length
 //! to exceed `I::MAX_RAW_INDEX` return an error or panic, depending on whether you use
 //! the fallible or infallible variant.
 
@@ -39,7 +38,7 @@ use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
 use crate::{
     IndexScalarType, IndexTooBigError, IndexType,
     enumerate::UncheckedTypedEnumerate,
-    range::{TypedRange, TypedRangeIterExt},
+    range::{TypedRangeIter, TypedRangeIterExt},
     slice::TypedSlice,
     utils::{range_bounds_to_raw, resolve_range_bounds},
 };
@@ -377,7 +376,7 @@ impl<I: IndexType, T> TypedVec<I, T> {
     /// }
     /// ```
     #[inline]
-    pub fn indices(&self) -> TypedRange<I> {
+    pub fn indices(&self) -> TypedRangeIter<I> {
         (I::ZERO..self.len()).iter()
     }
 

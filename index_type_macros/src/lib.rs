@@ -35,7 +35,7 @@ struct IndexTypeArgs {
     error: Option<syn::Path>,
 }
 
-/// Internal implementation. See docs on re-export from `index_type`.
+// Internal implementation. See docs on re-export from `index_type`.
 #[proc_macro_derive(IndexType, attributes(index_type))]
 pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let derive_input = parse_macro_input!(input_tokens as DeriveInput);
@@ -43,7 +43,7 @@ pub fn derive_index_type(input_tokens: proc_macro::TokenStream) -> proc_macro::T
     let Some(field) = as_newtype_struct(&derive_input) else {
         return quote_spanned! {
             proc_macro2::Span::call_site() => {
-                compile_error!("only structs with a single unnamed field are supported (e.g `struct Foo(u32);`)")
+                compile_error!("only structs with a single unnamed field are supported (e.g. `struct Foo(u32);`)")
             };
         }
         .into();
@@ -189,7 +189,7 @@ struct IndexTooBigErrorArgs {
     msg: String,
 }
 
-/// Internal implementation. See docs on re-export from `index_type`.
+// Internal implementation. See docs on re-export from `index_type`.
 #[proc_macro_derive(IndexTooBigError, attributes(index_too_big_error))]
 pub fn derive_index_too_big_error(
     input_tokens: proc_macro::TokenStream,
@@ -198,7 +198,7 @@ pub fn derive_index_too_big_error(
 
     if !is_empty_struct(&derive_input) {
         return quote_spanned! {
-            proc_macro2::Span::call_site() => compile_error!("only empty structs are supported (e.g `struct Foo;`)");
+            proc_macro2::Span::call_site() => compile_error!("only empty structs are supported (e.g. `struct Foo;`)");
         }
         .into();
     }

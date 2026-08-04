@@ -96,11 +96,13 @@ macro_rules! typed_vec {
 /// use index_type::{IndexType, typed_array_vec};
 /// use index_type::array_vec::TypedArrayVec;
 ///
-/// #[derive(IndexType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// struct MyIndex(u32);
 ///
-/// let v: TypedArrayVec<MyIndex, i32, 3> = typed_array_vec![1, 2, 3];
+/// let v: TypedArrayVec<MyIndex, i32, 50> = typed_array_vec![1, 2, 3];
 /// assert_eq!(v.len_usize(), 3);
+/// assert_eq!(v.capacity(), MyIndex(50));
+/// assert!(!v.is_full());
 /// ```
 #[macro_export]
 macro_rules! typed_array_vec {
