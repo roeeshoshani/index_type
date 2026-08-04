@@ -11,8 +11,8 @@
 //! The reason for this is that the built-in range types only implement the [`Iterator`] trait if the value type `T` implements the
 //! unstable [`Step`](core::iter::Step) trait, which you cannot implement for your own types in stable rust.
 //!
-//! Being able to iterate over ranges of index type is important for making the experience of working with typed indices feel seamless
-//! and as smooth as using regular index types.
+//! Being able to iterate over ranges of custom index types is important for making the experience of working with typed indices
+//! feel seamless and as smooth as using regular index types.
 //!
 //! This module provides extension traits that convert range types into iterator types that work with any [`IndexType`].
 //!

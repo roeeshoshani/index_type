@@ -255,8 +255,8 @@ for i in MyIdx(0)..MyIdx(20) {}
 The reason for this is that the built-in range types only implement the [`Iterator`](https://doc.rust-lang.org/stable/core/iter/traits/iterator/trait.Iterator.html) trait if the value type `T` implements the
 unstable [`Step`](https://doc.rust-lang.org/stable/core/iter/range/trait.Step.html) trait, which you cannot implement for your own types in stable rust.
 
-Being able to iterate over ranges of index type is important for making the experience of working with typed indices feel seamless
-and as smooth as using regular index types.
+Being able to iterate over ranges of custom index types is important for making the experience of working with typed indices
+feel seamless and as smooth as using regular index types.
 
 This crate provides [`TypedRangeIterExt`](https://docs.rs/index_type/latest/index_type/range/trait.TypedRangeIterExt.html) for iterating over ranges with custom index types:
 ```rust
