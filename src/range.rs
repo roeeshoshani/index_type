@@ -277,6 +277,7 @@ impl<I: IndexType> TypedRangeFromIter<I> {
     }
 
     /// Converts a raw range into a typed range iterator.
+    #[inline]
     pub const fn from_raw(value: core::ops::RangeFrom<I>) -> Self {
         Self { start: value.start }
     }
