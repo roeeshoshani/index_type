@@ -23,6 +23,7 @@ protection against using an index from one collection with another. Typed indice
 creating custom index types that are statically associated with specific collections.
 
 In standard Rust, a raw `usize` can index any collection. This allows subtle bugs:
+
 ```rust
 let nodes: Vec<Node> = vec![Node::default(); 10];  // 10 nodes
 let edges: Vec<Edge> = vec![Edge::default(); 5];   // 5 edges
@@ -32,6 +33,7 @@ edges[node_index]; // compiles just fine!
 ```
 
 With typed indices, cross-contamination becomes a compile error:
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct NodeId(u32);
@@ -74,6 +76,7 @@ assert_eq!(vec[idx], 42);
 ## Defining Index Types
 
 Use the `#[derive(IndexType)]` macro on a newtype struct:
+
 ```rust
 use index_type::IndexType;
 
@@ -83,6 +86,7 @@ struct MyIndex(u32);
 
 The macro automatically implements the [`IndexType`](https://docs.rs/index_type/latest/index_type/trait.IndexType.html) trait for your custom type. By default,
 it generates an error type `MyIndexTooBigError`. You can specify a custom error type:
+
 ```rust
 #[derive(Debug, IndexTooBigError)]
 #[index_too_big_error(msg = "item id too big")]
@@ -98,6 +102,7 @@ struct ItemId(u32);
 ### TypedVec
 
 A growable vector with typed indexing. See [`TypedVec`](https://docs.rs/index_type/latest/index_type/vec/struct.TypedVec.html) for the full API.
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct NodeId(u32);
@@ -110,6 +115,7 @@ println!("Node 0: {}", nodes[id0]);
 ```
 
 Operations that can fail due to index overflow have both panicking and fallible variants:
+
 ```rust
 let mut vec: TypedVec<MyIndex, i32> = TypedVec::new();
 
@@ -126,6 +132,7 @@ A slice wrapper with typed indexing.
 `TypedSlice<I, T>` is the same as `[T]` but with index type `I`.
 So, to represent `&[u8]` for example, use `&TypedSlice<I, u8>`, where `I` is your custom index type.
 See [`TypedSlice`](https://docs.rs/index_type/latest/index_type/slice/struct.TypedSlice.html) for the full API.
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct RowId(u16);
@@ -141,6 +148,7 @@ let first = slice[RowId::ZERO];
 
 A fixed-size array with typed indexing. The array length `N` is checked at compile time
 to ensure it fits within the index type’s range. See [`TypedArray`](https://docs.rs/index_type/latest/index_type/array/struct.TypedArray.html) for the full API.
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct ValueIdx(u8);
@@ -153,6 +161,7 @@ let mut values: TypedArray<ValueIdx, Value, 3> = TypedArray::from_array([Value(3
 values[ValueIdx::ZERO] = Value(20);
 values[ValueIdx(1)] = Value(32);
 assert_eq!(values[ValueIdx(0)], Value(20));
+assert_eq!(values[ValueIdx(1)], Value(32));
 assert_eq!(values[ValueIdx(2)], Value(5));
 ```
 
@@ -160,6 +169,7 @@ assert_eq!(values[ValueIdx(2)], Value(5));
 
 A fixed-capacity vector backed by an array, similar to the `ArrayVec` type provided by the `arrayvec` crate but with typed indexing.
 See [`TypedArrayVec`](https://docs.rs/index_type/latest/index_type/array_vec/struct.TypedArrayVec.html) for the full API.
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct BufferIndex(u8);
@@ -173,8 +183,9 @@ A `TypedArrayVec<u8, u8, 3>` is only 4 bytes (3 bytes for data + 1 byte for leng
 
 ## Complex Indexing
 
-This crate also supports complex forms of indexing when using custom index types, for example, slicing a range with a custom
-index type:
+This crate also supports complex forms of indexing when using custom index types, for example, slicing a collection with a range
+of a custom index type:
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct ItemId(usize);
@@ -204,14 +215,15 @@ This is useful when you know that the size of the collection is bounded.
 
 For example, if you are implementing a graph using an adjacency list, and you know that the graph will be reasonably small, you can use
 32-bit integers as indices instead of `usize`, which on 64-bit machines is half the size:
+
 ```rust
 // We know that the graph will never have more than `2^32 - 1` nodes, so we can use `u32` as the index type.
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct NodeId(u32);
 
 struct Node {
-    // Each node id is only 32-bits compared to `usize` which is 64-bit (assuming we are running on a 64-bit machine), which may
-    // save a lot of space for large graphs.
+    // Each node id is only 32 bits, compared to `usize` which is 64 bits (assuming we are running on a 64-bit machine), which
+    // may save a lot of space for large graphs.
     children: Vec<NodeId>,
 }
 
@@ -225,6 +237,7 @@ struct Graph {
 
 Using [`NonZero`](https://doc.rust-lang.org/stable/core/num/nonzero/struct.NonZero.html) types enables niche optimization, where `Option<Index>`
 has the same size as `Index`:
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct SafeId(NonZeroU32);
@@ -235,6 +248,7 @@ assert_eq!(size_of::<Option<SafeId>>(), 4);
 ```
 
 And indexing into a collection with non-zero indices is of course as seamless as using any other integer type as the index type:
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyId(NonZeroU32);
@@ -245,21 +259,23 @@ assert_eq!(arr[MyId::from_raw_index(2)], 19);
 
 ## Range Iterators
 
-Currently, in stable rust, you cannot iterate over a range of values of a custom type:
-```rust
+Currently, in stable Rust, you cannot iterate over a range of values of a custom type:
+
+```compile_fail,E0277
 struct MyIdx(u32);
 
-// There is nothing you can do to make this code work in stable rust
+// There is nothing you can do to make this code work in stable Rust
 for i in MyIdx(0)..MyIdx(20) {}
 ```
 
 The reason for this is that the built-in range types only implement the [`Iterator`](https://doc.rust-lang.org/stable/core/iter/traits/iterator/trait.Iterator.html) trait if the value type `T` implements the
-unstable [`Step`](https://doc.rust-lang.org/stable/core/iter/range/trait.Step.html) trait, which you cannot implement for your own types in stable rust.
+unstable [`Step`](https://doc.rust-lang.org/stable/core/iter/range/trait.Step.html) trait, which you cannot implement for your own types in stable Rust.
 
 Being able to iterate over ranges of custom index types is important for making the experience of working with typed indices
 feel seamless and as smooth as using regular index types.
 
 This crate provides [`TypedRangeIterExt`](https://docs.rs/index_type/latest/index_type/range/trait.TypedRangeIterExt.html) for iterating over ranges with custom index types:
+
 ```rust
 use index_type::range::TypedRangeIterExt;
 
@@ -274,6 +290,7 @@ for idx in (MyIdx(5)..MyIdx(10)).iter() {
 ## Typed Enumerate
 
 Use [`TypedIteratorExt`](https://docs.rs/index_type/latest/index_type/enumerate/trait.TypedIteratorExt.html) to enumerate any iterator with typed indices:
+
 ```rust
 use index_type::enumerate::TypedIteratorExt;
 
@@ -292,6 +309,7 @@ assert_eq!(pairs[1].1, "b");
 ## Macros
 
 Convenience macros for creating typed collections:
+
 ```rust
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u32);
@@ -313,9 +331,10 @@ let s: &TypedSlice<MyIndex, i32> = typed_slice![1, 2, 3];
 
 Operations that can fail due to index overflow return `Result` types.
 Each index type has its own custom error type which is returned when operating on a collection which uses that index type.
+
 ```rust
-// Note: the `#[derive(IndexType)]` automatically generates a type called `MyIndexTooBigError` which is the custom error type
-// for this custom index type.
+// Note: the `#[derive(IndexType)]` macro automatically generates a type called `MyIndexTooBigError` which is the custom error
+// type for this custom index type.
 #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct MyIndex(u8);
 
@@ -337,6 +356,7 @@ This crate is `no_std` compatible. The `alloc` feature (enabled by default) enab
 heap-allocated collections ([`TypedVec`](https://docs.rs/index_type/latest/index_type/vec/struct.TypedVec.html) and related macros).
 
 For pure `no_std` environments without heap allocation, disable the `alloc` feature:
+
 ```toml
 [dependencies]
 index_type = { version = "...", default-features = false }

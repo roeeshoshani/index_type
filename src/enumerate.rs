@@ -114,10 +114,11 @@ impl<I: IndexType, Iter: ExactSizeIterator> ExactSizeIterator for TypedEnumerate
 
 impl<I: IndexType, Iter: FusedIterator> FusedIterator for TypedEnumerate<I, Iter> {}
 
-/// An iterator adapter like [`Iterator::enumerate`] that yields typed indices, and skips index-type bounds checking.
+/// An iterator adapter like [`Iterator::enumerate`] which yields typed indices without checking for index type overflow.
 ///
-/// Unlike [`TypedEnumerate`], this variant does not perform runtime overflow checks while
-/// iterating. The caller must guarantee its length invariant up front. See [`UncheckedTypedEnumerate::new`] for more info.
+/// Unlike [`TypedEnumerate`], this variant does not perform runtime overflow checks while iterating. Instead, the caller must
+/// guarantee up front that the wrapped iterator's length fits within the index type. See [`UncheckedTypedEnumerate::new`] for more
+/// info.
 #[derive(Debug, Clone)]
 pub struct UncheckedTypedEnumerate<I: IndexType, Iter> {
     iter: Iter,

@@ -9,6 +9,7 @@
 //! creating custom index types that are statically associated with specific collections.
 //!
 //! In standard Rust, a raw `usize` can index any collection. This allows subtle bugs:
+//!
 //! ```rust
 //! # #[cfg(feature = "alloc")] {
 //! # #[derive(Default, Clone, Copy)]
@@ -24,6 +25,7 @@
 //! ```
 //!
 //! With typed indices, cross-contamination becomes a compile error:
+//!
 //! ```rust
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::{IndexType, vec::TypedVec, typed_vec};
@@ -75,6 +77,7 @@
 //! ## Defining Index Types
 //!
 //! Use the `#[derive(IndexType)]` macro on a newtype struct:
+//!
 //! ```
 //! use index_type::IndexType;
 //!
@@ -84,6 +87,7 @@
 //!
 //! The macro automatically implements the [`IndexType`] trait for your custom type. By default,
 //! it generates an error type `MyIndexTooBigError`. You can specify a custom error type:
+//!
 //! ```
 //! # use index_type::IndexType;
 //! # use index_type::IndexTooBigError;
@@ -101,6 +105,7 @@
 //! ### TypedVec
 //!
 //! A growable vector with typed indexing. See [`TypedVec`](crate::vec::TypedVec) for the full API.
+//!
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::IndexType;
@@ -117,6 +122,7 @@
 //! ```
 //!
 //! Operations that can fail due to index overflow have both panicking and fallible variants:
+//!
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::IndexType;
@@ -139,6 +145,7 @@
 //! `TypedSlice<I, T>` is the same as `[T]` but with index type `I`.
 //! So, to represent `&[u8]` for example, use `&TypedSlice<I, u8>`, where `I` is your custom index type.
 //! See [`TypedSlice`](crate::slice::TypedSlice) for the full API.
+//!
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::IndexType;
@@ -160,6 +167,7 @@
 //!
 //! A fixed-size array with typed indexing. The array length `N` is checked at compile time
 //! to ensure it fits within the index type's range. See [`TypedArray`](crate::array::TypedArray) for the full API.
+//!
 //! ```
 //! # use index_type::IndexType;
 //! # use index_type::array::TypedArray;
@@ -174,6 +182,7 @@
 //! values[ValueIdx::ZERO] = Value(20);
 //! values[ValueIdx(1)] = Value(32);
 //! assert_eq!(values[ValueIdx(0)], Value(20));
+//! assert_eq!(values[ValueIdx(1)], Value(32));
 //! assert_eq!(values[ValueIdx(2)], Value(5));
 //! ```
 //!
@@ -181,6 +190,7 @@
 //!
 //! A fixed-capacity vector backed by an array, similar to the `ArrayVec` type provided by the `arrayvec` crate but with typed indexing.
 //! See [`TypedArrayVec`](crate::array_vec::TypedArrayVec) for the full API.
+//!
 //! ```
 //! # use index_type::IndexType;
 //! # use index_type::array_vec::TypedArrayVec;
@@ -196,8 +206,9 @@
 //!
 //! ## Complex Indexing
 //!
-//! This crate also supports complex forms of indexing when using custom index types, for example, slicing a range with a custom
-//! index type:
+//! This crate also supports complex forms of indexing when using custom index types, for example, slicing a collection with a range
+//! of a custom index type:
+//!
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::IndexType;
@@ -233,6 +244,7 @@
 //!
 //! For example, if you are implementing a graph using an adjacency list, and you know that the graph will be reasonably small, you can use
 //! 32-bit integers as indices instead of `usize`, which on 64-bit machines is half the size:
+//!
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::{IndexType, vec::TypedVec};
@@ -241,8 +253,8 @@
 //! struct NodeId(u32);
 //!
 //! struct Node {
-//!     // Each node id is only 32-bits compared to `usize` which is 64-bit (assuming we are running on a 64-bit machine), which may
-//!     // save a lot of space for large graphs.
+//!     // Each node id is only 32 bits, compared to `usize` which is 64 bits (assuming we are running on a 64-bit machine), which
+//!     // may save a lot of space for large graphs.
 //!     children: Vec<NodeId>,
 //! }
 //!
@@ -257,6 +269,7 @@
 //!
 //! Using [`NonZero`](core::num::NonZero) types enables niche optimization, where `Option<Index>`
 //! has the same size as `Index`:
+//!
 //! ```
 //! # use index_type::IndexType;
 //! # use core::num::NonZeroU32;
@@ -269,6 +282,7 @@
 //! ```
 //!
 //! And indexing into a collection with non-zero indices is of course as seamless as using any other integer type as the index type:
+//!
 //! ```
 //! # use index_type::IndexType;
 //! # use index_type::typed_array;
@@ -283,21 +297,23 @@
 //!
 //! ## Range Iterators
 //!
-//! Currently, in stable rust, you cannot iterate over a range of values of a custom type:
+//! Currently, in stable Rust, you cannot iterate over a range of values of a custom type:
+//!
 //! ```compile_fail,E0277
 //! struct MyIdx(u32);
 //!
-//! // There is nothing you can do to make this code work in stable rust
+//! // There is nothing you can do to make this code work in stable Rust
 //! for i in MyIdx(0)..MyIdx(20) {}
 //! ```
 //!
 //! The reason for this is that the built-in range types only implement the [`Iterator`] trait if the value type `T` implements the
-//! unstable [`Step`](core::iter::Step) trait, which you cannot implement for your own types in stable rust.
+//! unstable [`Step`](core::iter::Step) trait, which you cannot implement for your own types in stable Rust.
 //!
 //! Being able to iterate over ranges of custom index types is important for making the experience of working with typed indices
 //! feel seamless and as smooth as using regular index types.
 //!
 //! This crate provides [`TypedRangeIterExt`](crate::range::TypedRangeIterExt) for iterating over ranges with custom index types:
+//!
 //! ```
 //! # use index_type::IndexType;
 //! use index_type::range::TypedRangeIterExt;
@@ -313,6 +329,7 @@
 //! ## Typed Enumerate
 //!
 //! Use [`TypedIteratorExt`](crate::enumerate::TypedIteratorExt) to enumerate any iterator with typed indices:
+//!
 //! ```
 //! # use index_type::IndexType;
 //! use index_type::enumerate::TypedIteratorExt;
@@ -332,6 +349,7 @@
 //! ## Macros
 //!
 //! Convenience macros for creating typed collections:
+//!
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::{typed_vec, typed_array, typed_array_vec, typed_slice, typed_slice_mut, IndexType};
@@ -360,12 +378,13 @@
 //!
 //! Operations that can fail due to index overflow return `Result` types.
 //! Each index type has its own custom error type which is returned when operating on a collection which uses that index type.
+//!
 //! ```
 //! # #[cfg(feature = "alloc")] {
 //! # use index_type::IndexType;
 //! # use index_type::vec::TypedVec;
-//! // Note: the `#[derive(IndexType)]` automatically generates a type called `MyIndexTooBigError` which is the custom error type
-//! // for this custom index type.
+//! // Note: the `#[derive(IndexType)]` macro automatically generates a type called `MyIndexTooBigError` which is the custom error
+//! // type for this custom index type.
 //! #[derive(IndexType, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 //! struct MyIndex(u8);
 //!
@@ -388,6 +407,7 @@
 //! heap-allocated collections ([`TypedVec`](crate::vec::TypedVec) and related macros).
 //!
 //! For pure `no_std` environments without heap allocation, disable the `alloc` feature:
+//!
 //! ```toml
 //! [dependencies]
 //! index_type = { version = "...", default-features = false }

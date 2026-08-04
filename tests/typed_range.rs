@@ -213,7 +213,7 @@ mod typed_range_from_iter {
     }
 
     #[test]
-    #[should_panic(expected = "range from index type overflow")]
+    #[should_panic(expected = "range-from index overflow")]
     fn test_range_from_nth_panics_on_overflow_like_std() {
         let mut iter = (SmallIndex(250)..).iter();
         let _ = iter.nth(10);

@@ -1,13 +1,10 @@
 //! A fixed-capacity vector with typed indexing.
 //!
-//! This module provides [`TypedArrayVec`], a vector with a fixed maximum capacity backed by an array that uses a
-//! custom [`IndexType`] for both indexing and storing the length.
+//! This module provides [`TypedArrayVec`], a vector with a fixed maximum capacity which uses a custom [`IndexType`] both for
+//! indexing and for storing the length.
 //!
-//! [`TypedArrayVec`] aims to be an index-typed version of the `ArrayVec` type provided by the `arrayvec` crate.
-//!
-//! # Array-Backed
-//!
-//! As expected from an `ArrayVec` like data-structure, [`TypedArrayVec`]'s storage is backed by a static array, no heap or allocations.
+//! [`TypedArrayVec`] aims to be an index-typed version of the `ArrayVec` type provided by the `arrayvec` crate. As expected from an
+//! `ArrayVec`-like data structure, its storage is an inline fixed-size array, so it never performs any heap allocation.
 //!
 //! # Memory Efficiency
 //!
