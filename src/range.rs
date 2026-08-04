@@ -288,13 +288,21 @@ impl<I: IndexType> From<core::ops::RangeFrom<I>> for TypedRangeFromIter<I> {
     }
 }
 
+#[cold]
+#[inline(never)]
+fn range_from_index_type_overflow() -> ! {
+    panic!("range from index type overflow")
+}
+
 impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
     type Item = I;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let res = self.start;
-        self.start = res.checked_add_scalar(I::Scalar::ONE).unwrap();
+        self.start = res
+            .checked_add_scalar(I::Scalar::ONE)
+            .unwrap_or_else(|_| range_from_index_type_overflow());
         Some(res)
     }
 
@@ -307,10 +315,14 @@ impl<I: IndexType> Iterator for TypedRangeFromIter<I> {
     fn nth(&mut self, n: usize) -> Option<I> {
         let res = self
             .start
-            .checked_add_scalar(I::Scalar::try_from_usize(n).unwrap())
-            .unwrap();
+            .checked_add_scalar(
+                I::Scalar::try_from_usize(n).unwrap_or_else(|| range_from_index_type_overflow()),
+            )
+            .unwrap_or_else(|_| range_from_index_type_overflow());
 
-        self.start = res.checked_add_scalar(I::Scalar::ONE).unwrap();
+        self.start = res
+            .checked_add_scalar(I::Scalar::ONE)
+            .unwrap_or_else(|_| range_from_index_type_overflow());
 
         Some(res)
     }
