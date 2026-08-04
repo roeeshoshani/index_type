@@ -109,7 +109,7 @@ impl<I: IndexType, T: serde::Serialize, const N: usize> serde::Serialize for Typ
 
 impl<I: IndexType, T, const N: usize> TypedArray<I, T, N> {
     // A compile time assertion to make sure that the array length `N` fits within the bounds of the index type `I`.
-    // Used to emit compile time errors instead of runtime erros when we know at compile time that the array size is too big to fit in
+    // Used to emit compile time errors instead of runtime errors when we know at compile time that the array size is too big to fit in
     // the index type `I`.
     const _ASSERT_ARRAY_LENGTH_IN_INDEX_BOUNDS: () = if N > I::MAX_RAW_INDEX {
         panic!("array length is not in bounds of the index type");
