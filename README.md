@@ -252,7 +252,7 @@ struct MyIdx(u32);
 for i in MyIdx(0)..MyIdx(20) {}
 ```
 
-The reason for this is that the built in range types only implement the [`Iterator`](https://doc.rust-lang.org/stable/core/iter/traits/iterator/trait.Iterator.html) trait if the value type `T` implements the
+The reason for this is that the built-in range types only implement the [`Iterator`](https://doc.rust-lang.org/stable/core/iter/traits/iterator/trait.Iterator.html) trait if the value type `T` implements the
 unstable [`Step`](https://doc.rust-lang.org/stable/core/iter/range/trait.Step.html) trait, which you cannot implement for your own types in stable rust.
 
 Being able to iterate over ranges of index type is important for making the experience of working with typed indices feel seamless

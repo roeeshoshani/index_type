@@ -8,7 +8,7 @@
 //! for i in MyIdx(0)..MyIdx(20) {}
 //! ```
 //!
-//! The reason for this is that the built in range types only implement the [`Iterator`] trait if the value type `T` implements the
+//! The reason for this is that the built-in range types only implement the [`Iterator`] trait if the value type `T` implements the
 //! unstable [`Step`](core::iter::Step) trait, which you cannot implement for your own types in stable rust.
 //!
 //! Being able to iterate over ranges of index type is important for making the experience of working with typed indices feel seamless
