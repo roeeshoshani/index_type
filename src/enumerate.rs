@@ -117,7 +117,7 @@ impl<I: IndexType, Iter: FusedIterator> FusedIterator for TypedEnumerate<I, Iter
 /// An iterator adapter like [`Iterator::enumerate`] that yields typed indices, and skips index-type bounds checking.
 ///
 /// Unlike [`TypedEnumerate`], this variant does not perform runtime overflow checks while
-/// iterating. The caller must guarantee its length invariant up front.
+/// iterating. The caller must guarantee its length invariant up front. See [`UncheckedTypedEnumerate::new`] for more info.
 #[derive(Debug, Clone)]
 pub struct UncheckedTypedEnumerate<I: IndexType, Iter> {
     iter: Iter,
